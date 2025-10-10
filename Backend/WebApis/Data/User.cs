@@ -11,6 +11,9 @@
         public DateTime CreatedAt { get; set; }
 
         public Candidate candidate { get; set; }
+        public Recruiter recruiter { get; set; }
+        public Reviewer reviewer { get; set; }
+        public Interviewer interviewer { get; set; }
         public ICollection<UserSkill> UserSkills { get; set; }
     }
 }
