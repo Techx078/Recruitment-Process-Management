@@ -20,5 +20,7 @@
         public ICollection<JobReviewer> JobReviewers { get; set; } = new List<JobReviewer>();
         public ICollection<JobInterviewer> JobInterviewers { get; set; } = new List<JobInterviewer>();
 
+        public ICollection<JobCandidate> JobCandidates { get; set; } = new List<JobCandidate>();
+
     }
 }

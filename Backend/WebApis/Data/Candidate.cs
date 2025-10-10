@@ -11,5 +11,7 @@
         public DateTime UpdatedAt { get; set; }
         public int UserId { get; set; }
         public User User { get; set; }
+
+        public ICollection<JobCandidate> JobCandidates { get; set; } = new List<JobCandidate>();
     }
 }

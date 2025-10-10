@@ -12,5 +12,7 @@
         public User User { get; set; }
         //navigation with JobInterviewer
        public List<JobInterviewer> JobInterviewers { get; set; }
+        public ICollection<JobInterview> JobInterviews { get; set; }
+
     }
 }

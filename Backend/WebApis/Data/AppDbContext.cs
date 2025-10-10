@@ -81,6 +81,31 @@ namespace WebApis.Data
                 .HasForeignKey(ji => ji.InterviewerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<JobCandidate>()
+            .HasOne(jc => jc.JobOpening)
+            .WithMany(j => j.JobCandidates)
+            .HasForeignKey(jc => jc.JobOpeningId)
+            .OnDelete(DeleteBehavior.Cascade); // if Job deleted → related JobCandidates deleted
+
+            modelBuilder.Entity<JobCandidate>()
+                .HasOne(jc => jc.Candidate)
+                .WithMany(c => c.JobCandidates)
+                .HasForeignKey(jc => jc.CandidateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<JobInterview>()
+            .HasOne(ji => ji.JobCandidate)
+            .WithMany(jc => jc.JobInterviews)
+            .HasForeignKey(ji => ji.JobCandidateId)
+            .OnDelete(DeleteBehavior.Cascade); // if JobCandidate deleted → related JobInterviews deleted
+
+            modelBuilder.Entity<JobInterview>()
+                .HasOne(ji => ji.Interviewer)
+                .WithMany(i => i.JobInterviews)
+                .HasForeignKey(ji => ji.InterviewerId)
+                .OnDelete(DeleteBehavior.Restrict); // keep interviewer's history
+
+
         }
     }
 }
