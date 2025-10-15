@@ -22,5 +22,7 @@
 
         public ICollection<JobCandidate> JobCandidates { get; set; } = new List<JobCandidate>();
 
+        public ICollection<JobDocument> JobDocuments { get; set; } = new List<JobDocument>();
+
     }
 }

@@ -1,5 +1,6 @@
 
 using Microsoft.EntityFrameworkCore;
+using WebApis.Repository;
 
 namespace WebApis
 {
@@ -9,8 +10,8 @@ namespace WebApis
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddScoped(typeof(ICommonRepository<>), typeof(CommonRepository<>));
             // Add services to the container.
-
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();

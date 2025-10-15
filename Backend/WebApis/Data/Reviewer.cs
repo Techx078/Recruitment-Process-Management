@@ -10,6 +10,6 @@
         public User User { get; set; }
 
         //navigation with jobreviewer
-        public List<JobReviewer> JobReviewers { get; set; }
+        public ICollection<JobReviewer> JobReviewers { get; set; } = new List<JobReviewer>();
     }
 }

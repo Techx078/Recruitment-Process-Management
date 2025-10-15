@@ -10,6 +10,6 @@
         public User User { get; set; }
 
         //navigation for the JobOpenings
-        public List<JobOpening> JobOpenings { get; set; }
+        public ICollection<JobOpening> JobOpenings { get; set; } = new List<JobOpening>();
     }
 }

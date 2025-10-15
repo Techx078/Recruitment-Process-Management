@@ -11,8 +11,8 @@
         //navigation with user
         public User User { get; set; }
         //navigation with JobInterviewer
-       public List<JobInterviewer> JobInterviewers { get; set; }
-        public ICollection<JobInterview> JobInterviews { get; set; }
+        public ICollection<JobInterviewer> JobInterviewers { get; set; } = new List<JobInterviewer>();
+        public ICollection<JobInterview> JobInterviews { get; set; } = new List<JobInterview>();
 
     }
 }
