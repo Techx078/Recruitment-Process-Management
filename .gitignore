@@ -1,6 +1,16 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
+﻿/Backend/WebApis/bin/
+/Backend/WebApis/obj/
+/Backend/WebApis/.vs/
+/Backend/WebApis/.vscode/
+/Backend/WebApis/appsettings*.json
 
-/Backend/WebApis/obj
-/Backend/WebApis/.vs/WebApis
+/Frontend/node_modules
+/Frontend/build
+/Frontend/.env
+
+.env
+.env.local
+.vscode/
+.idea/
+# Logs
+*.log
