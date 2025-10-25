@@ -46,7 +46,6 @@ namespace WebApis.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ResumePath")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -82,13 +81,16 @@ namespace WebApis.Migrations
 
                     b.HasKey("id");
 
-                    b.ToTable("Document");
+                    b.ToTable("Documents");
                 });
 
             modelBuilder.Entity("WebApis.Data.Interviewer", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -105,7 +107,10 @@ namespace WebApis.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Interviewer");
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Interviewers");
                 });
 
             modelBuilder.Entity("WebApis.Data.JobCandidate", b =>
@@ -171,7 +176,7 @@ namespace WebApis.Migrations
 
                     b.HasIndex("JobOpeningId");
 
-                    b.ToTable("JobDocument");
+                    b.ToTable("JobDocuments");
                 });
 
             modelBuilder.Entity("WebApis.Data.JobInterview", b =>
@@ -341,7 +346,10 @@ namespace WebApis.Migrations
             modelBuilder.Entity("WebApis.Data.Recruiter", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -357,6 +365,9 @@ namespace WebApis.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.ToTable("Recruiter");
                 });
@@ -364,7 +375,10 @@ namespace WebApis.Migrations
             modelBuilder.Entity("WebApis.Data.Reviewer", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -381,7 +395,10 @@ namespace WebApis.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Reviewer");
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Reviewers");
                 });
 
             modelBuilder.Entity("WebApis.Data.Skill", b =>
@@ -497,7 +514,7 @@ namespace WebApis.Migrations
                 {
                     b.HasOne("WebApis.Data.User", "User")
                         .WithOne("interviewer")
-                        .HasForeignKey("WebApis.Data.Interviewer", "Id")
+                        .HasForeignKey("WebApis.Data.Interviewer", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -614,7 +631,7 @@ namespace WebApis.Migrations
                 {
                     b.HasOne("WebApis.Data.User", "User")
                         .WithOne("recruiter")
-                        .HasForeignKey("WebApis.Data.Recruiter", "Id")
+                        .HasForeignKey("WebApis.Data.Recruiter", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -625,7 +642,7 @@ namespace WebApis.Migrations
                 {
                     b.HasOne("WebApis.Data.User", "User")
                         .WithOne("reviewer")
-                        .HasForeignKey("WebApis.Data.Reviewer", "Id")
+                        .HasForeignKey("WebApis.Data.Reviewer", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

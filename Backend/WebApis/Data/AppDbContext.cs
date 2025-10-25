@@ -15,6 +15,14 @@ namespace WebApis.Data
         public DbSet<JobOpening> JobOpening { get; set; }
         public DbSet<JobInterviewer> jobInterviewer { get; set; }
         public DbSet<JobReviewer> JobReviewer { get; set; }
+        public DbSet<Reviewer> Reviewers { get; set; }  
+        public DbSet<Interviewer> Interviewers { get; set; }
+        public DbSet<Recruiter> Recruiter { get; set; }
+        public DbSet<JobCandidate> JobCandidate { get; set; }
+        public DbSet<JobInterview> JobInterview { get; set; }
+        public DbSet<JobDocument> JobDocuments { get; set; }
+        public DbSet<Document> Documents { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>()
@@ -39,23 +47,6 @@ namespace WebApis.Data
                 .HasForeignKey(us => us.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Reviewer>()
-            .HasOne(r => r.User)
-            .WithOne(u => u.reviewer)
-            .HasForeignKey<Reviewer>(r => r.Id)
-            .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Interviewer>()
-            .HasOne(i => i.User)
-            .WithOne(u => u.interviewer)
-            .HasForeignKey<Interviewer>(i => i.Id)
-            .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Recruiter>()
-                .HasOne(r => r.User)
-                .WithOne(u => u.recruiter)
-                .HasForeignKey<Recruiter>(r => r.Id)
-                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<JobReviewer>()
             .HasOne(jr => jr.JobOpening)
