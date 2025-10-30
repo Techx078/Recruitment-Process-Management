@@ -11,19 +11,35 @@ export default function CandidateRegister() {
     linkedInProfile: "",
     gitHubProfile: "",
   });
+  const [skills, setSkills] = useState([{ name: "", experience: "" }]);
   const [resumeFile, setResumeFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Handle skill input changes
+  const handleSkillChange = (index, field, value) => {
+    const updatedSkills = [...skills];
+    updatedSkills[index][field] = value;
+    setSkills(updatedSkills);
+  };
+
+ // Add new skill input fields
+  const addSkillField = () => {
+    setSkills([...skills, { name: "", experience: "" }]);
+  };
+
+  // Handle input field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  // Handle resume file selection
   const handleFileChange = (e) => {
     setResumeFile(e.target.files[0]);
   };
 
+  // Function to upload resume to Cloudinary
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -38,6 +54,8 @@ export default function CandidateRegister() {
     return data.resumeUrl;
   };
 
+
+  // Handle form submission for registration
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -55,17 +73,23 @@ export default function CandidateRegister() {
       const candidateData = {
         ...formData,
         roleName: "Candidate",
-        resumePath: resumeUrl, 
-      };
-
+        resumePath: resumeUrl,
+        skills: skills.map((skill) => ({
+          name: skill.name,
+          experience: skill.experience,
+        })),
+      }; 
       // Send to backend
-      const response = await fetch("http://localhost:5233/api/Auth/register-candidate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(candidateData),
-      });
+      const response = await fetch(
+        "http://localhost:5233/api/Auth/register-candidate",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(candidateData),
+        }
+      );
 
       if (!response.ok) {
         const errMsg = await response.text();
@@ -209,6 +233,40 @@ export default function CandidateRegister() {
               className="w-full border border-gray-300 rounded-lg p-2 cursor-pointer focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          <div className="col-span-2">
+            <label className="block text-gray-700 mb-2">Skills</label>
+
+            {skills.map((skill, index) => (
+              <div key={index} className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  placeholder="Skill Name (e.g. React)"
+                  value={skill.name}
+                  onChange={(e) =>
+                    handleSkillChange(index, "name", e.target.value)
+                  }
+                  className="w-1/2 border border-gray-300 rounded-lg p-2"
+                />
+                <input
+                  type="number"
+                  placeholder="Experience (in years)"
+                  value={skill.experience}
+                  onChange={(e) =>
+                    handleSkillChange(index, "experience", e.target.value)
+                  }
+                  className="w-1/2 border border-gray-300 rounded-lg p-2"
+                />
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={addSkillField}
+              className="text-blue-600 text-sm mt-1"
+            >
+              + Add Another Skill
+            </button>
+          </div>
 
           {/* Submit */}
           <div className="col-span-2 mt-4">
@@ -226,7 +284,10 @@ export default function CandidateRegister() {
 
         <p className="text-center text-sm text-gray-600 mt-4">
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-600 hover:underline font-medium">
+          <Link
+            to="/login"
+            className="text-blue-600 hover:underline font-medium"
+          >
             Login
           </Link>
         </p>
