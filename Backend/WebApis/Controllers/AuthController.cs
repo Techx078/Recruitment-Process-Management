@@ -60,6 +60,34 @@ namespace WebApis.Controllers
             _db.Candidates.Add(candidate);
             await _db.SaveChangesAsync();
 
+            if (dto.Skills != null && dto.Skills.Any())
+            {
+                foreach (var skillDto in dto.Skills)
+                {
+                    var skillName = skillDto.Name.Trim().ToLower();
+                    var skill = await _db.Skill.FirstOrDefaultAsync(s => s.Name.ToLower() == skillName);
+
+                    if (skill == null)
+                    {
+                        skill = new Skill { Name = skillDto.Name };
+                        _db.Skill.Add(skill);
+                        await _db.SaveChangesAsync();
+                    }
+
+                    var userSkill = new UserSkill
+                    {
+                        UserId = user.Id,
+                        SkillId = skill.SkillId,
+                        YearsOfExperience = skillDto.Experience,
+                        ProficiencyLevel = "begineer",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _db.UserSkill.Add(userSkill);
+                }
+                await _db.SaveChangesAsync();
+            }
+
             return Ok(new
             {
                 message = "Candidate created successfully by Recruiter.",
@@ -68,7 +96,7 @@ namespace WebApis.Controllers
         }
 
         [HttpPost("upload-resume")]
-        public async Task<IActionResult> UploadResume(IFormFile file)
+            public async Task<IActionResult> UploadResume(IFormFile file)
         {
             if (file == null)
                 return BadRequest("No file received.");
@@ -90,7 +118,10 @@ namespace WebApis.Controllers
             //  Validate role
             var allowedRoles = new[] { "Recruiter", "Reviewer", "Interviewer" };
             if (!allowedRoles.Contains(dto.RoleName))
-                return BadRequest(new { message = "Invalid role. Admin can only create Recruiter, Reviewer, or Interviewer." });
+            {
+                Console.WriteLine("Invalid role attempted: " + dto.RoleName);
+                return BadRequest(new { message = "Invalid role", });
+            }
 
             //  Check email duplication
             var existingUser = await _db.Users.AnyAsync(u => u.Email == dto.Email.ToLower());
@@ -147,6 +178,34 @@ namespace WebApis.Controllers
             }
 
             await _db.SaveChangesAsync();
+
+            if (dto.Skills != null && dto.Skills.Any())
+            {
+                foreach (var skillDto in dto.Skills)
+                {
+                    var skillName = skillDto.Name.Trim().ToLower();
+                    var skill = await _db.Skill.FirstOrDefaultAsync(s => s.Name.ToLower() == skillName);
+
+                    if (skill == null)
+                    {
+                        skill = new Skill { Name = skillDto.Name };
+                        _db.Skill.Add(skill);
+                        await _db.SaveChangesAsync();
+                    }
+
+                    var userSkill = new UserSkill
+                    {
+                        UserId = user.Id,
+                        SkillId = skill.SkillId,
+                        YearsOfExperience = skillDto.Experience,
+                        ProficiencyLevel = "begineer",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _db.UserSkill.Add(userSkill);
+                }
+                await _db.SaveChangesAsync();
+            }
 
             return Ok(new
             {
