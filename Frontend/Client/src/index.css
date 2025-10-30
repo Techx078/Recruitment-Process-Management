@@ -7,7 +7,7 @@ body #root {
   margin: 0px !important;
   background: hsl(0, 40%, 98%);
   max-width:none;
-  @apply bg-gray-100
+  
 }
 body{
   padding: 0px !important;

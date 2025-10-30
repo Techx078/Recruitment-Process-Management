@@ -2,14 +2,43 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false) ;
+  const [error, setError] = useState("");
 
-  const handleLogin = (e) => {
+ const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Username:", username);
-    console.log("Password:", password);
-    alert("Login submitted!");
+    setError("");
+    setLoading(true);
+
+    try {
+      //make api call to login endpoint
+      const response = await fetch("http://localhost:5233/api/Auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Invalid credentials or server error");
+      }
+      //fetch data from response
+      const data = await response.json();
+      //store jwt token in local storage
+      localStorage.setItem("token", data.token);
+
+      alert("Login successful!");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -21,12 +50,12 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-gray-700 mb-1">Username :)</label>
+            <label className="block text-gray-700 mb-1">Email :)</label>
             <input
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter Registered Email"
               required
               className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -46,9 +75,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
+            disabled={loading}
             className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-all"
           >
-            Login
+             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
@@ -70,6 +100,8 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+      {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
+    
   );
 }

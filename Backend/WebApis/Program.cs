@@ -26,7 +26,14 @@ namespace WebApis
             );
 
             builder.Services.AddScoped<JwtService>();
-           
+
+            builder.Services.AddCors(options => options.AddPolicy("MyLocalPolicy", policy =>
+            {
+                policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+            }));
+
+            builder.Services.AddSingleton<CloudinaryService>();
+
             var jwtSettings = builder.Configuration.GetSection("Jwt");
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -52,8 +59,9 @@ namespace WebApis
             }
 
             app.UseHttpsRedirection();
-
+            app.UseCors("MyLocalPolicy");
             app.UseAuthentication();
+            
             app.UseAuthorization();
 
 

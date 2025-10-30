@@ -15,11 +15,13 @@ namespace WebApis.Controllers
     {
         private readonly AppDbContext _db;
         private readonly JwtService _jwt;
+        private readonly CloudinaryService _cloudinaryService;
 
-        public AuthController(AppDbContext db, JwtService jwt)
+        public AuthController(AppDbContext db, JwtService jwt, CloudinaryService cloudinaryService)
         {
             _db = db;
             _jwt = jwt;
+            _cloudinaryService = cloudinaryService;
         }
 
         [HttpPost("register-candidate")]
@@ -63,6 +65,23 @@ namespace WebApis.Controllers
                 message = "Candidate created successfully by Recruiter.",
                 user = new { id = user.Id, name = user.FullName, email = user.Email, role = user.RoleName }
             });
+        }
+
+        [HttpPost("upload-resume")]
+        public async Task<IActionResult> UploadResume(IFormFile file)
+        {
+            if (file == null)
+                return BadRequest("No file received.");
+
+            try
+            {
+                var url = await _cloudinaryService.UploadResumeAsync(file);
+                return Ok(new { resumeUrl = url });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
 
         [HttpPost("register-Users")]//register recruiter reviewer and interviewer by admin 

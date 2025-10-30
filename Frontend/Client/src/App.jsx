@@ -1,10 +1,11 @@
 import "./App.css";
 import { Routes, Route } from "react-router-dom";
 import Login from "./Pages/Login";
-import Register from "./Pages/Register";
+import CandidateRegister from "./Pages/CandidateRegister.jsx";
 import Home from "./Pages/Home";
 import Navbar from "./Component/Navbar.jsx";
 import Footer from "./Component/Footer.jsx";
+import OtherRegister from "./Pages/OtherRegister.jsx";
 
 function App() {
   return (
@@ -17,7 +18,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/Candidate-register" element={<CandidateRegister />} />
+          <Route path="/Other-register"element={<OtherRegister  />} />
         </Routes>
       </main>
 

@@ -34,8 +34,11 @@ export default function Navbar() {
             <Link to="/Login" className="text-gray-700 hover:text-indigo-600">
               Login
             </Link>
-            <Link to="/register" className="text-gray-700 hover:text-indigo-600">
-              Register
+            <Link to="/Candidate-register" className="text-gray-700 hover:text-indigo-600">
+              Candidate-Register
+            </Link>
+            <Link to="/Other-Register" className="text-gray-700 hover:text-indigo-600">
+              Other-Register
             </Link>
           </div>
 
@@ -70,10 +73,13 @@ export default function Navbar() {
           Login
         </Link>
          <Link
-          to="/Register"
+          to="/Candidate-Register"
           className="block px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
         >
-          Register
+          Candidate-Register
+        </Link>
+        <Link to="/Other-register" className="text-gray-700 hover:text-indigo-600">
+              Other-Register
         </Link>
       </div>
       
