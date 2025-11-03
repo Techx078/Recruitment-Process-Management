@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link , useNavigate} from "react-router-dom";
 
 export default function CandidateRegister() {
   const [formData, setFormData] = useState({
@@ -15,7 +15,7 @@ export default function CandidateRegister() {
   const [resumeFile, setResumeFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const navigateTo = useNavigate();
   // Handle skill input changes
   const handleSkillChange = (index, field, value) => {
     const updatedSkills = [...skills];
@@ -110,6 +110,8 @@ export default function CandidateRegister() {
         gitHubProfile: "",
       });
       setResumeFile(null);
+      setSkills([{ name: "", experience: "" }]);
+      navigateTo("/login");
     } catch (err) {
       setError(err.message);
     } finally {

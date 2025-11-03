@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link , useNavigate } from "react-router-dom";
 
 export default function OtherRegister() {
   const [formData, setFormData] = useState({
@@ -13,7 +13,7 @@ export default function OtherRegister() {
   const [skills, setSkills] = useState([{ name: "", experience: "" }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const navigateTo = useNavigate();
   // Handle skill input changes
   const handleSkillChange = (index, field, value) => {
     const updatedSkills = [...skills];
@@ -79,6 +79,7 @@ export default function OtherRegister() {
         Department: "",
       });
       setSkills([{ name: "", experience: "" }]);
+      navigateTo("/login");
     } catch (err) {
       setError(err.message);
     } finally {

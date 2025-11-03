@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link , useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false) ;
   const [error, setError] = useState("");
-
- const handleLogin = async (e) => {
+  const navigateTo = useNavigate();
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -34,6 +34,7 @@ export default function LoginPage() {
       localStorage.setItem("token", data.token);
 
       alert("Login successful!");
+      navigateTo("/");
     } catch (err) {
       setError(err.message);
     } finally {
