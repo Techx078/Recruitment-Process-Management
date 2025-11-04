@@ -24,6 +24,8 @@ namespace WebApis.Controllers
             _cloudinaryService = cloudinaryService;
         }
 
+
+        //Implementation remaining that cadidate should attached to job opening when created by recruiter
         [HttpPost("register-candidate")]
         public async Task<IActionResult> RegisterCandidate([FromBody] RegisterRequestDto dto)
         {

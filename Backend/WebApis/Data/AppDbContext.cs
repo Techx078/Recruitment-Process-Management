@@ -40,7 +40,7 @@ namespace WebApis.Data
                 .HasForeignKey(us => us.SkillId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // UserSkill - no cascade delete when User is deleted
+            // UserSkill - no cascade delete when User is deleted 
             modelBuilder.Entity<UserSkill>()
                 .HasOne(us => us.User)
                 .WithMany(u => u.UserSkills)
