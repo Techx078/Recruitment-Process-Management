@@ -10,7 +10,7 @@
         public bool IsRequired { get; set; } = true;
 
         // Navigation properties
-        public List<JobOpening> JobOpening { get; set; }
+        public JobOpening JobOpening { get; set; }
         public Skill Skill { get; set; }
     }
 }
