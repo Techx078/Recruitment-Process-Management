@@ -8,5 +8,7 @@
         public DateTime UpdatedAt { get; set; }
 
         public ICollection<UserSkill> UserSkills { get; set; }
+
+        public ICollection<JobSkill> JobSkills { get; set; } = new List<JobSkill>();
     }
 }

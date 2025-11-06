@@ -23,8 +23,48 @@ namespace WebApis.Data
         public DbSet<JobDocument> JobDocuments { get; set; }
         public DbSet<Document> Documents { get; set; }
 
+        public DbSet<JobSkill> jobSkills { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // JobSkill - cascade delete when Skill is deleted
+            modelBuilder.Entity<JobSkill>()
+                .HasOne(js => js.Skill)
+                .WithMany(s => s.JobSkills)
+                .HasForeignKey(js => js.SkillId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // UserSkill - no cascade delete when User is deleted 
+            modelBuilder.Entity<JobSkill>()
+                .HasOne(js => js.JobOpening)
+                .WithMany(u => u.JobSkills)
+                .HasForeignKey(us => us.JobOpeningId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder
+            .Entity<JobOpening>()
+           .Property(j => j.Status)
+           .HasConversion<string>();
+
+            modelBuilder
+                .Entity<JobOpening>()
+                .Property(j => j.JobType)
+                .HasConversion<string>();
+
+            modelBuilder
+                .Entity<JobOpening>()
+                .Property(j => j.Department)
+                .HasConversion<string>();
+
+            modelBuilder
+                .Entity<JobOpening>()
+                .Property(j => j.Location)
+                .HasConversion<string>();
+
+            modelBuilder
+                .Entity<JobOpening>()
+                .Property(j => j.Education)
+                .HasConversion<string>();
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
