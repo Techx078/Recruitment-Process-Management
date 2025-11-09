@@ -29,24 +29,30 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex space-x-6 items-center">
+          <div className="hidden md:flex space-x-4  items-center">
             <Link to="/" className="text-gray-700 hover:text-indigo-600">
               Home
             </Link>
             {authUser ? (
               <>
                 <span className="text-gray-700">Welcome, {authUser.role}</span>
+                 <Link
+                  to="/job-openings"
+                  className="text-gray-700 hover:text-indigo-600"
+                >
+                  Job-Openings
+                </Link>
                 <Link
                   to="/profile"
                   className="block px-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
                 >
-                  <i class="fa-solid fa-user"></i>
+                  <i className="fa-solid fa-user"></i>
                 </Link>
                 <button onClick={()=>{
                   setAuthUser(null);
                   localStorage.removeItem("token");
                 }}>
-                  <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                  <i className="fa-solid fa-arrow-right-from-bracket"></i>
                 </button>
               </>
             ) : (
@@ -69,6 +75,7 @@ export default function Navbar() {
                 >
                   Other-Register
                 </Link>
+               
               </>
             )}
           </div>
