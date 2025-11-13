@@ -7,11 +7,11 @@ namespace WebApis.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DoumentController : ControllerBase
+    public class DocumentController : ControllerBase
     {
         private readonly AppDbContext _db;
         private readonly ICommonRepository<Document> _repository;
-        public DoumentController(AppDbContext db , ICommonRepository<Document>  repository )
+        public DocumentController(AppDbContext db , ICommonRepository<Document>  repository )
         {
             _db = db;
             _repository = repository;

@@ -238,7 +238,10 @@ namespace WebApis.Controllers
                 {
                     id = user.Id,
                     name = user.FullName,
-                    email = user.Email
+                    email = user.Email,
+                    phone = user.PhoneNumber,
+                    role = user.RoleName,
+                    createdAt = user.CreatedAt
                 }
             });
         }
