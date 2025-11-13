@@ -25,6 +25,7 @@ const JobOpeningsList = () => {
 
   // Handle filters and search
   useEffect(() => { 
+    if (!jobs) return;
     let result = [...jobs];
 
     // Search by title or department
@@ -151,7 +152,7 @@ const JobOpeningsList = () => {
         </select>
       </div>
       {/* Job cards */}
-      {filteredJobs.length === 0 ? (
+      {filteredJobs.length === 0 || jobs.length === 0 ? (
         <p className="text-gray-500 text-center mt-10">No job openings found.</p>
       ) : (
         <div className="space-y-6 max-w-4xl mx-auto">

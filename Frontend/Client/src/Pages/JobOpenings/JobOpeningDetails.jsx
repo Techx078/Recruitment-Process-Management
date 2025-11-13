@@ -19,6 +19,7 @@ const JobOpeningDetails = () => {
       } catch (err) {
         console.error(err);
         setError("Failed to fetch job details.");
+        setJob(null);
       } finally {
         setLoading(false);
       }

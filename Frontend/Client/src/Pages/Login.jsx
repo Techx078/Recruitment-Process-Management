@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link , useNavigate } from "react-router-dom";
+import { useAuthUserContext } from "../Context/AuthUserContext";
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -7,6 +9,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false) ;
   const [error, setError] = useState("");
   const navigateTo = useNavigate();
+  const {setAuthUser} = useAuthUserContext();
+
+  // Handle form submission for login
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -32,7 +37,7 @@ export default function LoginPage() {
       const data = await response.json();
       //store jwt token in local storage
       localStorage.setItem("token", data.token);
-
+      setAuthUser(data.user); 
       alert("Login successful!");
       navigateTo("/");
     } catch (err) {

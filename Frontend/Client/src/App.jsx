@@ -10,11 +10,13 @@ import AuthUserContextProvider from "./Context/AuthUserContext.jsx";
 import JobOpeningsList from "./Pages/JobOpenings/JobOpeningsList.jsx";
 import JobOpeningContextProvider from "./Context/JobOpeningContext.jsx";
 import JobOpeningDetails from "./Pages/JobOpenings/JobOpeningDetails.jsx";
+import CreateJobOpening from "./Pages/JobOpenings/CreateJobOpening.jsx";
+import JobOpeningsListWrapper from "./Pages/JobOpenings/JobOpeningListWrapper.jsx";
 
 function App() {
   return (
     <AuthUserContextProvider>
-      <JobOpeningContextProvider>
+      
     <div className="flex flex-col min-h-screen">
       {/* Navbar */}
       <Navbar />
@@ -27,8 +29,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/Candidate-register" element={<CandidateRegister />} />
           <Route path="/Other-register"element={<OtherRegister  />} />
-          <Route path="/job-openings" element={<JobOpeningsList />} />
+          <Route path="/job-openings" element={<JobOpeningsListWrapper />} />
           <Route path="/job-openings/:id" element={<JobOpeningDetails />} />
+          <Route path="/job-openings/Create" element={<CreateJobOpening />} />
         </Routes>
         
       </main>
@@ -36,7 +39,7 @@ function App() {
       {/* Footer */}
       <Footer />
     </div>
-      </JobOpeningContextProvider>
+      
     </AuthUserContextProvider>
   );
 }
