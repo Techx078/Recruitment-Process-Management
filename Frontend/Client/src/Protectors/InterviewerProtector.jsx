@@ -9,7 +9,7 @@ const InterviewerProtector = ({ children }) => {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if (authUser.role !== "Interviewer") {
+    if ( !authUser || authUser.role !== "Interviewer") {
       alert("Access denied. Only Interviewer can access.");
       navigate("/login");
     } else {

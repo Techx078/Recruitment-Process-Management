@@ -10,7 +10,7 @@ const CandidateProtector = ({ children }) => {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if (authUser.role !== "Candidate") {
+    if ( !authUser || authUser.role !== "Candidate") {
         alert("Access denied. Only Candidates can access.");
       navigate("/login");
     } else {

@@ -9,7 +9,7 @@ const AdminProtextor = ({ children }) => {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if (authUser.role !== "Admin") {
+    if ( !authUser || authUser.role !== "Admin") {
       alert("Access denied. Only Admin can access.");
       navigate("/login");
     } else {

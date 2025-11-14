@@ -9,7 +9,7 @@ const  RecruiterProtector = ({ children }) => {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if (authUser.role !== "Recruiter") {
+    if ( !authUser || authUser.role !== "Recruiter") {
         alert("Access denied. Only Recruiters can access.");
       navigate("/login");
     } else {

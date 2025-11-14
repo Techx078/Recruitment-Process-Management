@@ -9,7 +9,7 @@ const ReviewerProtector = ({ children }) => {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if (authUser.role !== "Reviewer") {
+    if ( !authUser || authUser.role !== "Reviewer") {
       alert("Access denied. Only Reviewer can access.");
       navigate("/login");
     } else {

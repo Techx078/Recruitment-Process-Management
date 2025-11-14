@@ -12,6 +12,11 @@ import JobOpeningContextProvider from "./Context/JobOpeningContext.jsx";
 import JobOpeningDetails from "./Pages/JobOpenings/JobOpeningDetails.jsx";
 import CreateJobOpening from "./Pages/JobOpenings/CreateJobOpening.jsx";
 import JobOpeningsListWrapper from "./Pages/JobOpenings/JobOpeningListWrapper.jsx";
+import InterviewerProfile from "./Pages/Profile/InterviewerProfile.jsx";
+import InterviewerProtector from "./Protectors/InterviewerProtector.jsx";
+import RecruiterProtector from "./Protectors/RecruiterProtector.jsx";
+import ReviewerProtector from "./Protectors/ReviewerProtector.jsx";
+import ReviewerProfile from "./Pages/Profile/ReviewerProfile.jsx";
 
 function App() {
   return (
@@ -31,7 +36,23 @@ function App() {
           <Route path="/Other-register"element={<OtherRegister  />} />
           <Route path="/job-openings" element={<JobOpeningsListWrapper />} />
           <Route path="/job-openings/:id" element={<JobOpeningDetails />} />
-          <Route path="/job-openings/Create" element={<CreateJobOpening />} />
+          <Route path="/job-openings/Create" element={
+            <RecruiterProtector>
+              <CreateJobOpening />
+            </RecruiterProtector>
+            } 
+          />
+          <Route path="/Interviewer/Profile" element={
+            <InterviewerProtector>
+                <InterviewerProfile />
+            </InterviewerProtector>
+            } 
+          />
+          <Route path="/Reviewer/Profile" element= {
+            <ReviewerProtector>
+                <ReviewerProfile />
+            </ReviewerProtector>
+          } />
         </Routes>
         
       </main>

@@ -4,14 +4,14 @@ import { HiMenu, HiX, HiChevronDown, HiLogout } from "react-icons/hi";
 import { Link } from "react-router-dom";
 import roimalogo from "../../Public/roima.png";
 import { useAuthUserContext } from "../Context/AuthUserContext.jsx";
-
+import {useNavigate} from "react-router-dom";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false); // For dropdown
   const { authUser , setAuthUser } = useAuthUserContext();
   const toggleMenu = () => setMenuOpen(!menuOpen);
-  // const toggleServices = () => setServicesOpen(!servicesOpen);
+  const Navigate = useNavigate();
 
   return (
     <nav className="bg-white shadow-md fixed w-full z-50 mb-5">
@@ -43,7 +43,7 @@ export default function Navbar() {
                   Job-Openings
                 </Link>
                 <Link
-                  to="/profile"
+                  to={`/${authUser.role}/Profile`}
                   className="block px-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
                 >
                   <i className="fa-solid fa-user"></i>
@@ -51,6 +51,7 @@ export default function Navbar() {
                 <button onClick={()=>{
                   setAuthUser(null);
                   localStorage.removeItem("token");
+                  Navigate("/");
                 }}>
                   <i className="fa-solid fa-arrow-right-from-bracket"></i>
                 </button>
