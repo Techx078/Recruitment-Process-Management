@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using WebApis.Repository;
 using WebApis.Service;
+using WebApis.Service.EmailService;
 
 namespace WebApis
 {
@@ -32,6 +33,7 @@ namespace WebApis
             );
 
             builder.Services.AddScoped<JwtService>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
 
             builder.Services.AddCors(options => options.AddPolicy("MyLocalPolicy", policy =>
             {
