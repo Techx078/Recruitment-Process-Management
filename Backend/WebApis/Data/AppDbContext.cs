@@ -25,8 +25,14 @@ namespace WebApis.Data
 
         public DbSet<JobSkill> jobSkills { get; set; }
 
+        public DbSet<PasswordReset> PasswordResets { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+
+            modelBuilder.Entity<PasswordReset>()
+                .HasKey(pr => pr.Id);
+                
             // JobSkill - cascade delete when Skill is deleted
             modelBuilder.Entity<JobSkill>()
                 .HasOne(js => js.Skill)

@@ -7,7 +7,7 @@ using WebApis.Data;
 using WebApis.Dtos;
 using WebApis.Service;
 
-namespace WebApis.Controllers
+namespace WebApis.Controllers.UserController.AuthController
 {
     [ApiController]
     [Route("api/[controller]")]
