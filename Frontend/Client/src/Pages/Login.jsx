@@ -90,20 +90,12 @@ export default function LoginPage() {
 
         <div className="mt-4 text-center text-sm text-gray-600">
           <button
-            onClick={() => alert("Forgot password clicked")}
+            onClick={() => navigateTo("/forgot-password")}
             className="text-blue-600 hover:underline"
           >
             Forgot Password?
           </button>
-          <p className="mt-2">
-            Don’t have an account?{" "}
-            <Link
-              to="/register"
-              className="text-blue-600 hover:underline font-medium"
-            >
-              Register
-            </Link>
-          </p>
+          
         </div>
       </div>
       {error && <p style={{ color: "red" }}>{error}</p>}

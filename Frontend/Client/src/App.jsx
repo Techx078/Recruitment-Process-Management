@@ -17,6 +17,7 @@ import InterviewerProtector from "./Protectors/InterviewerProtector.jsx";
 import RecruiterProtector from "./Protectors/RecruiterProtector.jsx";
 import ReviewerProtector from "./Protectors/ReviewerProtector.jsx";
 import ReviewerProfile from "./Pages/Profile/ReviewerProfile.jsx";
+import ForgotPassword from "./Pages/ForgotPassword.jsx";
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
                 <ReviewerProfile />
             </ReviewerProtector>
           } />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
         </Routes>
         
       </main>
