@@ -3,7 +3,6 @@
     public class Candidate
     {
         public int Id { get; set; } 
-        public string Education { get; set; }
         public string LinkedInProfile { get; set; }
         public string GitHubProfile { get; set; }
         public string? ResumePath { get; set; }
@@ -13,5 +12,7 @@
         public User User { get; set; }
 
         public ICollection<JobCandidate> JobCandidates { get; set; } = new List<JobCandidate>();
+
+        public ICollection<Education> Educations { get; set; } = new List<Education>();
     }
 }

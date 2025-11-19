@@ -27,8 +27,17 @@ namespace WebApis.Data
 
         public DbSet<PasswordReset> PasswordResets { get; set; }
 
+        public DbSet<Education> Educations { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Education>()
+            .HasOne(e => e.Candidate)
+            .WithMany(c => c.Educations)
+            .HasForeignKey(e => e.CandidateId)
+            .OnDelete(DeleteBehavior.Cascade);
+
 
             modelBuilder.Entity<PasswordReset>()
                 .HasKey(pr => pr.Id);

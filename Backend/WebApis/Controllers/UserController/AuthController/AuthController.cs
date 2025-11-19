@@ -52,7 +52,6 @@ namespace WebApis.Controllers.UserController.AuthController
             var candidate = new Candidate
             {
                 UserId = user.Id,
-                Education = dto.Education,
                 LinkedInProfile = dto.LinkedInProfile,
                 GitHubProfile = dto.GitHubProfile,
                 ResumePath = dto.ResumePath,
@@ -62,6 +61,28 @@ namespace WebApis.Controllers.UserController.AuthController
             _db.Candidates.Add(candidate);
             await _db.SaveChangesAsync();
 
+            // Add Education Records
+            if (dto.Educations != null && dto.Educations.Any())
+            {
+                foreach (var edu in dto.Educations)
+                {
+                    var education = new Education
+                    {
+                        CandidateId = candidate.Id,
+                        Degree = edu.Degree,
+                        University = edu.University,
+                        College = edu.College,
+                        PassingYear = edu.PassingYear,
+                        Percentage = edu.Percentage
+                    };
+
+                    _db.Educations.Add(education);
+                }
+
+                await _db.SaveChangesAsync();
+            }
+
+            // Add Skills Records
             if (dto.Skills != null && dto.Skills.Any())
             {
                 foreach (var skillDto in dto.Skills)

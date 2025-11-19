@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link , useNavigate} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function CandidateRegister() {
   const [formData, setFormData] = useState({
@@ -7,15 +7,49 @@ export default function CandidateRegister() {
     email: "",
     phoneNumber: "",
     password: "",
-    education: "",
     linkedInProfile: "",
     gitHubProfile: "",
   });
+  const [educations, setEducations] = useState([
+    {
+      degree: "",
+      university: "",
+      college: "",
+      passingYear: "",
+      percentage: "",
+    },
+  ]);
+
   const [skills, setSkills] = useState([{ name: "", experience: "" }]);
   const [resumeFile, setResumeFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigateTo = useNavigate();
+
+  // Handle education change
+  const handleEducationChange = (index, field, value) => {
+    const updated = [...educations];
+    updated[index][field] = value;
+    setEducations(updated);
+  };
+
+  const addEducationField = () => {
+    setEducations([
+      ...educations,
+      {
+        degree: "",
+        university: "",
+        college: "",
+        passingYear: "",
+        percentage: "",
+      },
+    ]);
+  };
+
+  const removeEducationField = (index) => {
+    setEducations((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // Handle skill input changes
   const handleSkillChange = (index, field, value) => {
     const updatedSkills = [...skills];
@@ -23,7 +57,7 @@ export default function CandidateRegister() {
     setSkills(updatedSkills);
   };
 
- // Add new skill input fields
+  // Add new skill input fields
   const addSkillField = () => {
     setSkills([...skills, { name: "", experience: "" }]);
   };
@@ -54,7 +88,6 @@ export default function CandidateRegister() {
     return data.resumeUrl;
   };
 
-
   // Handle form submission for registration
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,11 +107,18 @@ export default function CandidateRegister() {
         ...formData,
         roleName: "Candidate",
         resumePath: resumeUrl,
+        Educations: educations.map((edu) => ({
+          degree: edu.degree,
+          university: edu.university,
+          college: edu.college,
+          passingYear: parseInt(edu.passingYear),
+          percentage: parseFloat(edu.percentage),
+        })),
         skills: skills.map((skill) => ({
           name: skill.name,
           experience: skill.experience,
         })),
-      }; 
+      };
       // Send to backend
       const response = await fetch(
         "http://localhost:5233/api/Auth/register-candidate",
@@ -105,7 +145,6 @@ export default function CandidateRegister() {
         email: "",
         phoneNumber: "",
         password: "",
-        education: "",
         linkedInProfile: "",
         gitHubProfile: "",
       });
@@ -185,20 +224,6 @@ export default function CandidateRegister() {
               className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
-          {/* Education */}
-          <div>
-            <label className="block text-gray-700 mb-1">Education</label>
-            <input
-              type="text"
-              name="education"
-              value={formData.education}
-              onChange={handleChange}
-              placeholder="e.g. B.Tech Computer Engineering"
-              className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
           {/* LinkedIn */}
           <div>
             <label className="block text-gray-700 mb-1">LinkedIn Profile</label>
@@ -235,6 +260,85 @@ export default function CandidateRegister() {
               className="w-full border border-gray-300 rounded-lg p-2 cursor-pointer focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          {/* EDUCATION SECTION */}
+          <div className="col-span-2">
+            <label className="font-semibold text-gray-700">Education</label>
+
+            {educations.map((edu, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-1 md:grid-cols-6 gap-3 my-3 items-center"
+              >
+                <input
+                  type="text"
+                  placeholder="Degree"
+                  value={edu.degree}
+                  onChange={(e) =>
+                    handleEducationChange(index, "degree", e.target.value)
+                  }
+                  className="border p-2 rounded-lg"
+                />
+
+                <input
+                  type="text"
+                  placeholder="University"
+                  value={edu.university}
+                  onChange={(e) =>
+                    handleEducationChange(index, "university", e.target.value)
+                  }
+                  className="border p-2 rounded-lg"
+                />
+
+                <input
+                  type="text"
+                  placeholder="College"
+                  value={edu.college}
+                  onChange={(e) =>
+                    handleEducationChange(index, "college", e.target.value)
+                  }
+                  className="border p-2 rounded-lg"
+                />
+
+                <input
+                  type="number"
+                  placeholder="Passing Year"
+                  value={edu.passingYear}
+                  onChange={(e) =>
+                    handleEducationChange(index, "passingYear", e.target.value)
+                  }
+                  className="border p-2 rounded-lg"
+                />
+
+                <input
+                  type="number"
+                  placeholder="Percentage"
+                  value={edu.percentage}
+                  onChange={(e) =>
+                    handleEducationChange(index, "percentage", e.target.value)
+                  }
+                  className="border p-2 rounded-lg"
+                />
+                <div className="flex justify-center">
+                  <p
+                    type="button"
+                    onClick={() => removeEducationField(index)}
+                    className="text-red-600 text-xl"
+                  >
+                    <i className="fa-solid fa-ban"></i>
+                  </p>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addEducationField}
+              className="text-blue-600 text-sm"
+            >
+              {" "}
+              + Add Another Education{" "}
+            </button>
+          </div>
+
           <div className="col-span-2">
             <label className="block text-gray-700 mb-2">Skills</label>
 

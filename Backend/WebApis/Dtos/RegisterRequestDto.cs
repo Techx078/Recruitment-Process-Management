@@ -9,7 +9,7 @@ public class RegisterRequestDto
     public string RoleName { get; set; }
 
     // Candidate-specific fields
-    public string? Education { get; set; } = null;
+    public List<EducationDto>? Educations { get; set; }
     public string? LinkedInProfile { get; set; } = null;
     public string? GitHubProfile { get; set; } = null;
     public string? ResumePath { get; set; } = null;
@@ -19,3 +19,12 @@ public class RegisterRequestDto
 
     public List<SkillsDto>? Skills { get; set; } = null;
 }
+public class EducationDto
+{
+    public string Degree { get; set; }        // B.Tech, M.Tech, BCA, MCA, etc.
+    public string University { get; set; }
+    public string College { get; set; }
+    public int PassingYear { get; set; }
+    public decimal Percentage { get; set; }
+}
+
