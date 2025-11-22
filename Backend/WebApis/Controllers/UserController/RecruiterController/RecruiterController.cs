@@ -45,13 +45,15 @@ namespace WebApis.Controllers.UserController.RecruiterController
 
             return Ok(Recruiters);
         }
-        [HttpGet("id")]
+        [HttpGet("{UserId}")]
         [Authorize(Roles = "Recruiter")]
-        public async Task<IActionResult> GetRecruiterById(int id)
+        public async Task<IActionResult> GetRecruiterById(int UserId)
         {
+            var recruiter = await _db.Recruiter.Where(r => r.UserId == UserId).FirstOrDefaultAsync();
+            Console.WriteLine("Recruiter ID: " + recruiter?.Id);
             var CreatedJobOpenings = await _db.JobOpening
                                     .AsNoTracking()
-                                    .Where(j => j.CreatedById == id )
+                                    .Where(j => j.CreatedById == recruiter.Id )
                                     .Select(j => new
                                     {
                                         j.Id,
@@ -65,9 +67,9 @@ namespace WebApis.Controllers.UserController.RecruiterController
                                     })
                                     .ToListAsync();
 
-            var recruiter = await _db.Recruiter
+            var recruiterDetail = await _db.Recruiter
+                .Where(r => r.Id == recruiter.Id )
                 .Include(i => i.User)
-                .Where(i => i.UserId == id)
                 .Select(i => new
                 {
                     i.Id,
@@ -82,11 +84,11 @@ namespace WebApis.Controllers.UserController.RecruiterController
                     CreatedJobOpenings
                 })
                 .FirstOrDefaultAsync();
-            if (recruiter == null)
+            if (recruiterDetail == null)
             {
                 return NotFound(new { Message = "Recruiter not found." });
             }
-            return Ok(recruiter);
+            return Ok(recruiterDetail);
         }
     }
 }

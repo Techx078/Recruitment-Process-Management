@@ -18,6 +18,7 @@ import RecruiterProtector from "./Protectors/RecruiterProtector.jsx";
 import ReviewerProtector from "./Protectors/ReviewerProtector.jsx";
 import ReviewerProfile from "./Pages/Profile/ReviewerProfile.jsx";
 import ForgotPassword from "./Pages/ForgotPassword.jsx";
+import RecruiterProfile from "./Pages/Profile/RecruiterProfile.jsx";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          
           <Route path="/Candidate-register" element={<CandidateRegister />} />
           <Route path="/Other-register"element={<OtherRegister  />} />
           <Route path="/job-openings" element={<JobOpeningsListWrapper />} />
@@ -43,17 +45,23 @@ function App() {
             </RecruiterProtector>
             } 
           />
+          <Route path = "Recruiter/Profile" element={
+            <RecruiterProtector>
+                <RecruiterProfile />
+            </RecruiterProtector>
+          } />
           <Route path="/Interviewer/Profile" element={
-            <InterviewerProtector>
-                <InterviewerProfile />
-            </InterviewerProtector>
-            } 
-          />
+              <InterviewerProtector>
+                  <InterviewerProfile />
+              </InterviewerProtector>
+              } 
+            />
           <Route path="/Reviewer/Profile" element= {
             <ReviewerProtector>
                 <ReviewerProfile />
             </ReviewerProtector>
           } />
+
           <Route path="/forgot-password" element={<ForgotPassword />} />
         </Routes>
         
