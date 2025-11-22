@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using WebApis.Data; // To access enums like JobType, Department, etc.
+using WebApis.Data;
 
-namespace WebApis.Dtos
+namespace WebApis.Dtos.JobOpeningDto
 {
     public class DocumentDto
     {
@@ -15,7 +15,7 @@ namespace WebApis.Dtos
     public class SkillDto
     {
         [Required]
-        public String SkillName { get; set; }
+        public string SkillName { get; set; }
 
         // true = Required, false = Preferred
         public bool IsRequired { get; set; } = true;

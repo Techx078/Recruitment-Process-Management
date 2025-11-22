@@ -64,18 +64,7 @@ export default function Navbar() {
                 >
                   Login
                 </Link>
-                <Link
-                  to="/Candidate-register"
-                  className="text-gray-700 hover:text-indigo-600"
-                >
-                  Candidate-Register
-                </Link>
-                <Link
-                  to="/Other-Register"
-                  className="text-gray-700 hover:text-indigo-600"
-                >
-                  Other-Register
-                </Link>
+                
                
               </>
             )}

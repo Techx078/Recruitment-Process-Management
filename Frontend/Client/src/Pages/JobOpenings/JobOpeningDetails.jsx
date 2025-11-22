@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getJobOpeningById } from "../../Services/JobOpeningService";
+import { useAuthUserContext } from "../../Context/AuthUserContext.jsx";
 
 const JobOpeningDetails = () => {
   const { id } = useParams();
@@ -9,6 +10,7 @@ const JobOpeningDetails = () => {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { authUser } = useAuthUserContext();
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -52,6 +54,7 @@ const JobOpeningDetails = () => {
     );
 
   // Parsed requirement and benefits
+  const responsibilities = parseJsonArray(job.responsibilities);
   const requirements = parseJsonArray(job.requirement);
   const benefits = parseJsonArray(job.benefits);
 
@@ -71,14 +74,13 @@ const JobOpeningDetails = () => {
               {job.title}
             </h1>
           </div>
-           <div
-              className={`inline-block px-3  py-4 text-sm font-medium rounded-full border ${
-                statusColors[job.status]
-              }`}
-            >
-              {job.status}
-            </div>
-          
+          <div
+            className={`inline-block px-3  py-4 text-sm font-medium rounded-full border ${
+              statusColors[job.status]
+            }`}
+          >
+            {job.status}
+          </div>
         </div>
 
         {/* Description */}
@@ -116,34 +118,46 @@ const JobOpeningDetails = () => {
             </ul>
           </section>
         )}
+        {/*responsibility*/}
+        {responsibilities.length > 0 && (
+          <section className="mb-6">
+            <h2 className="text-lg text-start mx-4 font-semibold text-gray-800 mb-2">
+              Responsibilities
+            </h2>
+            <ul className="list-disc text-start pl-6 text-gray-700 space-y-1">
+              {responsibilities.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* Job Info */}
         <section className="text-start mx-4 ">
-          <div >
-
+          <div>
             <p className="mb-2">
               <span className="font-medium text-gray-800">Department: </span>
               {job.department || "N/A"}
             </p>
-            <p className="mb-2" >
+            <p className="mb-2">
               <span className="font-medium text-gray-800">Location: </span>
               {job.location || "N/A"}
             </p>
-            <p className="mb-2" >
+            <p className="mb-2">
               <span className="font-medium text-gray-800">Job Type: </span>
               {job.jobType || "N/A"}
             </p>
           </div>
           <div>
-            <p className="mb-2" >
+            <p className="mb-2">
               <span className="font-medium text-gray-800">Experience: </span>
               {job.experience || "N/A"}
             </p>
-            <p className="mb-2" >
+            <p className="mb-2">
               <span className="font-medium text-gray-800">Education: </span>
               {job.education || "N/A"}
             </p>
-            <p className="mb-2" >
+            <p className="mb-2">
               <span className="font-medium text-gray-800">Deadline: </span>
               {job.deadLine
                 ? new Date(job.deadLine).toLocaleDateString()
@@ -152,37 +166,42 @@ const JobOpeningDetails = () => {
           </div>
         </section>
 
-        {/* Reviewers */}
-        <section className="mb-6">
-          <h2 className="text-lg text-start mx-3 font-semibold text-gray-800 mb-2">
-            Reviewers
-          </h2>
-          {job.reviewers && job.reviewers.length > 0 ? (
-            <ul className="list-disc text-start  pl-6 text-gray-700 space-y-1">
-              {job.reviewers.map((r) => (
-                <li key={r.id}>{r.email}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-600">No reviewers assigned.</p>
-          )}
-        </section>
+        
+        {job.recruiter.userId == authUser.id ? (
+          <div>
+            {/* Reviewers */}
+            <section className="mb-6">
+              <h2 className="text-lg text-start mx-3 font-semibold text-gray-800 mb-2">
+                Reviewers
+              </h2>
+              {job.reviewers && job.reviewers.length > 0 ? (
+                <ul className="list-disc text-start  pl-6 text-gray-700 space-y-1">
+                  {job.reviewers.map((r) => (
+                    <li key={r.id}>{r.email}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-600">No reviewers assigned.</p>
+              )}
+            </section>
 
-        {/* Interviewers */}
-        <section className="mb-6">
-          <h2 className="text-lg text-start mx-4 font-semibold text-gray-800 mb-2">
-            Interviewers
-          </h2>
-          {job.interviewers && job.interviewers.length > 0 ? (
-            <ul className="list-disc text-start pl-6 text-gray-700 space-y-1">
-              {job.interviewers.map((i) => (
-                <li key={i.id}>{i.email}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-600">No interviewers assigned.</p>
-          )}
-        </section>
+            {/* Interviewers */}
+            <section className="mb-6">
+              <h2 className="text-lg text-start mx-4 font-semibold text-gray-800 mb-2">
+                Interviewers
+              </h2>
+              {job.interviewers && job.interviewers.length > 0 ? (
+                <ul className="list-disc text-start pl-6 text-gray-700 space-y-1">
+                  {job.interviewers.map((i) => (
+                    <li key={i.id}>{i.email}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-600">No interviewers assigned.</p>
+              )}
+            </section>
+          </div>
+        ) : null}
 
         {/* Documents */}
         <section className="mb-6">
@@ -211,7 +230,9 @@ const JobOpeningDetails = () => {
         {/* Skills */}
         {job.jobSkills && job.jobSkills.length > 0 && (
           <section className="mb-6">
-            <h2 className="text-lg text-start font-semibold text-gray-800 mb-2">Key Skills</h2>
+            <h2 className="text-lg text-start font-semibold text-gray-800 mb-2">
+              Key Skills
+            </h2>
             <div className="flex flex-wrap gap-2">
               {job.jobSkills.map((s) => (
                 <span

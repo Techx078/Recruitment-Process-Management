@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
 using WebApis.Data;
-using WebApis.Dtos;
+using WebApis.Dtos.JobOpeningDto;
 
 namespace WebApis.Controllers
 {
@@ -22,7 +22,7 @@ namespace WebApis.Controllers
         //create job listing with linked reviewers, interviewers, and documents
         //Pending:-link cadidate to job opening
         [HttpPost("create")]
-         [Authorize(Roles = "Recruiter")]
+        [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> CreateJobOpening([FromBody] JobOpeningDto dto)
         {
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
@@ -281,6 +281,7 @@ namespace WebApis.Controllers
                  j.SalaryRange,
                  j.Benefits,
                  j.Education,
+                 j.Responsibilities,
                  j.Location,
                  j.Department,
                  j.JobType,
@@ -324,6 +325,49 @@ namespace WebApis.Controllers
              })
              .FirstOrDefaultAsync();
             return Ok(jobOpening);
+        }
+
+        [HttpPut("{id}/fields")]
+        //[Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> UpdateJobOpeningFields(int id, [FromBody] JobOpeningDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var job = await _db.JobOpening.FirstOrDefaultAsync(j => j.Id == id);
+            if (job == null)
+                return NotFound(new { message = "Job not found." });
+
+            job.Title = dto.Title;
+            job.Description = dto.Description;
+            job.SalaryRange = dto.SalaryRange;
+            job.Location = dto.Location;
+            job.Department = dto.Department;
+            job.JobType = dto.JobType;
+            job.Education = dto.Education;
+            job.Status = dto.Status;
+            job.Experience = dto.Experience;
+            job.DeadLine = dto.DeadLine;
+
+            job.Responsibilities = dto.Responsibilities != null
+                ? JsonSerializer.Serialize(dto.Responsibilities)
+                : null;
+
+            job.Requirement = dto.Requirement != null
+                ? JsonSerializer.Serialize(dto.Requirement)
+                : null;
+
+            job.Benefits = dto.Benefits != null
+                ? JsonSerializer.Serialize(dto.Benefits)
+                : null;
+
+            // Update timestamp
+            job.UpdatedAt = DateTime.UtcNow;
+
+            // Save
+            await _db.SaveChangesAsync();
+
+            return Ok(new { message = "Job fields updated successfully." });
         }
 
         ////update specific field of a job listing

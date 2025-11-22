@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { fetchRecruiterService } from "../../Services/RecruiterService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate , Link } from "react-router-dom";
 
 export default function RecruiterProfile() {
   const [recruiter, setRecruiter] = useState(null);
@@ -56,6 +56,19 @@ export default function RecruiterProfile() {
                 {recruiter.department}
               </span>
             </div>
+            
+            <button
+              className="px-4 bg-black py-2  text-white rounded-lg hover:bg-green-700"
+              onClick={() => navigate("/Candidate-register")}
+            >
+             Register Candidate
+            </button>
+           <button
+              className="px-4 bg-black py-2  text-white rounded-lg hover:bg-green-700"
+              onClick={() => navigate("/Other-register")}
+            >
+             Other-Register
+            </button>
           </div>
         </div>
 
@@ -121,7 +134,7 @@ export default function RecruiterProfile() {
                         <button
                           className="px-4 py-1 bg-black text-white text-sm rounded-lg hover:bg-gray-800"
                           onClick={() =>
-                            navigate(`/job-openings/update/${job.id}`)
+                            navigate(`/job-openings/${job.id}/edit`)
                           }
                         >
                           Update
