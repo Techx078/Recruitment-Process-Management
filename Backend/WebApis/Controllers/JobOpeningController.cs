@@ -327,16 +327,32 @@ namespace WebApis.Controllers
             return Ok(jobOpening);
         }
 
+
+        //update fields by recruiter only
         [HttpPut("{id}/fields")]
-        //[Authorize(Roles = "Recruiter")]
+        [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> UpdateJobOpeningFields(int id, [FromBody] JobOpeningDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-
+            
             var job = await _db.JobOpening.FirstOrDefaultAsync(j => j.Id == id);
             if (job == null)
                 return NotFound(new { message = "Job not found." });
+
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            int userId = int.Parse(userIdClaim);
+
+            var recruiter = await _db.Recruiter
+                .FirstOrDefaultAsync(r => r.UserId == userId);
+
+            if (recruiter == null || job.CreatedById != recruiter.Id)
+            {
+                return BadRequest(new { message = "You are not authorized to update this job." });
+            }
 
             job.Title = dto.Title;
             job.Description = dto.Description;
