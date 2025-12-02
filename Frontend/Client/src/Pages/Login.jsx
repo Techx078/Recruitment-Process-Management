@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link , useNavigate } from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
-
+import { loginUser } from "../Services/authService";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -18,27 +18,12 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      //make api call to login endpoint
-      const response = await fetch("http://localhost:5233/api/Auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Invalid credentials or server error");
-      }
-      //fetch data from response
-      const data = await response.json();
-      //store jwt token in local storage
-      localStorage.setItem("token", data.token);
-      setAuthUser(data.user); 
-      alert("Login successful!");
+      const data = await loginUser(email, password);
+    //store JWT
+    localStorage.setItem("token", data.token);
+    // store logged-in user in state
+    setAuthUser(data.user);
+    alert("Login successful!");
       navigateTo("/");
     } catch (err) {
       setError(err.message);

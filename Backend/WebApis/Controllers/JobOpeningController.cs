@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using WebApis.Data;
 using WebApis.Dtos.JobOpeningDto;
+using WebApis.Repository;
 
 namespace WebApis.Controllers
 {
@@ -13,10 +14,33 @@ namespace WebApis.Controllers
     public class JobOpeningController : Controller
     {
         private readonly AppDbContext _db;
+        private readonly ICommonRepository<Recruiter> _recruiterRepository;
+        private readonly ICommonRepository<JobOpening> _jobOpeningRepository;
+        private readonly ICommonRepository<JobReviewer> _jobReviewerRepository;
+        private readonly ICommonRepository<JobInterviewer> _jobInterviewerRepository;
+        private readonly ICommonRepository<JobDocument> _jobDocumentRepository;
+        private readonly ICommonRepository<JobSkill> _jobSkillRepository;
+        private readonly ICommonRepository<Skill> _skillRepository;
 
-        public JobOpeningController(AppDbContext db)
+        public JobOpeningController(
+            AppDbContext db,
+            ICommonRepository<Recruiter> recruiterRepository,
+            ICommonRepository<JobOpening> jobOpeningRepository,
+            ICommonRepository<JobReviewer> jobReviewerRepository,
+            ICommonRepository<JobDocument> jobDocumentRepository,
+            ICommonRepository<JobInterviewer> jobInterviewerRepository,
+            ICommonRepository<JobSkill> jobSkillRepository,
+            ICommonRepository<Skill> skillRepository
+        )
         {
             _db = db;
+            _recruiterRepository = recruiterRepository;
+            _jobOpeningRepository = jobOpeningRepository;
+            _jobReviewerRepository = jobReviewerRepository;
+            _jobInterviewerRepository = jobInterviewerRepository;
+            _jobDocumentRepository = jobDocumentRepository;
+            _jobSkillRepository = jobSkillRepository;
+            _skillRepository = skillRepository;
         }
 
         //create job listing with linked reviewers, interviewers, and documents
@@ -32,9 +56,8 @@ namespace WebApis.Controllers
             int recruiterUserId = int.Parse(userIdClaim);
 
             // Validate Recruiter exists
-            var recruiter = await _db.Recruiter
-                .FirstOrDefaultAsync(u => u.UserId == recruiterUserId);
-
+            var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == recruiterUserId);
+            
             if (recruiter == null)
                 return BadRequest(new { message = "Recruiter does not exist." });
 
@@ -104,9 +127,9 @@ namespace WebApis.Controllers
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _db.JobOpening.Add(job);
-            await _db.SaveChangesAsync();
 
+            await _jobOpeningRepository.AddAsync(job);
+           
             // Add Reviewers
             if (dto.ReviewerIds != null)
             {
@@ -152,8 +175,8 @@ namespace WebApis.Controllers
             {
                 foreach (var skill in dto.JobSkills)
                 {
-                    var skillTemp = await _db.Skill
-                        .FirstOrDefaultAsync(s => s.Name.ToLower() == skill.SkillName.ToLower());
+                    var skillTemp = await _skillRepository.GetByFilterAsync(s => s.Name.ToLower() == skill.SkillName.ToLower());
+                   
                     if(skillTemp == null)
                     {
                         // Create new Skill if it doesn't exist
@@ -161,8 +184,8 @@ namespace WebApis.Controllers
                         {
                             Name = skill.SkillName
                         };
-                        _db.Skill.Add(skillTemp);
-                        await _db.SaveChangesAsync();
+                        await _skillRepository.AddAsync(skillTemp);
+                        
                     }
                     _db.jobSkills.Add(new JobSkill
                     {
@@ -183,7 +206,7 @@ namespace WebApis.Controllers
         }
 
 
-        ////get all job listings with counts of linked reviewers, interviewers, and documents
+        ////get all job listings with linked reviewers, interviewers, and documents
         ////pending:- link cadidate to job opening retrieval
         [HttpGet("list")]
         [Authorize]
@@ -336,7 +359,7 @@ namespace WebApis.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
             
-            var job = await _db.JobOpening.FirstOrDefaultAsync(j => j.Id == id);
+            var job = await _jobOpeningRepository.GetByFilterAsync(j => j.Id == id);
             if (job == null)
                 return NotFound(new { message = "Job not found." });
 
@@ -346,9 +369,8 @@ namespace WebApis.Controllers
 
             int userId = int.Parse(userIdClaim);
 
-            var recruiter = await _db.Recruiter
-                .FirstOrDefaultAsync(r => r.UserId == userId);
-
+            var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
+            
             if (recruiter == null || job.CreatedById != recruiter.Id)
             {
                 return BadRequest(new { message = "You are not authorized to update this job." });
@@ -391,7 +413,8 @@ namespace WebApis.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> UpdateJobField(int id, [FromBody] Dictionary<string, object> update)
         {
-            var job = await _db.JobOpening.FindAsync(id);
+            var job = await _jobOpeningRepository.GetByFilterAsync(j => j.Id == id);
+          
             if (job == null)
                 return NotFound(new { message = "Job not found." });
 
@@ -634,27 +657,24 @@ namespace WebApis.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> DeleteJobOpening(int id)
         {
-            var job = await _db.JobOpening
+            var jobOpening = await _db.JobOpening
                 .Include(j => j.JobReviewers)
                 .Include(j => j.JobInterviewers)
                 .Include(j => j.JobDocuments)
                 .Include(j => j.JobSkills)
                 .FirstOrDefaultAsync(j => j.Id == id);
 
-            if (job == null)
+            if (jobOpening == null)
                 return NotFound(new { message = "Job not found." });
 
             // Delete linked entries first (junction tables)
-            _db.JobReviewer.RemoveRange(job.JobReviewers);
-            _db.jobInterviewer.RemoveRange(job.JobInterviewers);
-            _db.JobDocuments.RemoveRange(job.JobDocuments);
-            _db.jobSkills.RemoveRange(job.JobSkills);
+            _db.JobReviewer.RemoveRange(jobOpening.JobReviewers);
+            _db.jobInterviewer.RemoveRange(jobOpening.JobInterviewers);
+            _db.JobDocuments.RemoveRange(jobOpening.JobDocuments);
+            _db.jobSkills.RemoveRange(jobOpening.JobSkills);
 
             // Then delete main job record
-            _db.JobOpening.Remove(job);
-
-            await _db.SaveChangesAsync();
-
+            await _jobOpeningRepository.DeleteAsync(jobOpening);
             return Ok(new { message = "Job opening and related data deleted successfully." });
         }
 

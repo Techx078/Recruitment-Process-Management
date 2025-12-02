@@ -46,7 +46,7 @@ namespace WebApis.Controllers.UserController.RecruiterController
             return Ok(Recruiters);
         }
         [HttpGet("{UserId}")]
-        [Authorize(Roles = "Recruiter")]
+        [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> GetRecruiterById(int UserId)
         {
             var recruiter = await _db.Recruiter.Where(r => r.UserId == UserId).FirstOrDefaultAsync();

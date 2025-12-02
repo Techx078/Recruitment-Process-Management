@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { 
-  getAllSkills, 
-  getAllReviewers, 
-  getAllInterviewers, 
-  getAllDocuments, 
-  createJobOpening
+import {
+  getAllSkills,
+  getAllReviewers,
+  getAllInterviewers,
+  getAllDocuments,
+  createJobOpening,
 } from "../../Services/JobOpeningService";
 
 export default function JobOpeningForm({}) {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [jobData, setJobData] = useState({
     title: "",
@@ -27,7 +28,7 @@ export default function JobOpeningForm({}) {
     reviewerIds: [],
     interviewerIds: [],
     documents: [],
-    jobSkills: []
+    jobSkills: [],
   });
 
   const [skills, setSkills] = useState([]);
@@ -71,11 +72,11 @@ export default function JobOpeningForm({}) {
 
   // Toggle selection for reviewers and interviewers
   const toggleCheckbox = (field, id) => {
-    setJobData(prev => {
+    setJobData((prev) => {
       const arr = [...prev[field]];
       // Check if id already exists else add it
       if (arr.includes(id)) {
-        return { ...prev, [field]: arr.filter(x => x !== id) };
+        return { ...prev, [field]: arr.filter((x) => x !== id) };
       } else {
         return { ...prev, [field]: [...arr, id] };
       }
@@ -84,42 +85,41 @@ export default function JobOpeningForm({}) {
 
   // Toggle skill selection
   const toggleSkill = (skill) => {
-  setJobData(prev => {
-    // check if skill already exists
-    const exists = prev.jobSkills.some(s => s.skillName === skill.name);
+    setJobData((prev) => {
+      // check if skill already exists
+      const exists = prev.jobSkills.some((s) => s.skillName === skill.name);
 
-    if (exists) {
-      // remove
-      return {
-        ...prev,
-        jobSkills: prev.jobSkills.filter(s => s.skillName !== skill.name)
-      };
-    } else {
-      // add
-      return {
-        ...prev,
-        jobSkills: [
-          ...prev.jobSkills,
-          { skillName: skill.name, isRequired: true }
-        ]
-      };
-    }
-  });
-};
-
+      if (exists) {
+        // remove
+        return {
+          ...prev,
+          jobSkills: prev.jobSkills.filter((s) => s.skillName !== skill.name),
+        };
+      } else {
+        // add
+        return {
+          ...prev,
+          jobSkills: [
+            ...prev.jobSkills,
+            { skillName: skill.name, isRequired: true },
+          ],
+        };
+      }
+    });
+  };
 
   const toggleDocument = (id, checked) => {
-    setJobData(prev => {
+    setJobData((prev) => {
       // check if document already exists else add/remove
       if (checked) {
         return {
           ...prev,
-          documents: [...prev.documents, { documentId: id, isMandatory: true }]
+          documents: [...prev.documents, { documentId: id, isMandatory: true }],
         };
       } else {
         return {
           ...prev,
-          documents: prev.documents.filter(d => d.documentId !== id)
+          documents: prev.documents.filter((d) => d.documentId !== id),
         };
       }
     });
@@ -138,46 +138,88 @@ export default function JobOpeningForm({}) {
   };
 
   const handleSubmit = (e) => {
+    if(setIsLoading) return;
+    setIsLoading(true);
     e.preventDefault();
+    try{
     const token = localStorage.getItem("token");
-    createJobOpening(jobData , token);
+    createJobOpening(jobData, token);
+    alert("Job Opening Created Successfully!");
+    Navigate("/job-openings");
+    }catch(error){
+      console.error("Error creating job opening:", error);
+      alert("Failed to create job opening. Please try again.");
+    }finally{
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 border rounded-lg shadow-md">
-
       <h2 className="text-2xl font-bold">Create Job Opening</h2>
 
       {/* Progress Indicator */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center flex-1">
-          <div className={`flex items-center justify-center w-10 h-10 rounded-full ${currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+          <div
+            className={`flex items-center justify-center w-10 h-10 rounded-full ${
+              currentStep >= 1 ? "bg-blue-600 text-white" : "bg-gray-300"
+            }`}
+          >
             1
           </div>
-          <div className={`flex-1 h-1 mx-2 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+          <div
+            className={`flex-1 h-1 mx-2 ${
+              currentStep >= 2 ? "bg-blue-600" : "bg-gray-300"
+            }`}
+          ></div>
         </div>
-        
+
         <div className="flex items-center flex-1">
-          <div className={`flex items-center justify-center w-10 h-10 rounded-full ${currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+          <div
+            className={`flex items-center justify-center w-10 h-10 rounded-full ${
+              currentStep >= 2 ? "bg-blue-600 text-white" : "bg-gray-300"
+            }`}
+          >
             2
           </div>
-          <div className={`flex-1 h-1 mx-2 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+          <div
+            className={`flex-1 h-1 mx-2 ${
+              currentStep >= 3 ? "bg-blue-600" : "bg-gray-300"
+            }`}
+          ></div>
         </div>
-        
-        <div className={`flex items-center justify-center w-10 h-10 rounded-full ${currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+
+        <div
+          className={`flex items-center justify-center w-10 h-10 rounded-full ${
+            currentStep >= 3 ? "bg-blue-600 text-white" : "bg-gray-300"
+          }`}
+        >
           3
         </div>
       </div>
 
       {/* Step Labels */}
       <div className="flex justify-between mb-6 text-sm">
-        <div className={`flex-1 text-center ${currentStep === 1 ? 'font-bold text-blue-600' : 'text-gray-500'}`}>
+        <div
+          className={`flex-1 text-center ${
+            currentStep === 1 ? "font-bold text-blue-600" : "text-gray-500"
+          }`}
+        >
           Basic Details
         </div>
-        <div className={`flex-1 text-center ${currentStep === 2 ? 'font-bold text-blue-600' : 'text-gray-500'}`}>
+        <div
+          className={`flex-1 text-center ${
+            currentStep === 2 ? "font-bold text-blue-600" : "text-gray-500"
+          }`}
+        >
           Selection
         </div>
-        <div className={`flex-1 text-center ${currentStep === 3 ? 'font-bold text-blue-600' : 'text-gray-500'}`}>
+        <div
+          className={`flex-1 text-center ${
+            currentStep === 3 ? "font-bold text-blue-600" : "text-gray-500"
+          }`}
+        >
           Additional Info
         </div>
       </div>
@@ -255,7 +297,9 @@ export default function JobOpeningForm({}) {
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-sm">Department</label>
+              <label className="block font-medium mb-1 text-sm">
+                Department
+              </label>
               <select
                 name="department"
                 value={jobData.department}
@@ -293,7 +337,9 @@ export default function JobOpeningForm({}) {
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-sm">Education</label>
+              <label className="block font-medium mb-1 text-sm">
+                Education
+              </label>
               <select
                 name="education"
                 value={jobData.education}
@@ -306,7 +352,7 @@ export default function JobOpeningForm({}) {
                 <option value="3">Bachelors</option>
                 <option value="4">Masters</option>
                 <option value="5">Doctorate</option>
-                <option value="6">Other</option>    
+                <option value="6">Other</option>
               </select>
             </div>
           </div>
@@ -332,8 +378,11 @@ export default function JobOpeningForm({}) {
           <div className="border p-3 rounded">
             <label className="block font-semibold mb-2">Select Reviewers</label>
             <div className="space-y-2 max-h-60 overflow-auto border p-2 rounded">
-              {reviewers?.map(r => (
-                <label key={r.id} className="block border p-2 rounded hover:bg-gray-50 cursor-pointer">
+              {reviewers?.map((r) => (
+                <label
+                  key={r.id}
+                  className="block border p-2 rounded hover:bg-gray-50 cursor-pointer"
+                >
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -343,7 +392,9 @@ export default function JobOpeningForm({}) {
                     />
                     <div>
                       <div className="font-medium">{r.user?.email}</div>
-                      <div className="text-sm text-gray-600">Reviewer ID: {r.id}</div>
+                      <div className="text-sm text-gray-600">
+                        Reviewer ID: {r.id}
+                      </div>
                     </div>
                   </div>
                 </label>
@@ -353,10 +404,15 @@ export default function JobOpeningForm({}) {
 
           {/* Interviewers */}
           <div className="border p-3 rounded">
-            <label className="block font-semibold mb-2">Select Interviewers</label>
+            <label className="block font-semibold mb-2">
+              Select Interviewers
+            </label>
             <div className="space-y-2 max-h-60 overflow-auto border p-2 rounded">
-              {interviewers?.map(i => (
-                <label key={i.id} className="block border p-2 rounded hover:bg-gray-50 cursor-pointer">
+              {interviewers?.map((i) => (
+                <label
+                  key={i.id}
+                  className="block border p-2 rounded hover:bg-gray-50 cursor-pointer"
+                >
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -366,7 +422,9 @@ export default function JobOpeningForm({}) {
                     />
                     <div>
                       <div className="font-medium">{i.user?.email}</div>
-                      <div className="text-sm text-gray-600">Interviewer ID: {i.id}</div>
+                      <div className="text-sm text-gray-600">
+                        Interviewer ID: {i.id}
+                      </div>
                     </div>
                   </div>
                 </label>
@@ -376,18 +434,27 @@ export default function JobOpeningForm({}) {
 
           {/* Documents */}
           <div className="border p-3 rounded">
-            <label className="block font-semibold mb-2">Required Documents</label>
+            <label className="block font-semibold mb-2">
+              Required Documents
+            </label>
             <div className="space-y-2 max-h-40 overflow-auto border p-2 rounded">
-              {documents.map(d => (
-                <label key={d.id} className="flex items-center gap-3 p-1 cursor-pointer hover:bg-gray-100 rounded">
+              {documents.map((d) => (
+                <label
+                  key={d.id}
+                  className="flex items-center gap-3 p-1 cursor-pointer hover:bg-gray-100 rounded"
+                >
                   <input
                     type="checkbox"
-                    checked={jobData.documents.some(doc => doc.documentId === d.id)}
+                    checked={jobData.documents.some(
+                      (doc) => doc.documentId === d.id
+                    )}
                     onChange={(e) => toggleDocument(d.id, e.target.checked)}
                   />
                   <div>
                     <div className="font-medium">{d.name}</div>
-                    <div className="text-sm text-gray-600">Document ID: {d.id}</div>
+                    <div className="text-sm text-gray-600">
+                      Document ID: {d.id}
+                    </div>
                   </div>
                 </label>
               ))}
@@ -398,8 +465,10 @@ export default function JobOpeningForm({}) {
           <div className="border p-3 rounded">
             <label className="block font-semibold mb-2">Required Skills</label>
             <div className="space-y-2 max-h-40 overflow-auto border p-2 rounded">
-              {skills.map(s => {
-                const isChecked = jobData.jobSkills.some(sk => sk.skillName === s.name);
+              {skills.map((s) => {
+                const isChecked = jobData.jobSkills.some(
+                  (sk) => sk.skillName === s.name
+                );
                 return (
                   <label
                     key={s.skillId}
@@ -407,12 +476,14 @@ export default function JobOpeningForm({}) {
                   >
                     <input
                       type="checkbox"
-                      checked={isChecked} 
+                      checked={isChecked}
                       onChange={() => toggleSkill(s)}
                     />
                     <div>
                       <div className="font-medium">{s.name}</div>
-                      <div className="text-sm text-gray-600">Skill ID: {s.skillId}</div>
+                      <div className="text-sm text-gray-600">
+                        Skill ID: {s.skillId}
+                      </div>
                     </div>
                   </label>
                 );
@@ -432,7 +503,13 @@ export default function JobOpeningForm({}) {
               <div key={index} className="flex gap-2 mb-2">
                 <input
                   value={resp}
-                  onChange={(e) => handleSimpleArrayInput("responsibilities", index, e.target.value)}
+                  onChange={(e) =>
+                    handleSimpleArrayInput(
+                      "responsibilities",
+                      index,
+                      e.target.value
+                    )
+                  }
                   className="w-full border p-2 rounded"
                   placeholder="Enter responsibility"
                 />
@@ -463,7 +540,9 @@ export default function JobOpeningForm({}) {
               <div key={index} className="flex gap-2 mb-2">
                 <input
                   value={req}
-                  onChange={(e) => handleSimpleArrayInput("requirement", index, e.target.value)}
+                  onChange={(e) =>
+                    handleSimpleArrayInput("requirement", index, e.target.value)
+                  }
                   className="w-full border p-2 rounded"
                   placeholder="Enter requirement"
                 />
@@ -494,7 +573,9 @@ export default function JobOpeningForm({}) {
               <div key={index} className="flex gap-2 mb-2">
                 <input
                   value={benefit}
-                  onChange={(e) => handleSimpleArrayInput("benefits", index, e.target.value)}
+                  onChange={(e) =>
+                    handleSimpleArrayInput("benefits", index, e.target.value)
+                  }
                   className="w-full border p-2 rounded"
                   placeholder="Enter benefit"
                 />
@@ -527,9 +608,9 @@ export default function JobOpeningForm({}) {
           onClick={prevStep}
           disabled={currentStep === 1}
           className={`px-6 py-2 rounded ${
-            currentStep === 1 
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-              : 'bg-gray-600 text-white hover:bg-gray-700'
+            currentStep === 1
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-gray-600 text-white hover:bg-gray-700"
           }`}
         >
           Previous
@@ -547,9 +628,15 @@ export default function JobOpeningForm({}) {
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-6 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+            disabled={isLoading}
+            className={`px-6 py-2 rounded text-white
+        ${
+          isLoading
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-green-600 hover:bg-green-700"
+        }`}
           >
-            Create Job Opening
+            {isLoading ? "Creating..." : "Create Job Opening"}
           </button>
         )}
       </div>

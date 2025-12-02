@@ -1,6 +1,6 @@
 ﻿using WebApis.Dtos;
 
-public class RegisterRequestDto
+public class RegisterCandidateRequestDto
 {
     public string FullName { get; set; }
     public string Email { get; set; }
@@ -13,10 +13,6 @@ public class RegisterRequestDto
     public string? LinkedInProfile { get; set; } = null;
     public string? GitHubProfile { get; set; } = null;
     public string? ResumePath { get; set; } = null;
-
-    // Common for Recruiter/Reviewer/Interviewer
-    public string? Department { get; set; } = null;
-
     public List<SkillsDto>? Skills { get; set; } = null;
 }
 public class EducationDto

@@ -7,8 +7,6 @@ import Navbar from "./Component/Navbar.jsx";
 import Footer from "./Component/Footer.jsx";
 import OtherRegister from "./Pages/OtherRegister.jsx";
 import AuthUserContextProvider from "./Context/AuthUserContext.jsx";
-import JobOpeningsList from "./Pages/JobOpenings/JobOpeningsList.jsx";
-import JobOpeningContextProvider from "./Context/JobOpeningContext.jsx";
 import JobOpeningDetails from "./Pages/JobOpenings/JobOpeningDetails.jsx";
 import CreateJobOpening from "./Pages/JobOpenings/CreateJobOpening.jsx";
 import JobOpeningsListWrapper from "./Pages/JobOpenings/JobOpeningListWrapper.jsx";
@@ -52,7 +50,7 @@ function App() {
                 <EditJobOpening />
             </RecruiterProtector>
           } />
-          <Route path = "Recruiter/Profile" element={
+          <Route path = "/Recruiter/Profile" element={
             <RecruiterProtector>
                 <RecruiterProfile />
             </RecruiterProtector>

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {registerCandidate} from "../Services/authService.js";
 
 export default function CandidateRegister() {
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -25,6 +27,19 @@ export default function CandidateRegister() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigateTo = useNavigate();
+ const DEGREE_OPTIONS = [
+  "B.Tech",
+  "M.Tech",
+  "BCA",
+  "MCA",
+  "B.Sc",
+  "M.Sc",
+  "B.Com",
+  "M.Com",
+  "MBA",
+  "Diploma",
+  "PhD",
+];
 
   // Handle education change
   const handleEducationChange = (index, field, value) => {
@@ -119,24 +134,13 @@ export default function CandidateRegister() {
           experience: skill.experience,
         })),
       };
-      // Send to backend
-      const response = await fetch(
-        "http://localhost:5233/api/Auth/register-candidate",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(candidateData),
-        }
-      );
-
-      if (!response.ok) {
-        const errMsg = await response.text();
-        throw new Error(errMsg || "Registration failed");
+      //register with data and token
+      let token = localStorage.getItem('token');
+      if( token == null ){
+       alert("you are not a recruiter ! login with recruiter id");
+       navigateTo("/login");
       }
-
-      const data = await response.json();
+      const response = await registerCandidate(candidateData, token);
       alert("Candidate registered successfully!");
 
       // Reset form
@@ -150,7 +154,7 @@ export default function CandidateRegister() {
       });
       setResumeFile(null);
       setSkills([{ name: "", experience: "" }]);
-      navigateTo("/login");
+     navigateTo("/Recruiter/Profile")
     } catch (err) {
       setError(err.message);
     } finally {
@@ -267,17 +271,23 @@ export default function CandidateRegister() {
             {educations.map((edu, index) => (
               <div
                 key={index}
-                className="grid grid-cols-1 md:grid-cols-6 gap-3 my-3 items-center"
+                className="grid grid-cols-4 gap-3 my-3 items-center"
               >
-                <input
-                  type="text"
-                  placeholder="Degree"
+                
+                <select
                   value={edu.degree}
                   onChange={(e) =>
                     handleEducationChange(index, "degree", e.target.value)
                   }
-                  className="border p-2 rounded-lg"
-                />
+                  className="border p-2 rounded-lg w-full"
+                >
+                  <option value="">Degree</option>
+                  {DEGREE_OPTIONS.map((degree, idx) => (
+                    <option key={idx} value={degree}>
+                      {degree}
+                    </option>
+                  ))}
+                </select>
 
                 <input
                   type="text"
@@ -286,7 +296,7 @@ export default function CandidateRegister() {
                   onChange={(e) =>
                     handleEducationChange(index, "university", e.target.value)
                   }
-                  className="border p-2 rounded-lg"
+                  className="border p-2 rounded-lg w-full"
                 />
 
                 <input
@@ -296,9 +306,20 @@ export default function CandidateRegister() {
                   onChange={(e) =>
                     handleEducationChange(index, "college", e.target.value)
                   }
-                  className="border p-2 rounded-lg"
+                  className="border p-2 rounded-lg w-full"
                 />
 
+                
+                <div className="row-span-2 flex justify-center items-center">
+                  <p
+                    onClick={() => removeEducationField(index)}
+                    className="text-red-600 text-xl cursor-pointer"
+                  >
+                    <i className="fa-solid fa-ban"></i>
+                  </p>
+                </div>
+
+                
                 <input
                   type="number"
                   placeholder="Passing Year"
@@ -306,7 +327,7 @@ export default function CandidateRegister() {
                   onChange={(e) =>
                     handleEducationChange(index, "passingYear", e.target.value)
                   }
-                  className="border p-2 rounded-lg"
+                  className="border p-2 rounded-lg w-full"
                 />
 
                 <input
@@ -316,19 +337,13 @@ export default function CandidateRegister() {
                   onChange={(e) =>
                     handleEducationChange(index, "percentage", e.target.value)
                   }
-                  className="border p-2 rounded-lg"
+                  className="border p-2 rounded-lg w-full"
                 />
-                <div className="flex justify-center">
-                  <p
-                    type="button"
-                    onClick={() => removeEducationField(index)}
-                    className="text-red-600 text-xl"
-                  >
-                    <i className="fa-solid fa-ban"></i>
-                  </p>
-                </div>
+                {/* Empty spacing cell */}
+                <div></div>
               </div>
             ))}
+
             <button
               type="button"
               onClick={addEducationField}

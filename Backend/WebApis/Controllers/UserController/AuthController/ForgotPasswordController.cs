@@ -4,6 +4,7 @@ using System.Data.Common;
 using WebApis.Data;
 using WebApis.Dtos;
 using WebApis.Dtos.ForgotPasswordDtos;
+using WebApis.Repository;
 using WebApis.Service.EmailService;
 namespace WebApis.Controllers.UserController.AuthController
 {
@@ -13,11 +14,20 @@ namespace WebApis.Controllers.UserController.AuthController
     {
         private readonly AppDbContext _db;
         private readonly IEmailService _emailService;
+        ICommonRepository<PasswordReset> _passwordResetRepository;
+        ICommonRepository<User> _userRepository;
 
-        public ForgotPasswordController(AppDbContext db, IEmailService emailService)
+        public ForgotPasswordController(
+            AppDbContext db, 
+            IEmailService emailService,
+            ICommonRepository<PasswordReset> passwordResetRepository,
+            ICommonRepository<User> userRepository
+        )
         {
             _db = db;
             _emailService = emailService;
+            _passwordResetRepository = passwordResetRepository;
+            _userRepository = userRepository;
         }
 
         [HttpPost("forgot-password")]
@@ -36,9 +46,8 @@ namespace WebApis.Controllers.UserController.AuthController
                 OTP = otp,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(5)
             };
-            _db.PasswordResets.Add(resetEntry);
-            await _db.SaveChangesAsync();
-
+            await _passwordResetRepository.AddAsync(resetEntry);
+           
             // Send email 
             await _emailService.SendEmailAsync(
                 user.Email,
@@ -65,7 +74,7 @@ namespace WebApis.Controllers.UserController.AuthController
                 return BadRequest(new { message = "OTP expired" });
 
             // Get user
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var user = await _userRepository.GetByFilterAsync(u => u.Email == dto.Email);
             if (user == null)
                 return BadRequest(new { message = "User not found" });
 
@@ -73,10 +82,8 @@ namespace WebApis.Controllers.UserController.AuthController
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
 
             // Remove OTP entry so it cannot be reused
-            _db.PasswordResets.Remove(entry);
-
-            await _db.SaveChangesAsync();
-
+            await _passwordResetRepository.DeleteAsync(entry);
+          
             return Ok(new { message = "Password reset successful" });
         }
     }

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using WebApis.Data;
 using WebApis.Dtos;
+using WebApis.Repository;
 using WebApis.Service;
 
 namespace WebApis.Controllers.UserController.AuthController
@@ -17,17 +18,43 @@ namespace WebApis.Controllers.UserController.AuthController
         private readonly JwtService _jwt;
         private readonly CloudinaryService _cloudinaryService;
 
-        public AuthController(AppDbContext db, JwtService jwt, CloudinaryService cloudinaryService)
+        //repositories
+        private readonly ICommonRepository<User> _userRepository;
+        private readonly ICommonRepository<Candidate> _candidateRepository;
+        private readonly ICommonRepository<Recruiter> _recruiterRepository;
+        private readonly ICommonRepository<Reviewer> _reviewerRepository;
+        private readonly ICommonRepository<Interviewer> _interviewerRepository;
+        private readonly ICommonRepository<Skill> _skillRepository;
+
+        public AuthController(AppDbContext db, 
+            JwtService jwt,
+            CloudinaryService cloudinaryService,
+
+            ICommonRepository<User> commonRepository,
+            ICommonRepository<Candidate> candidateRepository,
+            ICommonRepository<Recruiter> recruiterRepository,
+            ICommonRepository<Reviewer> reviewerRepository,
+            ICommonRepository<Interviewer> interviewerRepository,
+            ICommonRepository<Skill> skillRepository
+        )
         {
             _db = db;
             _jwt = jwt;
             _cloudinaryService = cloudinaryService;
+
+            _userRepository = commonRepository;
+            _candidateRepository = candidateRepository;
+            _recruiterRepository = recruiterRepository;
+            _interviewerRepository = interviewerRepository;
+            _reviewerRepository = reviewerRepository;
+            _skillRepository = skillRepository;
         }
 
 
         //Implementation remaining that cadidate should attached to job opening when created by recruiter
         [HttpPost("register-candidate")]
-        public async Task<IActionResult> RegisterCandidate([FromBody] RegisterRequestDto dto)
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> RegisterCandidate([FromBody] RegisterCandidateRequestDto dto)
         {
             if (dto.RoleName != "Candidate")
                 return BadRequest(new { message = "Role should be cadidate" });
@@ -46,9 +73,7 @@ namespace WebApis.Controllers.UserController.AuthController
                 RoleName = "Candidate",
                 CreatedAt = DateTime.UtcNow
             };
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
-
+            await _userRepository.AddAsync(user);
             var candidate = new Candidate
             {
                 UserId = user.Id,
@@ -58,9 +83,8 @@ namespace WebApis.Controllers.UserController.AuthController
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-            _db.Candidates.Add(candidate);
-            await _db.SaveChangesAsync();
-
+            await _candidateRepository.AddAsync(candidate);
+          
             // Add Education Records
             if (dto.Educations != null && dto.Educations.Any())
             {
@@ -93,8 +117,7 @@ namespace WebApis.Controllers.UserController.AuthController
                     if (skill == null)
                     {
                         skill = new Skill { Name = skillDto.Name };
-                        _db.Skill.Add(skill);
-                        await _db.SaveChangesAsync();
+                        await _skillRepository.AddAsync(skill);
                     }
 
                     var userSkill = new UserSkill
@@ -119,7 +142,8 @@ namespace WebApis.Controllers.UserController.AuthController
         }
 
         [HttpPost("upload-resume")]
-            public async Task<IActionResult> UploadResume(IFormFile file)
+        [Authorize(Roles = "Recruiter,Candidate" )]
+        public async Task<IActionResult> UploadResume(IFormFile file)
         {
             if (file == null)
                 return BadRequest("No file received.");
@@ -135,8 +159,9 @@ namespace WebApis.Controllers.UserController.AuthController
             }
         }
 
-        [HttpPost("register-Users")]//register recruiter reviewer and interviewer by admin 
-        public async Task<IActionResult> RegisterUser([FromBody] RegisterRequestDto dto)
+        [HttpPost("register-Users")]//register recruiter reviewer and interviewer by admin
+        [Authorize(Roles = "Recruiter,Admin")]
+        public async Task<IActionResult> RegisterUser([FromBody] RegisterOtherUserRequestDto dto)
         {
             //  Validate role
             var allowedRoles = new[] { "Recruiter", "Reviewer", "Interviewer" };
@@ -147,8 +172,8 @@ namespace WebApis.Controllers.UserController.AuthController
             }
 
             //  Check email duplication
-            var existingUser = await _db.Users.AnyAsync(u => u.Email == dto.Email.ToLower());
-            if (existingUser)
+            var existingUser = await _userRepository.GetByFilterAsync(u => u.Email == dto.Email.ToLower());
+            if (existingUser != null )
                 return BadRequest(new { message = "Email already registered." });
 
             // Create base user
@@ -162,17 +187,17 @@ namespace WebApis.Controllers.UserController.AuthController
                 RoleName = dto.RoleName,
                 CreatedAt = DateTime.UtcNow
             };
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
-
+            await _userRepository.AddAsync(user);
+            
             // Create role-specific table
             switch (dto.RoleName)
             {
                 case "Recruiter":
-                    _db.Recruiter.Add(new Recruiter
+                    
+                    await _recruiterRepository.AddAsync(new Recruiter
                     {
                         UserId = user.Id,
-                        Department = dto.Department ?? "",
+                        Department = dto.Department.ToString(),
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     });
@@ -180,27 +205,25 @@ namespace WebApis.Controllers.UserController.AuthController
                     break;
 
                 case "Reviewer":
-                    _db.Reviewers.Add(new Reviewer
+                   await _reviewerRepository.AddAsync(new Reviewer
                     {
                         UserId = user.Id,
-                        Department = dto.Department ?? "",
+                        Department = dto.Department.ToString(),
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     });
                     break;
 
                 case "Interviewer":
-                    _db.Interviewers.Add(new Interviewer
+                   await _interviewerRepository.AddAsync(new Interviewer
                     {
                         UserId = user.Id,
-                        Department = dto.Department ?? "",
+                        Department = dto.Department.ToString(),
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     });
                     break;
             }
-
-            await _db.SaveChangesAsync();
 
             if (dto.Skills != null && dto.Skills.Any())
             {
@@ -212,8 +235,7 @@ namespace WebApis.Controllers.UserController.AuthController
                     if (skill == null)
                     {
                         skill = new Skill { Name = skillDto.Name };
-                        _db.Skill.Add(skill);
-                        await _db.SaveChangesAsync();
+                        await _skillRepository.AddAsync(skill);
                     }
 
                     var userSkill = new UserSkill

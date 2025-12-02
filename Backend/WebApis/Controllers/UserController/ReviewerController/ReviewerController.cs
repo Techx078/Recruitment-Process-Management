@@ -20,6 +20,7 @@ namespace WebApis.Controllers.UserController.ReviewerController
             _db = db;
         }
         [HttpGet("All")]
+        [Authorize(Roles = "Reviewer,Admin,Recruiter,Interviewer")]
         public async Task<IActionResult> GetAllReviewer()
         {
             var reviewers = await _db.Reviewers
@@ -59,7 +60,7 @@ namespace WebApis.Controllers.UserController.ReviewerController
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Reviewer")]
+        [Authorize(Roles = "Reviewer,Admin,Recruiter,Interviewer")]
         public async Task<IActionResult> GetReviewerById(int id)
         {
             var reviewer = await _db.Reviewers

@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import {useNavigate} from "react-router-dom";
-
-const API_BASE = "http://localhost:5233/api/ForgotPassword";
+import { resetPassword, sendOtp  } from "../Services/forgotPasswordService";
 
 export default function ForgotPassword() {
   const [step, setStep] = useState(1);
@@ -10,25 +9,36 @@ export default function ForgotPassword() {
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
   const navigate = useNavigate();
 
   const handleSendOtp = async () => {
-    if (!email) return alert("Please enter email");
+    if(isLoading) return;
+    setIsLoading(true);
+    if (!email) {
+      setIsLoading(false);
+      return alert("Please enter email");
+    }
 
     try {
-      await axios.post(`${API_BASE}/forgot-password`, email, {
-        headers: { "Content-Type": "application/json" },
-      });
+      await sendOtp(email);
       alert("OTP sent to your email");
       setStep(2);
     } catch (err) {
       alert(err.response?.data?.message || "Something went wrong");
+    }finally{
+      setIsLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
-    if (newPassword !== confirmPassword)
+    if(isLoading) return;
+    setIsLoading(true);
+    if (newPassword !== confirmPassword){
+      setIsLoading(false);
       return alert("Passwords do not match!");
+    }
 
     const payload = {
       email,
@@ -37,11 +47,13 @@ export default function ForgotPassword() {
     };
 
     try {
-      await axios.post(`${API_BASE}/reset-password`, payload);
+      await resetPassword(payload);
       alert("Password reset successful. Redirecting...");
       navigate("/login");
     } catch (err) {
       alert(err.response?.data?.message || "Error resetting password");
+    }finally{
+      setIsLoading(false);
     }
   };
 
@@ -65,9 +77,11 @@ export default function ForgotPassword() {
 
             <button
               onClick={handleSendOtp}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
+              disabled={!email || isLoading}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium
+              disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Send OTP
+              {isLoading ? "Sending..." : "Send OTP"}
             </button>
           </>
         )}
@@ -111,9 +125,10 @@ export default function ForgotPassword() {
 
             <button
               onClick={handleResetPassword}
-              className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium"
+              disabled={ !email || isLoading || !otp || !newPassword || !confirmPassword}
+              className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Reset Password
+              {isLoading ? "Resetting..." : "Reset Password"}
             </button>
           </>
         )}

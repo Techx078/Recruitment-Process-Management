@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link , useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { registerOtherUser } from "../Services/authService";
 
 export default function OtherRegister() {
   const [formData, setFormData] = useState({
@@ -14,6 +15,17 @@ export default function OtherRegister() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigateTo = useNavigate();
+  const DEPARTMENT_OPTIONS = [
+    "IT",
+    "HR",
+    "Finance",
+    "Marketing",
+    "Sales",
+    "Operations",
+    "Administration",
+    "Support",
+  ];
+
   // Handle skill input changes
   const handleSkillChange = (index, field, value) => {
     const updatedSkills = [...skills];
@@ -21,7 +33,7 @@ export default function OtherRegister() {
     setSkills(updatedSkills);
   };
 
- // Add new skill input fields
+  // Add new skill input fields
   const addSkillField = () => {
     setSkills([...skills, { name: "", experience: "" }]);
   };
@@ -48,25 +60,12 @@ export default function OtherRegister() {
         })),
       };
       console.log(UserData);
-      
-    //   // Send to backend
-      const response = await fetch(
-        "http://localhost:5233/api/Auth/register-Users",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(UserData),
-        }
-      );
-
-      if (!response.ok) {
-        const errMsg = await response.text();
-        throw new Error(errMsg || "Registration failed");
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Login as a recruiter");
+        navigateTo("/login");
       }
-
-      const data = await response.json();
+      const response = await registerOtherUser(UserData, token);
       alert("registered successfully!");
 
       // Reset form
@@ -79,8 +78,9 @@ export default function OtherRegister() {
         Department: "",
       });
       setSkills([{ name: "", experience: "" }]);
-      navigateTo("/login");
+      navigateTo("/Recruiter/Profile");
     } catch (err) {
+      console.log(err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -157,31 +157,38 @@ export default function OtherRegister() {
           {/* Role-Name */}
           <div>
             <label className="block text-gray-700 mb-1">Role-Name</label>
-            <select 
-                name="roleName" 
-                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 mb-2" 
-                value={formData.roleName || ""}
-                onChange={handleChange}
+            <select
+              name="roleName"
+              className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 mb-2"
+              value={formData.roleName || ""}
+              onChange={handleChange}
             >
-                <option value="" disabled>Select Role</option>
-                <option value="Recruiter">Recruiter</option>
-                <option value="Reviewer">Reviewer</option>
-                <option value="Interviewer">Interviewer</option>
+              <option value="" disabled>
+                Select Role
+              </option>
+              <option value="Recruiter">Recruiter</option>
+              <option value="Reviewer">Reviewer</option>
+              <option value="Interviewer">Interviewer</option>
             </select>
           </div>
 
-         
           {/* Department */}
           <div>
             <label className="block text-gray-700 mb-1">Department</label>
-            <input
-              type="text"
+            <select
               name="Department"
               value={formData.Department}
               onChange={handleChange}
-              placeholder="Department"
               className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">Select Department</option>
+
+              {DEPARTMENT_OPTIONS.map((dept, idx) => (
+                <option key={idx} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="col-span-2">
             <label className="block text-gray-700 mb-2">Skills</label>

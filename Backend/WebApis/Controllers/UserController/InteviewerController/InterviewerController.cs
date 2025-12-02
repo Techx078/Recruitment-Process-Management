@@ -18,6 +18,7 @@ namespace WebApis.Controllers.UserController.InteviewerController
         }
 
         [HttpGet("All")]
+        [Authorize(Roles = "Recruiter,Interviewer,Admin,Reviewer")]
         public async Task<IActionResult> GetAllInterviewers()
         {
             var interviewers = await _db.Interviewers
