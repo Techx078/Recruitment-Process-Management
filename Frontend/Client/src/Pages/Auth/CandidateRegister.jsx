@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {registerCandidate} from "../Services/authService.js";
+import {registerCandidate} from "../../Services/authService"
+
 
 export default function CandidateRegister() {
 
@@ -92,10 +93,14 @@ export default function CandidateRegister() {
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
+    let token = localStorage.getItem("token")
 
     const res = await fetch("http://localhost:5233/api/Auth/upload-resume", {
       method: "POST",
       body: formData,
+      headers:{
+        Authorization : `Bearer ${token}`
+      }
     });
 
     if (!res.ok) throw new Error("Failed to upload resume");

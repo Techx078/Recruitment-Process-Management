@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import {useNavigate} from "react-router-dom";
-import { resetPassword, sendOtp  } from "../Services/forgotPasswordService";
+import { resetPassword, sendOtp  } from "../../Services/forgotPasswordService";
 
 export default function ForgotPassword() {
   const [step, setStep] = useState(1);

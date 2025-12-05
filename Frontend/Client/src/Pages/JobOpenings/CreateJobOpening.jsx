@@ -6,10 +6,12 @@ import {
   getAllDocuments,
   createJobOpening,
 } from "../../Services/JobOpeningService";
+import { useNavigate } from "react-router-dom";
 
 export default function JobOpeningForm({}) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const Navigate = useNavigate();
 
   const [jobData, setJobData] = useState({
     title: "",
@@ -41,10 +43,11 @@ export default function JobOpeningForm({}) {
   }, []);
 
   async function loadData() {
-    setSkills(await getAllSkills());
-    setReviewers(await getAllReviewers());
-    setInterviewers(await getAllInterviewers());
-    setDocuments(await getAllDocuments());
+    let token = localStorage.getItem("token");
+    setSkills(await getAllSkills(token));
+    setReviewers(await getAllReviewers(token));
+    setInterviewers(await getAllInterviewers(token));
+    setDocuments(await getAllDocuments(token));
   }
 
   // Handle input changes
@@ -101,11 +104,20 @@ export default function JobOpeningForm({}) {
           ...prev,
           jobSkills: [
             ...prev.jobSkills,
-            { skillName: skill.name, isRequired: true },
+            { skillName: skill.name, isRequired: false },
           ],
         };
       }
     });
+  };
+
+  const toggleRequired = (skillName) => {
+    setJobData((prev) => ({
+      ...prev,
+      jobSkills: prev.jobSkills.map((s) =>
+        s.skillName === skillName ? { ...s, isRequired: !s.isRequired } : s
+      ),
+    }));
   };
 
   const toggleDocument = (id, checked) => {
@@ -138,18 +150,20 @@ export default function JobOpeningForm({}) {
   };
 
   const handleSubmit = (e) => {
-    if(setIsLoading) return;
+    if (setIsLoading) return;
     setIsLoading(true);
     e.preventDefault();
-    try{
-    const token = localStorage.getItem("token");
-    createJobOpening(jobData, token);
-    alert("Job Opening Created Successfully!");
-    Navigate("/job-openings");
-    }catch(error){
+    try {
+      const token = localStorage.getItem("token");
+      console.log(jobData);
+
+      // createJobOpening(jobData, token);
+      alert("Job Opening Created Successfully!");
+      Navigate("/job-openings");
+    } catch (error) {
       console.error("Error creating job opening:", error);
       alert("Failed to create job opening. Please try again.");
-    }finally{
+    } finally {
       setIsLoading(false);
     }
   };
@@ -466,26 +480,40 @@ export default function JobOpeningForm({}) {
             <label className="block font-semibold mb-2">Required Skills</label>
             <div className="space-y-2 max-h-40 overflow-auto border p-2 rounded">
               {skills.map((s) => {
-                const isChecked = jobData.jobSkills.some(
+                const selectedSkill = jobData.jobSkills.find(
                   (sk) => sk.skillName === s.name
                 );
+                const isSelected = selectedSkill !== undefined;
+                const isRequired = selectedSkill?.isRequired || false;
                 return (
-                  <label
-                    key={s.skillId}
-                    className="flex items-center gap-3 p-1 cursor-pointer hover:bg-gray-100 rounded"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleSkill(s)}
-                    />
-                    <div>
-                      <div className="font-medium">{s.name}</div>
-                      <div className="text-sm text-gray-600">
-                        Skill ID: {s.skillId}
+                  <>
+                    <label
+                      key={s.skillId}
+                      className="flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-100 rounded"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSkill(s)}
+                      />
+                      <div>
+                        <div className="font-medium">{s.name} </div>
+                        <div className="text-sm text-gray-600">
+                          Skill ID: {s.skillId}
+                        </div>
                       </div>
-                    </div>
-                  </label>
+                    </label>
+                    {isSelected && (
+                      <label className="flex items-center gap-1 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isRequired}
+                          onChange={() => toggleRequired(s.name)}
+                        />
+                        Required
+                      </label>
+                    )}
+                  </>
                 );
               })}
             </div>

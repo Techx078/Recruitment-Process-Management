@@ -49,6 +49,137 @@ namespace WebApis.Controllers.UserController.AuthController
             _reviewerRepository = reviewerRepository;
             _skillRepository = skillRepository;
         }
+        [HttpPost("Candidate-bulk-register")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> BulkRegisterCandidates(
+        [FromBody] List<RegisterCandidateRequestDto> candidatesDto)
+        {
+            if (candidatesDto == null || !candidatesDto.Any())
+                return BadRequest(new { message = "Candidate list is empty." });
+
+            var resultCreated = new List<object>();
+            var resultSkipped = new List<object>();
+
+            //get all mails from body
+            var incomingEmails = candidatesDto
+                .Select(x => x.Email.ToLower())
+                .ToList();
+
+            //find exists mail to skip
+            var alreadyExists = await _db.Users
+                .Where(u => incomingEmails.Contains(u.Email))
+                .Select(u => u.Email)
+                .ToHashSetAsync();
+
+            //get all skills from database
+            var existingSkills = await _skillRepository.GetAllAsync();
+
+            //main loop
+            foreach (var dto in candidatesDto)
+            {
+                var email = dto.Email.ToLower();
+
+                if (alreadyExists.Contains(email))
+                {
+                    resultSkipped.Add(new { email, reason = "Email already exists" });
+                    continue;
+                }
+
+                // create a user
+                var user = new User
+                {
+                    FullName = dto.FullName,
+                    Email = email,
+                    PhoneNumber = dto.PhoneNumber,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                    RoleName = "Candidate",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _db.Users.Add(user);
+
+
+                // create cadidate
+                var candidate = new Candidate
+                {
+                    User = user,    
+                    LinkedInProfile = dto.LinkedInProfile,
+                    GitHubProfile = dto.GitHubProfile,
+                    ResumePath = dto.ResumePath,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _db.Candidates.Add(candidate);
+
+
+                //create education
+                if (dto.Educations?.Any() == true)
+                {
+                    var educationEntities = dto.Educations.Select(e => new Education
+                    {
+                        Candidate = candidate,   
+                        Degree = e.Degree,
+                        University = e.University,
+                        College = e.College,
+                        PassingYear = e.PassingYear,
+                        Percentage = e.Percentage
+                    });
+
+                    _db.Educations.AddRange(educationEntities);
+                }
+
+
+                //add skill for candidate
+                if (dto.Skills?.Any() == true)
+                {
+                    foreach (var skillDto in dto.Skills)
+                    {
+                        var normalized = skillDto.Name.Trim().ToLower();
+
+                        var skill = existingSkills
+                            .FirstOrDefault(x => x.Name.ToLower() == normalized);
+
+                        // Create skill if missing
+                        if (skill == null)
+                        {
+                            skill = new Skill { Name = skillDto.Name };
+
+                            _db.Skill.Add(skill);
+                            existingSkills.Add(skill);
+                        }
+
+                        _db.UserSkill.Add(new UserSkill
+                        {
+                            User = user,          
+                            Skill = skill,
+                            YearsOfExperience = skillDto.Experience,
+                            ProficiencyLevel = "beginner",
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+
+                resultCreated.Add(new
+                {
+                    name = user.FullName,
+                    email = user.Email
+                });
+            }
+
+           //commin everthing a once
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Bulk candidate registration completed.",
+                successCount = resultCreated.Count,
+                skippedCount = resultSkipped.Count,
+                created = resultCreated,
+                skipped = resultSkipped
+            });
+        }
 
 
         //Implementation remaining that cadidate should attached to job opening when created by recruiter
@@ -142,7 +273,7 @@ namespace WebApis.Controllers.UserController.AuthController
         }
 
         [HttpPost("upload-resume")]
-        [Authorize(Roles = "Recruiter,Candidate" )]
+        [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> UploadResume(IFormFile file)
         {
             if (file == null)

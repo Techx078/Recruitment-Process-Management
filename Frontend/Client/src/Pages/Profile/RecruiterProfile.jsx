@@ -58,16 +58,22 @@ export default function RecruiterProfile() {
             </div>
             
             <button
-              className="px-4 bg-black py-2  text-white rounded-lg hover:bg-green-700"
+              className="px-4 bg-gray-800 py-2  text-white rounded-lg hover:bg-black"
               onClick={() => navigate("/Candidate-register")}
             >
-             Register Candidate
+             +Register Candidate
             </button>
            <button
-              className="px-4 bg-black py-2  text-white rounded-lg hover:bg-green-700"
+              className="px-4 bg-gray-800 py-2  text-white rounded-lg hover:bg-black"
               onClick={() => navigate("/Other-register")}
             >
-             Other-Register
+             +Other-Register(Reviewer , Interviewer)
+            </button>
+              <button
+              className="px-4 bg-gray-800 py-2  text-white rounded-lg hover:bg-black"
+              onClick={() => navigate("/Candidate-bulk-register")}
+            >
+              +Create candidate in bulk
             </button>
           </div>
         </div>
@@ -79,11 +85,12 @@ export default function RecruiterProfile() {
 
             {/* Create Job Button */}
             <button
-              className="px-4 bg-black py-2  text-white rounded-lg hover:bg-green-700"
+              className="px-4 bg-gray-800 py-2  text-white rounded-lg hover:bg-black"
               onClick={() => navigate("/job-openings/create")}
             >
               + Create Job Opening
             </button>
+           
           </div>
 
           <div className="space-y-4">

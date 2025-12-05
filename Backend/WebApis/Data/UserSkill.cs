@@ -6,7 +6,7 @@
         public int UserId { get; set; }
         public int SkillId { get; set; }
         public string ProficiencyLevel { get; set; }
-        public int? YearsOfExperience { get; set; }
+        public Decimal? YearsOfExperience { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 

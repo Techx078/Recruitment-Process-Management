@@ -33,9 +33,15 @@ export const getJobOpeningById = async (id, token) => {
   }
 };
 
-export const getAllSkills = async () => {
+export const getAllSkills = async (token) => {
   try {
-    const response = await axios.get(`http://localhost:5233/api/Skill/All`);
+    const response = await axios.get(`http://localhost:5233/api/Skill/All`,
+      {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+    );
     return response.data;
   } catch (error) {
     console.error("Error in fetching skills:", error);
@@ -43,9 +49,15 @@ export const getAllSkills = async () => {
   }
 };
 
-export const getAllReviewers = async () => {
+export const getAllReviewers = async (token) => {
   try {
-    const response = await axios.get(`http://localhost:5233/api/Reviewer/All`);
+    const response = await axios.get(`http://localhost:5233/api/Reviewer/All`,
+      {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+    );
     return response.data;
   } catch (error) {
     console.error("Error in fetching reviewers:", error);
@@ -53,10 +65,15 @@ export const getAllReviewers = async () => {
   }
 };
 
-export const getAllInterviewers = async () => {
+export const getAllInterviewers = async (token) => {
   try {
     const response = await axios.get(
-      `http://localhost:5233/api/Interviewer/All`
+      `http://localhost:5233/api/Interviewer/All`,
+      {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
     );
     return response.data;
   } catch (error) {
@@ -65,9 +82,15 @@ export const getAllInterviewers = async () => {
   }
 };
 
-export const getAllDocuments = async () => {
+export const getAllDocuments = async (token) => {
   try {
-    const response = await axios.get(`http://localhost:5233/api/Document/All`);
+    const response = await axios.get(`http://localhost:5233/api/Document/All`,
+      {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+    );
     return response.data;
   } catch (error) {
     console.error("Error in fetching documents:", error);
