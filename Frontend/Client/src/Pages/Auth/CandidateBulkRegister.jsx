@@ -57,6 +57,8 @@ export default function CandidateBulkRegister() {
         PhoneNumber: basic.PhoneNumber,
         Password: basic.Password,
         ResumePath: basic.ResumePath,
+        Domain : basic.Domain,
+        DomainExperienceYears : basic.DomainExperienceYears,
         RoleName: "Candidate",
         LinkedInProfile: basic.LinkedInProfile || null,
         GitHubProfile: basic.GitHubProfile || null,

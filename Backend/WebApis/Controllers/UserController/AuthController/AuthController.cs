@@ -84,7 +84,11 @@ namespace WebApis.Controllers.UserController.AuthController
                     resultSkipped.Add(new { email, reason = "Email already exists" });
                     continue;
                 }
-
+                if( dto.DomainExperienceYears < 0)
+                {
+                    resultSkipped.Add(new { email, reason = "Domain experinece can't be negative." });
+                    continue;
+                }
                 // create a user
                 var user = new User
                 {
@@ -93,6 +97,8 @@ namespace WebApis.Controllers.UserController.AuthController
                     PhoneNumber = dto.PhoneNumber,
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                     RoleName = "Candidate",
+                    Domain = dto.Domain.ToString(),
+                    DomainExperienceYears = dto.DomainExperienceYears,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -187,20 +193,23 @@ namespace WebApis.Controllers.UserController.AuthController
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> RegisterCandidate([FromBody] RegisterCandidateRequestDto dto)
         {
-            if (dto.RoleName != "Candidate")
-                return BadRequest(new { message = "Role should be cadidate" });
-
             var existingUser = await _db.Users.AnyAsync(u => u.Email == dto.Email.ToLower());
             if (existingUser)
                 return BadRequest(new { message = "Email already registered." });
 
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+            if (dto.DomainExperienceYears < 0)
+                return BadRequest("Experience must be positive");
+
             var user = new User
             {
                 FullName = dto.FullName,
                 Email = dto.Email.ToLower(),
                 PhoneNumber = dto.PhoneNumber,
                 PasswordHash = passwordHash,
+                Domain = dto.Domain.ToString(),
+                DomainExperienceYears = dto.DomainExperienceYears,
                 RoleName = "Candidate",
                 CreatedAt = DateTime.UtcNow
             };
@@ -268,7 +277,7 @@ namespace WebApis.Controllers.UserController.AuthController
             return Ok(new
             {
                 message = "Candidate created successfully by Recruiter.",
-                user = new { id = user.Id, name = user.FullName, email = user.Email, role = user.RoleName }
+                user = new {  id = user.Id, name = user.FullName, email = user.Email, role = user.RoleName , user.Domain,user.DomainExperienceYears }
             });
         }
 
@@ -278,7 +287,7 @@ namespace WebApis.Controllers.UserController.AuthController
         {
             if (file == null)
                 return BadRequest("No file received.");
-
+            
             try
             {
                 var url = await _cloudinaryService.UploadResumeAsync(file);
@@ -296,7 +305,7 @@ namespace WebApis.Controllers.UserController.AuthController
         {
             //  Validate role
             var allowedRoles = new[] { "Recruiter", "Reviewer", "Interviewer" };
-            if (!allowedRoles.Contains(dto.RoleName))
+            if (!allowedRoles.Contains(dto.RoleName.ToString()))
             {
                 Console.WriteLine("Invalid role attempted: " + dto.RoleName);
                 return BadRequest(new { message = "Invalid role", });
@@ -307,6 +316,9 @@ namespace WebApis.Controllers.UserController.AuthController
             if (existingUser != null )
                 return BadRequest(new { message = "Email already registered." });
 
+            if(dto.DomainExperienceYears < 0)
+                return BadRequest(new { message = "domain experience should be positie " });
+            
             // Create base user
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
             var user = new User
@@ -315,13 +327,15 @@ namespace WebApis.Controllers.UserController.AuthController
                 Email = dto.Email.ToLower(),
                 PhoneNumber = dto.PhoneNumber,
                 PasswordHash = passwordHash,
-                RoleName = dto.RoleName,
+                Domain = dto.Domain.ToString(),
+                DomainExperienceYears = dto.DomainExperienceYears,
+                RoleName = dto.RoleName.ToString(),
                 CreatedAt = DateTime.UtcNow
             };
             await _userRepository.AddAsync(user);
             
             // Create role-specific table
-            switch (dto.RoleName)
+            switch (dto.RoleName.ToString())
             {
                 case "Recruiter":
                     
@@ -386,7 +400,7 @@ namespace WebApis.Controllers.UserController.AuthController
             return Ok(new
             {
                 message = $"{dto.RoleName} created successfully by Admin.",
-                user = new { id = user.Id, name = user.FullName, email = user.Email, role = user.RoleName }
+                user = new { id = user.Id, name = user.FullName, email = user.Email, role = user.RoleName, user.Domain,user.DomainExperienceYears }
             });
         }
         

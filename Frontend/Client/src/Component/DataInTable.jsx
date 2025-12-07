@@ -9,6 +9,8 @@ export default function DataInTable({ finalJson = [] }) {
             <th className="p-2 border">Email</th>
             <th className="p-2 border">Phone</th>
             <th className="p-2 border">ResumePath</th>
+            <th className="p-2 border">Domain</th>
+            <th className="p-2 border">DomainExperienceYears</th>
             <th className="p-2 border">LinkedIn</th>
             <th className="p-2 border">GitHub</th>
             <th className="p-2 border">Educations</th>
@@ -30,6 +32,8 @@ export default function DataInTable({ finalJson = [] }) {
               <td className="p-2 border">{candidate.Email}</td>
               <td className="p-2 border">{candidate.PhoneNumber}</td>
               <td className="p-2 border">{candidate.ResumePath}</td>
+              <td className="p-2 border">{candidate.Domain}</td>
+              <td className="p-2 border">{candidate.DomainExperienceYears}</td>
               <td className="p-2 border">
                 {candidate.LinkedInProfile ? (
                   <a

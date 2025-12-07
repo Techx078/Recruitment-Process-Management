@@ -10,6 +10,8 @@ export default function OtherRegister() {
     password: "",
     roleName: "",
     Department: "",
+    Domain:"",
+    DomainExperienceYears:0
   });
   const [skills, setSkills] = useState([{ name: "", experience: "" }]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,23 @@ export default function OtherRegister() {
     "Administration",
     "Support",
   ];
-
+  const DOMAIN_OPTIONS = [
+ "NotSpecified" ,
+ "FullStackDevelopment",
+ "FrontendDevelopment" ,
+ "BackendDevelopment" ,
+ "MobileAppDevelopment",
+ "DataScience" ,
+ "ArtificialIntelligence_ML",
+ "CloudComputing" ,
+ "DevOps" ,
+ "IndustrialIoT",
+ "EmbeddedSystems" ,
+ "AutomationEngineering",
+ "SupplyChainTech",
+ "QualityAssurance",
+ "CyberSecurity"
+]
   // Handle skill input changes
   const handleSkillChange = (index, field, value) => {
     const updatedSkills = [...skills];
@@ -59,7 +77,6 @@ export default function OtherRegister() {
           experience: skill.experience,
         })),
       };
-      console.log(UserData);
       const token = localStorage.getItem("token");
       if (!token) {
         alert("Login as a recruiter");
@@ -76,6 +93,8 @@ export default function OtherRegister() {
         password: "",
         roleName: "",
         Department: "",
+        Domain:"",
+        DomainExperienceYears:0
       });
       setSkills([{ name: "", experience: "" }]);
       navigateTo("/Recruiter/Profile");
@@ -189,6 +208,33 @@ export default function OtherRegister() {
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">Primary-Domain</label>
+            <select
+              name="Domain"
+              value={formData.Domain}
+              onChange={handleChange}
+              className="border p-2 rounded-lg w-full"
+            >
+              <option value="">Primary-Domain</option>
+              {DOMAIN_OPTIONS.map((Domain, idx) => (
+                <option key={idx} value={Domain}>
+                  {Domain}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">Domain-Experience</label>
+            <input
+              name="DomainExperienceYears"
+              type="number"
+              placeholder="DomainExperienceYears"
+              value={formData.DomainExperienceYears}
+              onChange={handleChange}
+              className="border p-2 rounded-lg w-full"
+            />
           </div>
           <div className="col-span-2">
             <label className="block text-gray-700 mb-2">Skills</label>

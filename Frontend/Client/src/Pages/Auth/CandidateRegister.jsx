@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {registerCandidate} from "../../Services/authService"
-
+import { registerCandidate } from "../../Services/authService";
 
 export default function CandidateRegister() {
-
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -12,6 +10,8 @@ export default function CandidateRegister() {
     password: "",
     linkedInProfile: "",
     gitHubProfile: "",
+    Domain: "",
+    DomainExperienceYears: 0,
   });
   const [educations, setEducations] = useState([
     {
@@ -25,23 +25,40 @@ export default function CandidateRegister() {
 
   const [skills, setSkills] = useState([{ name: "", experience: "" }]);
   const [resumeFile, setResumeFile] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigateTo = useNavigate();
- const DEGREE_OPTIONS = [
-  "B.Tech",
-  "M.Tech",
-  "BCA",
-  "MCA",
-  "B.Sc",
-  "M.Sc",
-  "B.Com",
-  "M.Com",
-  "MBA",
-  "Diploma",
-  "PhD",
-];
-
+  const DEGREE_OPTIONS = [
+    "B.Tech",
+    "M.Tech",
+    "BCA",
+    "MCA",
+    "B.Sc",
+    "M.Sc",
+    "B.Com",
+    "M.Com",
+    "MBA",
+    "Diploma",
+    "PhD",
+  ];
+  const DOMAIN_OPTIONS = [
+    "NotSpecified",
+    "FullStackDevelopment",
+    "FrontendDevelopment",
+    "BackendDevelopment",
+    "MobileAppDevelopment",
+    "DataScience",
+    "ArtificialIntelligence_ML",
+    "CloudComputing",
+    "DevOps",
+    "IndustrialIoT",
+    "EmbeddedSystems",
+    "AutomationEngineering",
+    "SupplyChainTech",
+    "QualityAssurance",
+    "CyberSecurity",
+  ];
   // Handle education change
   const handleEducationChange = (index, field, value) => {
     const updated = [...educations];
@@ -93,16 +110,16 @@ export default function CandidateRegister() {
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    let token = localStorage.getItem("token")
+    let token = localStorage.getItem("token");
 
     const res = await fetch("http://localhost:5233/api/Auth/upload-resume", {
       method: "POST",
       body: formData,
-      headers:{
-        Authorization : `Bearer ${token}`
-      }
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
-
+    console.log(res);
     if (!res.ok) throw new Error("Failed to upload resume");
     const data = await res.json();
     return data.resumeUrl;
@@ -117,7 +134,7 @@ export default function CandidateRegister() {
     try {
       let resumeUrl = null;
 
-      //Upload resume to Cloudinary if file exists
+      // //Upload resume to Cloudinary if file exists
       if (resumeFile) {
         resumeUrl = await uploadToCloudinary(resumeFile);
       }
@@ -140,12 +157,16 @@ export default function CandidateRegister() {
         })),
       };
       //register with data and token
-      let token = localStorage.getItem('token');
-      if( token == null ){
-       alert("you are not a recruiter ! login with recruiter id");
-       navigateTo("/login");
+      let token = localStorage.getItem("token");
+      if (token == null) {
+        alert("you are not a recruiter ! login with recruiter id");
+        navigateTo("/login");
       }
+      console.log(JSON.stringify(candidateData));
+
       const response = await registerCandidate(candidateData, token);
+      console.log(response.data);
+
       alert("Candidate registered successfully!");
 
       // Reset form
@@ -156,10 +177,22 @@ export default function CandidateRegister() {
         password: "",
         linkedInProfile: "",
         gitHubProfile: "",
+        Domain: "",
+        DomainExperienceYears: 0,
       });
       setResumeFile(null);
       setSkills([{ name: "", experience: "" }]);
-     navigateTo("/Recruiter/Profile")
+      setEducations([
+        {
+          degree: "",
+          university: "",
+          college: "",
+          passingYear: "",
+          percentage: "",
+        },
+      ]);
+
+      navigateTo("/Recruiter/Profile");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -278,7 +311,6 @@ export default function CandidateRegister() {
                 key={index}
                 className="grid grid-cols-4 gap-3 my-3 items-center"
               >
-                
                 <select
                   value={edu.degree}
                   onChange={(e) =>
@@ -314,7 +346,6 @@ export default function CandidateRegister() {
                   className="border p-2 rounded-lg w-full"
                 />
 
-                
                 <div className="row-span-2 flex justify-center items-center">
                   <p
                     onClick={() => removeEducationField(index)}
@@ -324,7 +355,6 @@ export default function CandidateRegister() {
                   </p>
                 </div>
 
-                
                 <input
                   type="number"
                   placeholder="Passing Year"
@@ -357,6 +387,33 @@ export default function CandidateRegister() {
               {" "}
               + Add Another Education{" "}
             </button>
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">Primary-Domain</label>
+            <select
+              name="Domain"
+              value={formData.Domain}
+              onChange={handleChange}
+              className="border p-2 rounded-lg w-full"
+            >
+              <option value="">Primary-Domain</option>
+              {DOMAIN_OPTIONS.map((Domain, idx) => (
+                <option key={idx} value={Domain}>
+                  {Domain}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">Domain-Experience</label>
+            <input
+              name="DomainExperienceYears"
+              type="number"
+              placeholder="DomainExperienceYears"
+              value={formData.DomainExperienceYears}
+              onChange={handleChange}
+              className="border p-2 rounded-lg w-full"
+            />
           </div>
 
           <div className="col-span-2">

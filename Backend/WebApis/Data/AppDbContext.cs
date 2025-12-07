@@ -32,7 +32,10 @@ namespace WebApis.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Education>()
+            modelBuilder.Entity<User>()
+                .Property(u => u.Domain)
+                .HasConversion<string>();   
+        modelBuilder.Entity<Education>()
             .HasOne(e => e.Candidate)
             .WithMany(c => c.Educations)
             .HasForeignKey(e => e.CandidateId)

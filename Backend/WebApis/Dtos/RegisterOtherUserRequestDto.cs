@@ -6,7 +6,10 @@
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
         public string Password { get; set; }
-        public string RoleName { get; set; }
+        public RoleName RoleName { get; set; }
+
+        public Domain Domain { get; set; }
+        public decimal DomainExperienceYears { get; set; }
 
         public DepartmentEnum Department { get; set; }
 
@@ -24,4 +27,5 @@
             Administration,
             Support
         }
+
 }
