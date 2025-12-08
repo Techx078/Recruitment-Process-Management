@@ -10,40 +10,45 @@ export default function OtherRegister() {
     password: "",
     roleName: "",
     Department: "",
-    Domain:"",
-    DomainExperienceYears:0
+    Domain: "",
+    DomainExperienceYears: 0,
   });
   const [skills, setSkills] = useState([{ name: "", experience: "" }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigateTo = useNavigate();
   const DEPARTMENT_OPTIONS = [
-    "IT",
+    "SoftwareDevelopment",
+    "DataScience",
+    "QualityAssurance",
+    "DevOps",
+    "CyberSecurity",
+    "ITSupport",
+    "ProductManagement",
     "HR",
-    "Finance",
-    "Marketing",
     "Sales",
+    "Marketing",
+    "Finance",
     "Operations",
-    "Administration",
-    "Support",
   ];
+
   const DOMAIN_OPTIONS = [
- "NotSpecified" ,
- "FullStackDevelopment",
- "FrontendDevelopment" ,
- "BackendDevelopment" ,
- "MobileAppDevelopment",
- "DataScience" ,
- "ArtificialIntelligence_ML",
- "CloudComputing" ,
- "DevOps" ,
- "IndustrialIoT",
- "EmbeddedSystems" ,
- "AutomationEngineering",
- "SupplyChainTech",
- "QualityAssurance",
- "CyberSecurity"
-]
+    "NotSpecified",
+    "FullStackDevelopment",
+    "FrontendDevelopment",
+    "BackendDevelopment",
+    "MobileAppDevelopment",
+    "DataScience",
+    "ArtificialIntelligence_ML",
+    "CloudComputing",
+    "DevOps",
+    "IndustrialIoT",
+    "EmbeddedSystems",
+    "AutomationEngineering",
+    "SupplyChainTech",
+    "QualityAssurance",
+    "CyberSecurity",
+  ];
   // Handle skill input changes
   const handleSkillChange = (index, field, value) => {
     const updatedSkills = [...skills];
@@ -93,8 +98,8 @@ export default function OtherRegister() {
         password: "",
         roleName: "",
         Department: "",
-        Domain:"",
-        DomainExperienceYears:0
+        Domain: "",
+        DomainExperienceYears: 0,
       });
       setSkills([{ name: "", experience: "" }]);
       navigateTo("/Recruiter/Profile");
@@ -226,7 +231,9 @@ export default function OtherRegister() {
             </select>
           </div>
           <div>
-            <label className="block text-gray-700 mb-1">Domain-Experience</label>
+            <label className="block text-gray-700 mb-1">
+              Domain-Experience
+            </label>
             <input
               name="DomainExperienceYears"
               type="number"

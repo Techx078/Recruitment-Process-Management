@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { fetchInterviewerService } from "../../services/InterviewerService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 export default function InterviewerProfile({}) {
+  let {interviewerId} = useParams();
   let [interviewer, setInterviewer] = useState(null);
   
-  let { authUser } = useAuthUserContext();
   let navigate = useNavigate();
   
   useEffect(() => {
     let fetchInterviewer = async () => {
-      let data = await fetchInterviewerService(localStorage.getItem("token"), authUser.id);
+      let data = await fetchInterviewerService(localStorage.getItem("token"), interviewerId);
       setInterviewer(data);
     };
     fetchInterviewer();
@@ -74,8 +74,11 @@ export default function InterviewerProfile({}) {
                       <p className="text-gray-600">
                         Department: {job.department}
                       </p>
+                     <p className="text-gray-600">
+                        Domain: {job.domain}
+                      </p>
                       <p className="text-gray-600">
-                        Experience: {job.experience}
+                        Experience: {job.minDomainExperience}
                       </p>
                       <p className="text-gray-600">
                         Created: {new Date(job.createdAt).toLocaleDateString()}

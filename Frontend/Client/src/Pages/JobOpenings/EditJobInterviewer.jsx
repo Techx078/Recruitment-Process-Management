@@ -1,0 +1,106 @@
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  getAllInterviewers,
+  getJobOpeningById,
+  updateJobInterviewers,
+} from "../../Services/JobOpeningService";
+
+const EditJobInterviewers = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [interviewers, setInterviewers] = useState([]);
+  const [selected, setSelected] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const token = localStorage.getItem("token");
+
+      // Load all interviewers
+      const allInterviewers = await getAllInterviewers(token);
+      setInterviewers(allInterviewers);
+
+      // Load selected interviewers for this job
+      const job = await getJobOpeningById(id, token);
+      setSelected(job.interviewers.map(i => i.id));
+    };
+
+    load();
+  }, [id]);
+
+  // Toggle checkbox
+  const toggle = (iid) => {
+    setSelected((prev) =>
+      prev.includes(iid)
+        ? prev.filter((x) => x !== iid)
+        : [...prev, iid]
+    );
+  };
+
+  // Save to backend
+  const save = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await updateJobInterviewers(id, selected, token);
+      alert("Interviewers updated!");
+      navigate(`/job-openings/${id}`);
+    } catch (error) {
+      console.error("Failed to update interviewers", error);
+      alert("Update failed!");
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-xl mx-auto bg-white shadow rounded">
+      <h2 className="text-xl font-bold mb-4">Update Interviewers</h2>
+
+      {interviewers.map((i) => (
+        <label
+          key={i.id}
+          className="flex items-center gap-3 border p-2 rounded mb-2 cursor-pointer hover:bg-gray-50"
+        >
+          <input
+            type="checkbox"
+            checked={selected.includes(i.id)}
+            onChange={() => toggle(i.id)}
+          />
+
+          <div>
+            <div className="font-medium">{i.user?.email}</div>
+            <div className="text-sm text-gray-600">
+              Interviewer ID: {i.id}
+            </div>
+          </div>
+          <div>
+            <button
+              type="button"
+              onClick={() => window.open(`/Interviewer/Profile/${r.user.id}`)}
+              className="px-5 py-1 ml-4 rounded bg-gray-600 text-white hover:bg-gray-800"
+            >
+              Profile
+            </button>
+          </div>
+        </label>
+      ))}
+
+      <div className="flex gap-3 mt-4">
+        <button
+          onClick={save}
+          className="bg-black text-white px-4 py-2 rounded"
+        >
+          Save Changes
+        </button>
+
+        <button
+          onClick={() => navigate(-1)}
+          className="bg-gray-500 text-white px-4 py-2 rounded"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default EditJobInterviewers;

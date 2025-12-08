@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { fetchRecruiterService } from "../../Services/RecruiterService";
-import { useNavigate , Link } from "react-router-dom";
+import { useNavigate, Link, useParams } from "react-router-dom";
 
 export default function RecruiterProfile() {
+  let { recruiterId } = useParams();
   const [recruiter, setRecruiter] = useState(null);
 
-  const { authUser } = useAuthUserContext();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRecruiter = async () => {
       const data = await fetchRecruiterService(
         localStorage.getItem("token"),
-        authUser.id
+        recruiterId
       );
       setRecruiter(data);
     };
@@ -56,20 +56,20 @@ export default function RecruiterProfile() {
                 {recruiter.department}
               </span>
             </div>
-            
+
             <button
               className="px-4 bg-gray-800 py-2  text-white rounded-lg hover:bg-black"
               onClick={() => navigate("/Candidate-register")}
             >
-             +Register Candidate
+              +Register Candidate
             </button>
-           <button
+            <button
               className="px-4 bg-gray-800 py-2  text-white rounded-lg hover:bg-black"
               onClick={() => navigate("/Other-register")}
             >
-             +Other-Register(Reviewer , Interviewer)
+              +Other-Register(Reviewer , Interviewer)
             </button>
-              <button
+            <button
               className="px-4 bg-gray-800 py-2  text-white rounded-lg hover:bg-black"
               onClick={() => navigate("/Candidate-bulk-register")}
             >
@@ -85,12 +85,11 @@ export default function RecruiterProfile() {
 
             {/* Create Job Button */}
             <button
-              className="px-4 bg-gray-800 py-2  text-white rounded-lg hover:bg-black"
+              className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-black text-sm sm:text-base w-full sm:w-auto"
               onClick={() => navigate("/job-openings/create")}
             >
               + Create Job Opening
             </button>
-           
           </div>
 
           <div className="space-y-4">
@@ -104,50 +103,83 @@ export default function RecruiterProfile() {
                 >
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                     <div>
-                      <h3 className="text-xl font-semibold">{job.title}</h3>
-                      <p className="text-gray-600">
+                      <h3 className="text-lg sm:text-xl font-semibold">
+                        {job.title}
+                      </h3>
+
+                      <p className="text-xs sm:text-sm text-gray-600">
                         Department: {job.department}
                       </p>
-                      <p className="text-gray-600">
-                        Experience: {job.experience}
+
+                      <p className="text-xs sm:text-sm text-gray-600">
+                        Domain: {job.domain}
                       </p>
-                      <p className="text-gray-600">
+
+                      <p className="text-xs sm:text-sm text-gray-600">
+                        Experience: {job.minDomainExperience}
+                      </p>
+
+                      <p className="text-xs sm:text-sm text-gray-600">
                         Created: {new Date(job.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-
-                    <div className="flex flex-col items-start md:items-end gap-2">
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-sm font-medium">
+                    <div className="flex flex-col items-start md:items-end gap-1">
+                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs sm:text-sm font-medium">
                         {job.status}
                       </span>
 
-                      <p className="text-gray-700 text-sm">
+                      <p className="text-xs sm:text-sm text-gray-700">
                         Candidates: {job.candidateCount}
                       </p>
 
-                      <p className="text-gray-700 text-sm">
+                      <p className="text-xs sm:text-sm text-gray-700">
                         Type: {job.jobType}
                       </p>
-                      <div className="flex gap-2 mt-2">
-                        {/* Show Button */}
-                        <button
-                          className="px-4 py-1 bg-black text-white text-sm rounded-lg hover:bg-gray-800"
-                          onClick={() => navigate(`/job-openings/${job.id}`)}
-                        >
-                          Show
-                        </button>
-
-                        {/* Update Button */}
-                        <button
-                          className="px-4 py-1 bg-black text-white text-sm rounded-lg hover:bg-gray-800"
-                          onClick={() =>
-                            navigate(`/job-openings/${job.id}/edit`)
-                          }
-                        >
-                          Update
-                        </button>
-                      </div>
                     </div>
+                  </div>
+
+                  {/* ACTION BUTTONS */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-4">
+                    <button
+                      className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
+                      onClick={() => navigate(`/job-openings/${job.id}`)}
+                    >
+                      Show
+                    </button>
+
+                    <button
+                      className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
+                      onClick={() => navigate(`/job-openings/${job.id}/edit`)}
+                    >
+                      Update fields
+                    </button>
+
+                    <button
+                      className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
+                      onClick={() =>
+                        navigate(`/job-openings/${job.id}/editReviewer`)
+                      }
+                    >
+                      Update Reviewer
+                    </button>
+
+                    <button
+                      className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
+                      onClick={() =>
+                        navigate(`/job-openings/${job.id}/editInterviewer`)
+                      }
+                    >
+                      Update Interviewer
+                    </button>
+
+                    <button
+                      className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
+                      onClick={() =>
+                        navigate(`/job-openings/${job.id}/editDocument`)
+                      }
+                    >
+                      Update Document
+                    </button>
                   </div>
                 </div>
               ))

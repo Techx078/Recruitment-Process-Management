@@ -22,7 +22,7 @@ namespace WebApis.Controllers.UserController.RecruiterController
                 .Include(i => i.User)
                     .ThenInclude(u => u.UserSkills)
                     .ThenInclude(s => s.Skill)
-                
+
                 .Select(i => new
                 {
                     i.Id,
@@ -39,7 +39,7 @@ namespace WebApis.Controllers.UserController.RecruiterController
                                 s.Skill.Name
                             })
                     },
-                   
+
                 })
                 .ToListAsync();
 
@@ -47,48 +47,66 @@ namespace WebApis.Controllers.UserController.RecruiterController
         }
         [HttpGet("{UserId}")]
         [Authorize(Roles = "Recruiter,Admin")]
+
         public async Task<IActionResult> GetRecruiterById(int UserId)
         {
-            var recruiter = await _db.Recruiter.Where(r => r.UserId == UserId).FirstOrDefaultAsync();
-            Console.WriteLine("Recruiter ID: " + recruiter?.Id);
+            var recruiter = await _db.Recruiter
+                .Where(r => r.UserId == UserId)
+                .FirstOrDefaultAsync();
+
+            if (recruiter == null)
+                return NotFound(new { Message = "Recruiter not found" });
+
             var CreatedJobOpenings = await _db.JobOpening
-                                    .AsNoTracking()
-                                    .Where(j => j.CreatedById == recruiter.Id )
-                                    .Select(j => new
-                                    {
-                                        j.Id,
-                                        j.Title,
-                                        j.Status,
-                                        j.Department,
-                                        j.JobType,
-                                        j.CreatedAt,
-                                        CandidateCount = j.JobCandidates.Count,
-                                        j.Experience,
-                                    })
-                                    .ToListAsync();
+                .AsNoTracking()
+                .Where(j => j.CreatedById == recruiter.Id)
+                .Select(j => new
+                {
+                    j.Id,
+                    j.Title,
+                    j.Status,
+                    j.Department,
+                    j.JobType,
+                    j.CreatedAt,
+                    CandidateCount = j.JobCandidates.Count,
+                    j.minDomainExperience,
+                    j.Domain
+                })
+                .ToListAsync();
 
             var recruiterDetail = await _db.Recruiter
-                .Where(r => r.Id == recruiter.Id )
-                .Include(i => i.User)
-                .Select(i => new
+                .Where(r => r.Id == recruiter.Id)
+                .Include(r => r.User)
+                    .ThenInclude(u => u.UserSkills)
+                        .ThenInclude(us => us.Skill)
+                .Select(r => new
                 {
-                    i.Id,
-                    i.Department,
+                    r.Id,
+                    r.Department,
+
                     User = new
                     {
-                        i.User.Id,
-                        i.User.FullName,
-                        i.User.Email,
-                        i.User.PhoneNumber,
+                        r.User.Id,
+                        r.User.FullName,
+                        r.User.Email,
+                        r.User.PhoneNumber,
+                        r.User.Domain,
+                        r.User.DomainExperienceYears,
+
+                        Skills = r.User.UserSkills.Select(us => new
+                        {
+                            UserSkillId = us.Id,
+                            SkillId = us.SkillId,
+                            SkillName = us.Skill.Name,
+                            SkillExperience = us.YearsOfExperience,
+                        }).ToList()
                     },
+
                     CreatedJobOpenings
                 })
                 .FirstOrDefaultAsync();
-            if (recruiterDetail == null)
-            {
-                return NotFound(new { Message = "Recruiter not found." });
-            }
+
             return Ok(recruiterDetail);
         }
     }
-}
+    }

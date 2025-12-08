@@ -43,7 +43,7 @@ export default function Navbar() {
                   Job-Openings
                 </Link>
                 <Link
-                  to={`/${authUser.role}/Profile`}
+                  to={`/${authUser.role}/Profile/${authUser.id}`}
                   className="block px-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
                 >
                   <i className="fa-solid fa-user"></i>

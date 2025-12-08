@@ -5,17 +5,19 @@ using WebApis.Data;
 
 namespace WebApis.Dtos.JobOpeningDto
 {
-    public class DocumentDto
+    public class jobDocumentDto
     {
         [Required]
         public int DocumentId { get; set; }
         public bool IsMandatory { get; set; } = true;
     }
 
-    public class SkillDto
+    public class jobSkillDto
     {
         [Required]
         public string SkillName { get; set; }
+
+        public int minExperience { get; set; } = 0;
 
         // true = Required, false = Preferred
         public bool IsRequired { get; set; } = true;
@@ -30,25 +32,27 @@ namespace WebApis.Dtos.JobOpeningDto
         [Required]
         public string Description { get; set; }
 
-       
-        public string? SalaryRange { get; set; }
-
         [Required]
-        public JobLocation Location { get; set; } = JobLocation.Remote;
+        public Domain Domain { get; set; }
+        public int minDomainExperience { get; set; } = 0;
+
+        public string SalaryRange { get; set; } = "not-specified";
+
+        
+        public JobLocation Location { get; set; } = JobLocation.OnSite;
 
         [Required]
         public Department Department { get; set; }
 
-        [Required]
+        
         public JobType JobType { get; set; } = JobType.FullTime;
 
-        [Required]
+        
         public EducationLevel Education { get; set; } = EducationLevel.Bachelors;
 
-        [Required]
+        
         public JobStatus Status { get; set; } = JobStatus.Open;
 
-        public string? Experience { get; set; } = "0"; // e.g. "2–5 years"
         public List<string>? Responsibilities { get; set; }
         public List<string>? Requirement { get; set; }
         //store like string in database
@@ -65,8 +69,42 @@ namespace WebApis.Dtos.JobOpeningDto
         [Required]
         public List<int> InterviewerIds { get; set; } = new();
 
-        public List<DocumentDto>? Documents { get; set; } = new();
+        [Required]
+        public List<jobDocumentDto> Documents { get; set; } = new();
 
-        public List<SkillDto>? JobSkills { get; set; } = new();
+        [Required]
+        public List<jobSkillDto>? JobSkills { get; set; } = new();
+    }
+    
+    public enum JobType
+    {
+        FullTime = 1,
+        PartTime = 2,
+        Contract = 3,
+        Internship = 4,
+        Temporary = 5
+    }
+
+    public enum EducationLevel
+    {
+        HighSchool = 1,
+        Diploma = 2,
+        Bachelors = 3,
+        Masters = 4,
+        Doctorate = 5,
+        Other = 6
+    }
+
+    public enum JobStatus
+    {
+        Open = 1,
+        Closed = 2,
+        OnHold = 3
+    }
+    public enum JobLocation
+    {
+        Remote = 1,
+        OnSite = 2,
+        Hybrid = 3
     }
 }

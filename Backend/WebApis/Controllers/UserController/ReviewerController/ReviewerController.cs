@@ -92,7 +92,8 @@ namespace WebApis.Controllers.UserController.ReviewerController
                             j.JobOpening.CreatedAt,
                             CandidateCount = j.JobOpening.JobCandidates.Count,
                             ReviewerCount = j.JobOpening.JobReviewers.Count,
-                            j.JobOpening.Experience,
+                            j.JobOpening.minDomainExperience,
+                            j.JobOpening.Domain
 
                         })
                 })

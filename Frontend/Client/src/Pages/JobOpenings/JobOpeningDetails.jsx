@@ -150,8 +150,14 @@ const JobOpeningDetails = () => {
           </div>
           <div>
             <p className="mb-2">
-              <span className="font-medium text-gray-800">Experience: </span>
-              {job.experience || "N/A"}
+              <span className="font-medium text-gray-800">Domain: </span>
+              {job.domain || "N/A"}
+            </p>
+            <p className="mb-2">
+              <span className="font-medium text-gray-800">
+                minDomainExperience:{" "}
+              </span>
+              {job.minDomainExperience || "N/A"}
             </p>
             <p className="mb-2">
               <span className="font-medium text-gray-800">Education: </span>
@@ -166,7 +172,6 @@ const JobOpeningDetails = () => {
           </div>
         </section>
 
-        
         {job.recruiter.userId == authUser.id ? (
           <div>
             {/* Reviewers */}
@@ -231,20 +236,30 @@ const JobOpeningDetails = () => {
         {job.jobSkills && job.jobSkills.length > 0 && (
           <section className="mb-6">
             <h2 className="text-lg text-start font-semibold text-gray-800 mb-2">
-              Key Skills
+              Key Skills & Experience <p className="text-sm">(Blue = Mandatory)</p>
             </h2>
             <div className="flex flex-wrap gap-2">
               {job.jobSkills.map((s) => (
-                <span
+                <div
                   key={s.skillId}
-                  className={`px-3 py-1 mt-4 rounded-full text-sm font-medium border ${
-                    s.isRequired
-                      ? "bg-indigo-100 text-indigo-700 border-indigo-300"
-                      : "bg-gray-100 text-gray-700 border-gray-300"
-                  }`}
+                  className="flex items-center space-x-3 mt-4"
                 >
-                  {s.name}
-                </span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      s.isRequired
+                        ? "bg-indigo-100 text-indigo-800 border border-indigo-300"
+                        : "bg-gray-100 text-gray-700 border border-gray-300"
+                    }`}
+                  >
+                    {s.name}
+                  </span>
+                  { s.minExperience > 0 ? (<span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200">
+
+                    {s.minExperience} {s.minExperience > 1 ? "years" : "year"}
+                  </span>):"" 
+                  }
+                  
+                </div>
               ))}
             </div>
           </section>

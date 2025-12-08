@@ -5,9 +5,11 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
 using System.Text.Json.Serialization;
+using WebApis.Dtos.JobOpeningDto;
 using WebApis.Repository;
 using WebApis.Service;
 using WebApis.Service.EmailService;
+using WebApis.Service.ValidationService;
 
 namespace WebApis
 {
@@ -34,6 +36,8 @@ namespace WebApis
 
             builder.Services.AddScoped<JwtService>();
             builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<ICommonValidator<JobOpeningDto>, JobOpeningValidator>();
+
 
             builder.Services.AddCors(options => options.AddPolicy("MyLocalPolicy", policy =>
             {

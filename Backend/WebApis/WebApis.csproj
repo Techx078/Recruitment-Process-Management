@@ -25,4 +25,8 @@
     <PackageReference Include="Scalar.AspNetCore" Version="2.9.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="NewFolder\" />
+  </ItemGroup>
+
 </Project>

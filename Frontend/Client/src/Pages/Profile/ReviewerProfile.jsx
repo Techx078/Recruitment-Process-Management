@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { fetchReviewerService } from "../../Services/ReviewerService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 export default function ReviewerProfile({}) {
+  let {reviewerId} = useParams();
   let [reviewer, setReviewer] = useState(null);
-
-  let { authUser } = useAuthUserContext();
   let navigate = useNavigate();
   useEffect(() => {
     let fetchReviewer = async () => {
-      let data = await fetchReviewerService(localStorage.getItem("token"), authUser.id);
+      let data;
+      data = await fetchReviewerService(localStorage.getItem("token"), reviewerId);
       setReviewer(data);
     };
     fetchReviewer();
@@ -72,7 +72,10 @@ export default function ReviewerProfile({}) {
                         Department: {job.department}
                       </p>
                       <p className="text-gray-600">
-                        Experience: {job.experience}
+                        Domain: {job.domain}
+                      </p>
+                      <p className="text-gray-600">
+                        Experience: {job.minDomainExperience}
                       </p>
                       <p className="text-gray-600">
                         Created: {new Date(job.createdAt).toLocaleDateString()}

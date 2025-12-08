@@ -6,6 +6,7 @@ using System.Text.Json;
 using WebApis.Data;
 using WebApis.Dtos.JobOpeningDto;
 using WebApis.Repository;
+using WebApis.Service.ValidationService;
 
 namespace WebApis.Controllers
 {
@@ -21,6 +22,7 @@ namespace WebApis.Controllers
         private readonly ICommonRepository<JobDocument> _jobDocumentRepository;
         private readonly ICommonRepository<JobSkill> _jobSkillRepository;
         private readonly ICommonRepository<Skill> _skillRepository;
+        private readonly ICommonValidator<JobOpeningDto> _jobOpeningDtoValidator;
 
         public JobOpeningController(
             AppDbContext db,
@@ -30,7 +32,8 @@ namespace WebApis.Controllers
             ICommonRepository<JobDocument> jobDocumentRepository,
             ICommonRepository<JobInterviewer> jobInterviewerRepository,
             ICommonRepository<JobSkill> jobSkillRepository,
-            ICommonRepository<Skill> skillRepository
+            ICommonRepository<Skill> skillRepository,
+            ICommonValidator<JobOpeningDto> jobOpeningDtoValidator
         )
         {
             _db = db;
@@ -41,6 +44,7 @@ namespace WebApis.Controllers
             _jobDocumentRepository = jobDocumentRepository;
             _jobSkillRepository = jobSkillRepository;
             _skillRepository = skillRepository;
+            _jobOpeningDtoValidator = jobOpeningDtoValidator;
         }
 
         //create job listing with linked reviewers, interviewers, and documents
@@ -49,6 +53,12 @@ namespace WebApis.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> CreateJobOpening([FromBody] JobOpeningDto dto)
         {
+            
+            var validation = await _jobOpeningDtoValidator.ValidateAsync(dto);
+
+            if (!validation.IsValid)
+                return BadRequest(validation.Errors);
+
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null)
                 return Unauthorized(new { message = "User is not authorized." });
@@ -60,43 +70,6 @@ namespace WebApis.Controllers
             
             if (recruiter == null)
                 return BadRequest(new { message = "Recruiter does not exist." });
-
-            // Validate Reviewers
-            if (dto.ReviewerIds != null && dto.ReviewerIds.Any())
-            {
-                var existingReviewerIds = await _db.Reviewers
-                    .Where(r => dto.ReviewerIds.Contains(r.Id))
-                    .Select(r => r.Id)
-                    .ToListAsync();
-
-                if (existingReviewerIds.Count != dto.ReviewerIds.Count)
-                    return BadRequest(new { message = "Some reviewer IDs do not exist." });
-            }
-
-            // Validate Interviewers
-            if (dto.InterviewerIds != null && dto.InterviewerIds.Any())
-            {
-                var existingInterviewerIds = await _db.Interviewers
-                    .Where(i => dto.InterviewerIds.Contains(i.Id))
-                    .Select(i => i.Id)
-                    .ToListAsync();
-
-                if (existingInterviewerIds.Count != dto.InterviewerIds.Count)
-                    return BadRequest(new { message = "Some interviewer IDs do not exist." });
-            }
-
-            // Validate Documents
-            if (dto.Documents != null && dto.Documents.Any())
-            {
-                var documentIds = dto.Documents.Select(d => d.DocumentId).ToList();
-                var existingDocumentIds = await _db.Documents
-                    .Where(d => documentIds.Contains(d.id))
-                    .Select(d => d.id)
-                    .ToListAsync();
-
-                if (existingDocumentIds.Count != documentIds.Count)
-                    return BadRequest(new { message = "Some document IDs do not exist." });
-            }
 
             //  Create JobOpening entity
             var job = new JobOpening
@@ -115,13 +88,14 @@ namespace WebApis.Controllers
                     : null,
 
                 SalaryRange = dto.SalaryRange,
-                Experience = dto.Experience,
+                minDomainExperience = dto.minDomainExperience,
+                Domain = dto.Domain.ToString(),
                 DeadLine = dto.DeadLine,
-                Location = dto.Location,
-                Department = dto.Department,
-                JobType = dto.JobType,
-                Education = dto.Education,
-                Status = dto.Status,
+                Location = dto.Location.ToString(),
+                Department = dto.Department.ToString(),
+                JobType = dto.JobType.ToString(),
+                Education = dto.Education.ToString(),
+                Status = dto.Status.ToString(),
                 CreatedById = recruiter.Id,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -191,7 +165,8 @@ namespace WebApis.Controllers
                     {
                         JobOpeningId = job.Id,
                         SkillId = skillTemp.SkillId,
-                        IsRequired = skill.IsRequired
+                        IsRequired = skill.IsRequired,
+                        minExperience = skill.minExperience
                     });
                 }
             }
@@ -200,8 +175,9 @@ namespace WebApis.Controllers
 
             return Ok(new
             {
+
                 message = "Job opening created successfully with all linked entities.",
-                jobId = job.Id
+                job.Id
             });
         }
 
@@ -234,7 +210,8 @@ namespace WebApis.Controllers
                     j.Location,
                     j.Department,
                     j.JobType,
-                    j.Experience,
+                    j.minDomainExperience,
+                    j.Domain,
                     j.Status,
                     j.DeadLine,
                     j.CreatedAt,
@@ -269,7 +246,8 @@ namespace WebApis.Controllers
                     {
                         s.Skill.SkillId,
                         s.Skill.Name,
-                        s.IsRequired
+                        s.IsRequired,
+                        s.minExperience
                     })
                 })
                 .ToListAsync();
@@ -295,6 +273,7 @@ namespace WebApis.Controllers
              .Include(j => j.JobDocuments)
                  .ThenInclude(jd => jd.Document)
              .Include(j => j.CreatedBy)
+             .Include(j => j.JobSkills)
              .Select(j => new
              {
                  j.Id,
@@ -308,7 +287,8 @@ namespace WebApis.Controllers
                  j.Location,
                  j.Department,
                  j.JobType,
-                 j.Experience,
+                 j.minDomainExperience,
+                 j.Domain,
                  j.Status,
                  j.DeadLine,
                  j.CreatedAt,
@@ -343,7 +323,8 @@ namespace WebApis.Controllers
                  {
                      s.Skill.SkillId,
                      s.Skill.Name,
-                     s.IsRequired
+                     s.IsRequired,
+                     s.minExperience
                  })
              })
              .FirstOrDefaultAsync();
@@ -354,11 +335,11 @@ namespace WebApis.Controllers
         //update fields by recruiter only
         [HttpPut("{id}/fields")]
         [Authorize(Roles = "Recruiter")]
-        public async Task<IActionResult> UpdateJobOpeningFields(int id, [FromBody] JobOpeningDto dto)
+        public async Task<IActionResult> UpdateJobOpeningFields(int id, [FromBody] JobOpeningUpdateDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-            
+
             var job = await _jobOpeningRepository.GetByFilterAsync(j => j.Id == id);
             if (job == null)
                 return NotFound(new { message = "Job not found." });
@@ -379,12 +360,13 @@ namespace WebApis.Controllers
             job.Title = dto.Title;
             job.Description = dto.Description;
             job.SalaryRange = dto.SalaryRange;
-            job.Location = dto.Location;
-            job.Department = dto.Department;
-            job.JobType = dto.JobType;
-            job.Education = dto.Education;
-            job.Status = dto.Status;
-            job.Experience = dto.Experience;
+            job.Location = dto.Location.ToString();
+            job.Department = dto.Department.ToString();
+            job.JobType = dto.JobType.ToString();
+            job.Education = dto.Education.ToString();
+            job.Status = dto.Status.ToString();
+            job.minDomainExperience = dto.minDomainExperience;
+            job.Domain = dto.Domain.ToString();
             job.DeadLine = dto.DeadLine;
 
             job.Responsibilities = dto.Responsibilities != null
@@ -407,109 +389,24 @@ namespace WebApis.Controllers
 
             return Ok(new { message = "Job fields updated successfully." });
         }
-
-        ////update specific field of a job listing
-        [HttpPatch("update-field/{id}")]
-        [Authorize(Roles = "Recruiter")]
-        public async Task<IActionResult> UpdateJobField(int id, [FromBody] Dictionary<string, object> update)
-        {
-            var job = await _jobOpeningRepository.GetByFilterAsync(j => j.Id == id);
-          
-            if (job == null)
-                return NotFound(new { message = "Job not found." });
-
-            var field = update.Keys.FirstOrDefault();
-            var value = update.Values.FirstOrDefault();
-
-            if (string.IsNullOrEmpty(field))
-                return BadRequest(new { message = "No field provided." });
-
-
-            switch (field.ToLower())
-            {
-                case "title":
-                    job.Title = value?.ToString();
-                    break;
-
-                case "description":
-                    job.Description = value?.ToString();
-                    break;
-
-                case "salaryrange":
-                    job.SalaryRange = value?.ToString();
-                    break;
-
-                case "status":
-
-                    if (!int.TryParse(value?.ToString(), out int statusValue))
-                        return BadRequest(new { message = "Status must be a valid numeric value." });
-                    if (!Enum.IsDefined(typeof(JobStatus), statusValue))
-                        return BadRequest(new { message = $"Invalid status value." });
-                    job.Status = (JobStatus)statusValue;
-                    break;
-
-                case "location":
-                    if (!int.TryParse(value?.ToString(), out int locationValue))
-                        return BadRequest(new { message = "Location must be a valid numeric value." });
-
-                    if (!Enum.IsDefined(typeof(JobLocation), locationValue))
-                        return BadRequest(new { message = $"Invalid location value)"});
-                    job.Location = (JobLocation)locationValue;
-                    break;
-
-                case "department":
-                    if (!int.TryParse(value?.ToString(), out int departmentValue))
-                        return BadRequest(new { message = "Department must be a valid numeric value." });
-
-                    if (!Enum.IsDefined(typeof(Department), departmentValue))
-                        return BadRequest(new { message = $"Invalid department value" });
-                    job.Department = (Department)departmentValue;
-                    break;
-
-                case "education":
-                    if (!int.TryParse(value?.ToString(), out int educationValue))
-                        return BadRequest(new { message = "Education must be a valid numeric value." });
-
-                    if (!Enum.IsDefined(typeof(EducationLevel), educationValue))
-                        return BadRequest(new { message = $"Invalid education value" });
-                    job.Education = (EducationLevel)educationValue;
-                    break;
-
-                case "jobtype":
-                    if(!int.TryParse(value?.ToString(), out int jobTypeValue))
-                    return BadRequest(new { message = "JobType must be a valid numeric value." });
-
-                    if (!Enum.IsDefined(typeof(JobType), jobTypeValue))
-                        return BadRequest(new { message = $"Invalid job type value" });
-                    job.JobType = (JobType)jobTypeValue;
-                    break;
-
-                //  Serialize list fields into JSON
-                case "benefits":
-                    job.Benefits =JsonSerializer.Serialize(value);
-                    break;
-
-                case "requirement":
-                    job.Requirement = JsonSerializer.Serialize(value); 
-                    break;
-                case "responsibilities":
-                    job.Responsibilities = JsonSerializer.Serialize(value);
-                    break;
-                default:
-                    return BadRequest(new { message = $"Unsupported field update: {field}" });
-            }
-
-            job.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync();
-
-            return Ok(new { message = $"Job field '{field}' updated successfully." });
-        }
-
+      
         ////update job reviewers linked to a job listing
         [HttpPatch("update-reviewers/{id}")]
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> UpdateJobReviewers(int id, [FromBody] List<int> reviewerIds)
         {
+            if (id <= 0)
+                return BadRequest(new { message = "Invalid Job ID." });
+
+            if (reviewerIds == null)
+                return BadRequest(new { message = "reviewer list cannot be null." });
+
+            if (!reviewerIds.Any())
+                return BadRequest(new { message = "At least one reviewer must be selected." });
+
+            if (reviewerIds.Count != reviewerIds.Distinct().Count())
+                return BadRequest(new { message = "Duplicate reviewer IDs are not allowed." });
+
             var job = await _db.JobOpening
                 .Include(j => j.JobReviewers)
                 .FirstOrDefaultAsync(j => j.Id == id);
@@ -544,6 +441,18 @@ namespace WebApis.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> UpdateJobInterviewers(int id, [FromBody] List<int> interviewerIds)
         {
+            if (id <= 0)
+                return BadRequest(new { message = "Invalid Job ID." });
+
+            if (interviewerIds == null)
+                return BadRequest(new { message = "Interviewer list cannot be null." });
+
+            if (!interviewerIds.Any())
+                return BadRequest(new { message = "At least one interviewer must be selected." });
+
+            if (interviewerIds.Count != interviewerIds.Distinct().Count())
+                return BadRequest(new { message = "Duplicate interviewer IDs are not allowed." });
+
             var job = await _db.JobOpening
                 .Include(j => j.JobInterviewers)
                 .FirstOrDefaultAsync(j => j.Id == id);
@@ -574,7 +483,7 @@ namespace WebApis.Controllers
         //update job documents linked to a job listing
         [HttpPatch("update-documents/{id}")]
         [Authorize(Roles = "Recruiter")]
-        public async Task<IActionResult> UpdateJobDocuments(int id, [FromBody] List<DocumentDto> documents)
+        public async Task<IActionResult> UpdateJobDocuments(int id, [FromBody] List<jobDocumentDto> documents)
         {
             var job = await _db.JobOpening
                 .Include(j => j.JobDocuments)
@@ -607,9 +516,9 @@ namespace WebApis.Controllers
         }
 
         //update job skills linked to a job listing
-        [HttpPatch("{id}/skills")]
+        [HttpPatch("update-skills/{id}")]
         [Authorize(Roles = "Recruiter")]
-        public async Task<IActionResult> UpdateJobSkills(int id, [FromBody] List<SkillDto> skills)
+        public async Task<IActionResult> UpdateJobSkills(int id, [FromBody] List<jobSkillDto> skills)
         {
             var job = await _db.JobOpening
                 .Include(j => j.JobSkills)
@@ -643,7 +552,8 @@ namespace WebApis.Controllers
             {
                 JobOpeningId = job.Id,
                 SkillId = existingSkills.First(es => es.Name.Equals(s.SkillName, StringComparison.OrdinalIgnoreCase)).SkillId,
-                IsRequired = s.IsRequired
+                IsRequired = s.IsRequired,
+                minExperience = s.minExperience
             }).ToList();
 
             await _db.SaveChangesAsync();

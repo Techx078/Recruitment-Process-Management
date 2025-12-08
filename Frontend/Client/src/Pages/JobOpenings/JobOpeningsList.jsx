@@ -204,7 +204,11 @@ const JobOpeningsList = () => {
                 </p>
                  <p className="text-sm text-gray-700">
                   <span className="font-medium">Experience:</span>{" "}
-                  {job.experience || "Not Disclosed"}
+                  {job.minDomainExperience || "Not Disclosed"}
+                </p>
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">Domain:</span>{" "}
+                  {job.domain || "Not Disclosed"}
                 </p>
                 <p className="text-sm text-gray-700">
                   <span className="font-medium">Job Type:</span>{" "}

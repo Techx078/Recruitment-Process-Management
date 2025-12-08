@@ -8,8 +8,7 @@ namespace WebApis.Dtos.JobOpeningDto
     public class JobOpeningUpdateDto
     {
       
-        public class JobOpeningFieldUpdateDto
-        {
+        
             // --- Basic Fields ---
 
             [Required]
@@ -35,10 +34,12 @@ namespace WebApis.Dtos.JobOpeningDto
             [Required]
             public JobStatus Status { get; set; }
 
-            public string? Experience { get; set; }   // e.g. "2–5 years"
+        [Required]
+        public Domain Domain { get; set; }
+        public int minDomainExperience { get; set; } = 0;  // e.g. "2–5 years"
 
-            // --- JSON List Fields ---
-            public List<string>? Responsibilities { get; set; }
+        // --- JSON List Fields ---
+        public List<string>? Responsibilities { get; set; }
 
             public List<string>? Requirement { get; set; }
 
@@ -47,7 +48,7 @@ namespace WebApis.Dtos.JobOpeningDto
             // --- Deadline ---
             [Required]
             public DateTime DeadLine { get; set; }
-        }
+        
     }
 }
 

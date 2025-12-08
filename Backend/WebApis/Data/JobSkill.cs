@@ -9,6 +9,8 @@
         // Flag for whether it’s required or preferred
         public bool IsRequired { get; set; } = true;
 
+        public int minExperience { get; set; }
+
         // Navigation properties
         public JobOpening JobOpening { get; set; }
         public Skill Skill { get; set; }

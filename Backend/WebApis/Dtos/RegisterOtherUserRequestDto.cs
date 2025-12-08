@@ -11,21 +11,24 @@
         public Domain Domain { get; set; }
         public decimal DomainExperienceYears { get; set; }
 
-        public DepartmentEnum Department { get; set; }
+        public Department Department { get; set; }
 
         public List<SkillsDto>? Skills { get; set; }
   
     }
-        public enum DepartmentEnum
+        public enum Department
         {
-            IT,
-            HR,
-            Finance,
-            Marketing,
-            Sales,
-            Operations,
-            Administration,
-            Support
+            SoftwareDevelopment = 1,
+            DataScience = 2,
+            QualityAssurance = 3,
+            DevOps = 4,
+            CyberSecurity = 5,
+            ITSupport = 6,
+            ProductManagement = 7,
+            HR = 8,
+            Sales = 9,
+            Marketing = 10,
+            Finance = 11,
+            Operations = 12,
         }
-
 }

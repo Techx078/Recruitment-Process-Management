@@ -56,7 +56,7 @@ namespace WebApis.Controllers.UserController.InteviewerController
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Interviewer")]
+        [Authorize(Roles = "Reviewer,Admin,Recruiter,Interviewer")]
         public async Task<IActionResult> GetInterviewerById(int id)
         {
             var interviewer = await _db.Interviewers
@@ -88,7 +88,8 @@ namespace WebApis.Controllers.UserController.InteviewerController
                             j.JobOpening.CreatedAt,
                             CandidateCount = j.JobOpening.JobCandidates.Count,
                             InterviewerCount = j.JobOpening.JobInterviewers.Count,
-                            j.JobOpening.Experience,
+                            j.JobOpening.minDomainExperience,
+                            j.JobOpening.Domain
                             
                         })
                 })

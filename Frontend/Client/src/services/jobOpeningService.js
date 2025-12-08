@@ -35,13 +35,11 @@ export const getJobOpeningById = async (id, token) => {
 
 export const getAllSkills = async (token) => {
   try {
-    const response = await axios.get(`http://localhost:5233/api/Skill/All`,
-      {
+    const response = await axios.get(`http://localhost:5233/api/Skill/All`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }
-    );
+    });
     return response.data;
   } catch (error) {
     console.error("Error in fetching skills:", error);
@@ -51,13 +49,11 @@ export const getAllSkills = async (token) => {
 
 export const getAllReviewers = async (token) => {
   try {
-    const response = await axios.get(`http://localhost:5233/api/Reviewer/All`,
-      {
+    const response = await axios.get(`http://localhost:5233/api/Reviewer/All`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }
-    );
+    });
     return response.data;
   } catch (error) {
     console.error("Error in fetching reviewers:", error);
@@ -70,10 +66,10 @@ export const getAllInterviewers = async (token) => {
     const response = await axios.get(
       `http://localhost:5233/api/Interviewer/All`,
       {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
     return response.data;
   } catch (error) {
@@ -84,13 +80,11 @@ export const getAllInterviewers = async (token) => {
 
 export const getAllDocuments = async (token) => {
   try {
-    const response = await axios.get(`http://localhost:5233/api/Document/All`,
-      {
+    const response = await axios.get(`http://localhost:5233/api/Document/All`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }
-    );
+    });
     return response.data;
   } catch (error) {
     console.error("Error in fetching documents:", error);
@@ -128,6 +122,86 @@ export const updateJobFields = async (id, data, token) => {
   } catch (error) {
     throw new Error(
       error.response.data.message || "Failed to update job opening."
+    );
+  }
+};
+
+export const updateJobReviewers = async (id, reviewerIds, token) => {
+  try {
+    const res = await axios.patch(
+      `${API_BASE_URL}/update-reviewers/${id}`,
+      reviewerIds,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  } catch (error) {
+    console.log(error);
+
+    throw new Error(
+      error.response.data.message || "Failed to reviewer job opening."
+    );
+  }
+};
+
+export const updateJobInterviewers = async (id, interviewerIds, token) => {
+  try {
+    const res = await axios.patch(
+      `${API_BASE_URL}/update-interviewers/${id}`,
+      interviewerIds,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  } catch (error) {
+    throw new Error(
+      error.response.data.message || "Failed to update Interviewer opening."
+    );
+  }
+};
+
+export const updateJobDocument = async (id, documents, token) => {
+  try {
+    const res = await axios.patch(
+      `${API_BASE_URL}/update-documents/${id}`,
+      documents,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  } catch (error) {
+    throw new Error(
+      error.response.data.message || "Failed to update Interviewer opening."
+    );
+  }
+};
+
+export const updateJobSkill = async (id, skills, token) => {
+  try {
+    const res = await axios.patch(
+      `${API_BASE_URL}/update-skills/${id}`,
+      skills,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  } catch (error) {
+    console.log(error);
+    
+    throw new Error(
+      error.response.data.message || "Failed to update Interviewer opening."
     );
   }
 };
