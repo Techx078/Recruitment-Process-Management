@@ -24,11 +24,6 @@ namespace WebApis.Controllers.UserController.ReviewerController
         public async Task<IActionResult> GetAllReviewer()
         {
             var reviewers = await _db.Reviewers
-                            .Include(r => r.User)
-                                .ThenInclude(u => u.UserSkills)
-                                .ThenInclude(s => s.Skill)
-                            .Include(r => r.JobReviewers)
-                                .ThenInclude(Jr => Jr.JobOpening)
                             .Select(r => new
                             {
                                 r.Id,
@@ -64,40 +59,41 @@ namespace WebApis.Controllers.UserController.ReviewerController
         public async Task<IActionResult> GetReviewerById(int id)
         {
             var reviewer = await _db.Reviewers
-                .Include(i => i.User)
-                .Include(i => i.JobReviewers)
-                    .ThenInclude(ji => ji.JobOpening)
-                 .Include(i => i.JobReviewers)
-                    .ThenInclude(ji => ji.JobOpening)
-                .Where(i => i.UserId == id)
-                .Select(i => new
-                {
-                    i.Id,
-                    i.Department,
-                    User = new
-                    {
-                        i.User.Id,
-                        i.User.FullName,
-                        i.User.Email,
-                        i.User.PhoneNumber,
-                    },
-                    AssignedJobOpenings = i.JobReviewers
-                        .Select(j => new
-                        {
-                            j.JobOpeningId,
-                            j.JobOpening.Title,
-                            j.JobOpening.Status,
-                            j.JobOpening.Department,
-                            j.JobOpening.JobType,
-                            j.JobOpening.CreatedAt,
-                            CandidateCount = j.JobOpening.JobCandidates.Count,
-                            ReviewerCount = j.JobOpening.JobReviewers.Count,
-                            j.JobOpening.minDomainExperience,
-                            j.JobOpening.Domain
+                         .Where(i => i.UserId == id)
+                         .Select(i => new ReviewerInterviewerDetailsDto
+                         {
+                             Id = i.Id,
+                             Department = i.Department,
 
-                        })
-                })
-                .FirstOrDefaultAsync();
+                             User = new UserDto
+                             {
+                                 Id = i.User.Id,
+                                 FullName = i.User.FullName,
+                                 Email = i.User.Email,
+                                 PhoneNumber = i.User.PhoneNumber,
+                                 Domain = i.User.Domain,
+                                 DomainExperienceYears = i.User.DomainExperienceYears
+                             },
+                             AssignedJobOpenings = i.JobReviewers
+                                 .Select(j => new AssignedJobOpeningDto
+                                 {
+                                     JobOpeningId = j.JobOpeningId,
+                                     Title = j.JobOpening.Title,
+                                     Status = j.JobOpening.Status,
+                                     Department = j.JobOpening.Department,
+                                     JobType = j.JobOpening.JobType,
+                                     CreatedAt = j.JobOpening.CreatedAt,
+
+                                     CandidateCount = j.JobOpening.JobCandidates.Count,
+                                     ReviewerCount = j.JobOpening.JobReviewers.Count,
+
+                                     MinDomainExperience = j.JobOpening.minDomainExperience,
+                                     Domain = j.JobOpening.Domain
+                                 })
+                                 .ToList()
+                         })
+                         .FirstOrDefaultAsync();
+
             if (reviewer == null)
             {
                 return NotFound(new { Message = "Reviewer not found." });

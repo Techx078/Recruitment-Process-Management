@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerCandidate } from "../../Services/authService";
-
+import { getAllSkills } from "../../Services/JobOpeningService";
 export default function CandidateRegister() {
   const [formData, setFormData] = useState({
     fullName: "",
@@ -13,6 +13,7 @@ export default function CandidateRegister() {
     Domain: "",
     DomainExperienceYears: 0,
   });
+  const [allSkills, setAllSkills] = useState([]);
   const [educations, setEducations] = useState([
     {
       degree: "",
@@ -22,6 +23,14 @@ export default function CandidateRegister() {
       percentage: "",
     },
   ]);
+    useEffect(() => {
+      loadData();
+    }, []);
+  
+    async function loadData() {
+      let token = localStorage.getItem("token");
+      setAllSkills(await getAllSkills(token));
+    }
 
   const [skills, setSkills] = useState([{ name: "", experience: "" }]);
   const [resumeFile, setResumeFile] = useState(null);
@@ -405,7 +414,9 @@ export default function CandidateRegister() {
             </select>
           </div>
           <div>
-            <label className="block text-gray-700 mb-1">Domain-Experience</label>
+            <label className="block text-gray-700 mb-1">
+              Domain-Experience
+            </label>
             <input
               name="DomainExperienceYears"
               type="number"
@@ -418,18 +429,22 @@ export default function CandidateRegister() {
 
           <div className="col-span-2">
             <label className="block text-gray-700 mb-2">Skills</label>
-
             {skills.map((skill, index) => (
               <div key={index} className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  placeholder="Skill Name (e.g. React)"
+                <select
                   value={skill.name}
                   onChange={(e) =>
                     handleSkillChange(index, "name", e.target.value)
                   }
                   className="w-1/2 border border-gray-300 rounded-lg p-2"
-                />
+                >
+                  <option value="">select skill</option>
+                  {allSkills.map((skillOption) => (
+                  <option key={skillOption.id} value={skillOption.name}>
+                    {skillOption.name}
+                  </option>
+                  ))}
+                </select>
                 <input
                   type="number"
                   placeholder="Experience (in years)"

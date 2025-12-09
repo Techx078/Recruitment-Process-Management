@@ -19,10 +19,6 @@ namespace WebApis.Controllers.UserController.RecruiterController
         public async Task<IActionResult> GetAllRecruiters()
         {
             var Recruiters = await _db.Recruiter
-                .Include(i => i.User)
-                    .ThenInclude(u => u.UserSkills)
-                    .ThenInclude(s => s.Skill)
-
                 .Select(i => new
                 {
                     i.Id,
@@ -76,9 +72,6 @@ namespace WebApis.Controllers.UserController.RecruiterController
 
             var recruiterDetail = await _db.Recruiter
                 .Where(r => r.Id == recruiter.Id)
-                .Include(r => r.User)
-                    .ThenInclude(u => u.UserSkills)
-                        .ThenInclude(us => us.Skill)
                 .Select(r => new
                 {
                     r.Id,

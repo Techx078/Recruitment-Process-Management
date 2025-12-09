@@ -109,8 +109,8 @@ export default function CandidateBulkRegister() {
 
         <pre className="text-sm bg-white p-3 rounded border mb-3">
           BasicDetails.xlsx: FullName | Email | PhoneNumber | Password |
-          LinkedInProfile | GitHubProfile{" "}
-          <div>| ResumePath(google drive links)</div>
+          LinkedInProfile | GitHubProfile{" "} 
+          <div>| ResumePath(google drive links) | Domain | DomainExperienceYears |</div>
         </pre>
 
         <pre className="text-sm bg-white p-3 rounded border mb-3">

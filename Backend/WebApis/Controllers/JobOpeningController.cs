@@ -189,15 +189,6 @@ namespace WebApis.Controllers
         public async Task<IActionResult> GetAllJobOpenings()
         {
             var jobs = await _db.JobOpening
-                .Include(j => j.JobReviewers)
-                    .ThenInclude(jr => jr.Reviewer)
-                    .ThenInclude(r => r.User)
-                .Include(j => j.JobInterviewers)
-                    .ThenInclude(ji => ji.Interviewer)
-                    .ThenInclude(i => i.User)
-                .Include(j => j.JobDocuments)
-                    .ThenInclude(jd => jd.Document)
-                .Include(j => j.CreatedBy)
                 .Select(j => new
                 {
                     j.Id,
@@ -264,16 +255,6 @@ namespace WebApis.Controllers
         {
             var jobOpening = await _db.JobOpening
              .Where(j => j.Id == id)
-             .Include(j => j.JobReviewers)
-                 .ThenInclude(jr => jr.Reviewer)
-                 .ThenInclude(r => r.User)
-             .Include(j => j.JobInterviewers)
-                 .ThenInclude(ji => ji.Interviewer)
-                 .ThenInclude(i => i.User)
-             .Include(j => j.JobDocuments)
-                 .ThenInclude(jd => jd.Document)
-             .Include(j => j.CreatedBy)
-             .Include(j => j.JobSkills)
              .Select(j => new
              {
                  j.Id,

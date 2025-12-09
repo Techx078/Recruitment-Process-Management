@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApis.Data;
+using WebApis.Dtos;
 
 
 namespace WebApis.Controllers.UserController.InteviewerController
@@ -22,11 +23,6 @@ namespace WebApis.Controllers.UserController.InteviewerController
         public async Task<IActionResult> GetAllInterviewers()
         {
             var interviewers = await _db.Interviewers
-                .Include(i => i.User)
-                    .ThenInclude(u => u.UserSkills)
-                    .ThenInclude(s => s.Skill)
-                .Include(i => i.JobInterviewers)
-                    .ThenInclude(ji => ji.JobOpening)
                 .Select(i => new
                 {
                     i.Id,
@@ -60,40 +56,40 @@ namespace WebApis.Controllers.UserController.InteviewerController
         public async Task<IActionResult> GetInterviewerById(int id)
         {
             var interviewer = await _db.Interviewers
-                .Include(i => i.User)
-                .Include(i => i.JobInterviewers)
-                    .ThenInclude(ji => ji.JobOpening)
-                 .Include(i => i.JobInterviewers)
-                    .ThenInclude( ji => ji.JobOpening)
                 .Where(i => i.UserId == id)
-                .Select(i => new
+                .Select(i => new ReviewerInterviewerDetailsDto
                 {
-                    i.Id,
-                    i.Department,
-                    User = new
+                    Id = i.Id,
+                    Department = i.Department,
+
+                    User = new UserDto
                     {
-                        i.User.Id,
-                        i.User.FullName,
-                        i.User.Email,
-                        i.User.PhoneNumber,
+                        Id = i.User.Id,
+                        FullName = i.User.FullName,
+                        Email = i.User.Email,
+                        PhoneNumber = i.User.PhoneNumber,
+                        Domain = i.User.Domain,
+                        DomainExperienceYears = i.User.DomainExperienceYears,
                     },
+
                     AssignedJobOpenings = i.JobInterviewers
-                        .Select(j => new
+                        .Select(j => new AssignedJobOpeningDto
                         {
-                            j.JobOpeningId,
-                            j.JobOpening.Title,
-                            j.JobOpening.Status,
-                            j.JobOpening.Department,
-                            j.JobOpening.JobType,
-                            j.JobOpening.CreatedAt,
+                            JobOpeningId = j.JobOpeningId,
+                            Title = j.JobOpening.Title,
+                            Status = j.JobOpening.Status,
+                            Department = j.JobOpening.Department,
+                            JobType = j.JobOpening.JobType,
+                            CreatedAt = j.JobOpening.CreatedAt,
                             CandidateCount = j.JobOpening.JobCandidates.Count,
                             InterviewerCount = j.JobOpening.JobInterviewers.Count,
-                            j.JobOpening.minDomainExperience,
-                            j.JobOpening.Domain
-                            
+                            MinDomainExperience = j.JobOpening.minDomainExperience,
+                            Domain = j.JobOpening.Domain
                         })
+                      .ToList()
                 })
                 .FirstOrDefaultAsync();
+
             if (interviewer == null)
             {
                 return NotFound();
