@@ -14,10 +14,14 @@
         public string Status { get; set; } // e.g. "Applied", "Reviewed", "Shortlisted", "Interviewing", "Rejected", "Selected"
         public string? ReviewerComment { get; set; }
 
+        public int RoundNumber { get; set; } = 0;
+
+        public int? ReviewerId {  get; set; }
+        public Reviewer? Reviewer { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
         // Navigation property to JobInterviews
-        public ICollection<JobInterview> JobInterviews { get; set; }
+        public ICollection<JobInterview>? JobInterviews { get; set; }
     }
 }
