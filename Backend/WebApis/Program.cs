@@ -5,11 +5,15 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
 using System.Text.Json.Serialization;
+using WebApis.Dtos.JobCandidateDtos;
 using WebApis.Dtos.JobOpeningDto;
 using WebApis.Repository;
+using WebApis.Repository.JobCandidateRepository;
 using WebApis.Service;
 using WebApis.Service.EmailService;
 using WebApis.Service.ValidationService;
+using WebApis.Service.ValidationService.JobCandidateValidator;
+using WebApis.Service.ValidationService.JobOpeningValidator;
 
 namespace WebApis
 {
@@ -20,6 +24,8 @@ namespace WebApis
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddScoped(typeof(ICommonRepository<>), typeof(CommonRepository<>));
+            builder.Services.AddScoped<IJobCandidateRepository, JobCandidateRepository>();
+            builder.Services.AddScoped<ICommonValidator<JobCandidateCreateDto>, JobCandidateCreateValidator>();
             // Add services to the container.
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>
@@ -37,7 +43,7 @@ namespace WebApis
             builder.Services.AddScoped<JwtService>();
             builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<ICommonValidator<JobOpeningDto>, JobOpeningValidator>();
-
+            
 
             builder.Services.AddCors(options => options.AddPolicy("MyLocalPolicy", policy =>
             {

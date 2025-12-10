@@ -11,7 +11,7 @@
         public Candidate Candidate { get; set; }
 
         public string CvPath { get; set; }
-        public string Status { get; set; } // e.g. "Applied", "Reviewed", "Shortlisted", "Interviewing", "Rejected", "Selected"
+        public string Status { get; set; } // e.g. "Applied", "Reviewed", "ScheduledInterview", "WaitForInterview", "Rejected","Shortlisted" "Selected"
         public string? ReviewerComment { get; set; }
 
         public int RoundNumber { get; set; } = 0;
@@ -20,7 +20,9 @@
         public Reviewer? Reviewer { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-
+        public bool IsNextTechnicalRound { get; set; }
+        public bool IsNextHrRound { get; set; }
+      
         // Navigation property to JobInterviews
         public ICollection<JobInterview>? JobInterviews { get; set; }
     }

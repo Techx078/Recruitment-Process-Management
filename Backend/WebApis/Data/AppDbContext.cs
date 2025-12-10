@@ -32,6 +32,10 @@ namespace WebApis.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<JobCandidate>()
+                        .HasIndex(j => new { j.JobOpeningId, j.CandidateId })
+                        .IsUnique();
+
             modelBuilder.Entity<User>()
                 .Property(u => u.Domain)
                 .HasConversion<string>();   

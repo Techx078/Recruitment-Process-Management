@@ -18,10 +18,6 @@
         public int? Marks { get; set; }
         public string? Feedback { get; set; }
 
-        public bool IsNextRound { get; set; }
-        public bool IsHrRound { get; set; }
-        public bool IsRejected { get; set; }
-
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WebApis.Data;
 
@@ -11,9 +12,11 @@ using WebApis.Data;
 namespace WebApis.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251210114544_Prevention_Of_Dublicate_jobCandidate")]
+    partial class Prevention_Of_Dublicate_jobCandidate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -163,12 +166,6 @@ namespace WebApis.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsNextHrRound")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsNextTechnicalRound")
-                        .HasColumnType("bit");
-
                     b.Property<int>("JobOpeningId")
                         .HasColumnType("int");
 
@@ -246,6 +243,15 @@ namespace WebApis.Migrations
 
                     b.Property<int>("InterviewerId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsHrRound")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsNextRound")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRejected")
+                        .HasColumnType("bit");
 
                     b.Property<int>("JobCandidateId")
                         .HasColumnType("int");

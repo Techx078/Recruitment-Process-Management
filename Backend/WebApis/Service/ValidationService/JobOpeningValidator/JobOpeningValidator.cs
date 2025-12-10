@@ -2,7 +2,7 @@
 using WebApis.Data;
 using WebApis.Dtos.JobOpeningDto;
 
-namespace WebApis.Service.ValidationService
+namespace WebApis.Service.ValidationService.JobOpeningValidator
 {
     public class JobOpeningValidator : ICommonValidator<JobOpeningDto>
     {
