@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using WebApis.Data;
 using WebApis.Dtos.JobCandidateDtos;
 using WebApis.Repository.JobCandidateRepository;
@@ -24,6 +27,7 @@ namespace WebApis.Controllers.JobCandidateController
             _jobCandidateCreateValidator = jobCandidateCreateValidator;
         }
         [HttpPost("create")]
+        [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> CreateJobCandidate([FromBody] JobCandidateCreateDto dto)
         {
             if (dto == null)
@@ -36,6 +40,17 @@ namespace WebApis.Controllers.JobCandidateController
             {
                 return BadRequest(result.Errors);
             }
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized(new { message = "Invalid User." });
+
+            int userId = int.Parse(userIdClaim);
+
+            bool jobOpening = await _db.JobOpening
+                               .AnyAsync(j => j.Id == dto.JobOpeningId && j.CreatedBy.UserId == userId);
+
+            if (!jobOpening)
+                return Forbid("You are not authorized to add candidates to this job opening."); 
 
             //call repository method to create jobCandidate
             JobCandidate JobCandidate = await _jobCandidateRepository.CreateJobCandidate(dto);
