@@ -7,7 +7,6 @@ import {
 import {
   DOMAIN_OPTIONS,
   EDUCATION_OPTIONS,
-  JOB_STATUS_OPTIONS,
   JOB_TYPE_OPTIONS,
   JOB_LOCATION_OPTIONS,
   DEPARTMENT_OPTIONS,
@@ -137,13 +136,13 @@ const EditJobOpening = () => {
             name="domain"
             value={formData.domain}
             onChange={(e) => {
-              setFormData({ ...formData, domain: Number(e.target.value) });
+              setFormData({ ...formData, domain: e.target.value  });
             }}
             className="border p-2 rounded w-full"
           >
             <option value="">select domain</option>
             {DOMAIN_OPTIONS.map((opt) => (
-              <option key={opt.id} value={opt.id}>
+              <option key={opt.id} value={opt.label}>
                 {opt.label}
               </option>
             ))}
@@ -157,13 +156,13 @@ const EditJobOpening = () => {
               name="location"
               value={formData.location}
               onChange={(e) => {
-                setFormData({ ...formData, location: Number(e.target.value) });
+                setFormData({ ...formData, location: e.target.value });
               }}
               className="border p-2 rounded w-full"
             >
               <option value="">Select Location</option>
               {JOB_LOCATION_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
+                <option key={opt.id} value={opt.label}>
                   {opt.label}
                 </option>
               ))}
@@ -177,14 +176,14 @@ const EditJobOpening = () => {
               name="department"
               value={formData.department}
               onChange={(e)=>{
-                setFormData({ ...formData, department: Number(e.target.value) })
+                setFormData({ ...formData, department: e.target.value })
               }
             }
               className="border p-2 rounded w-full"
             >
               <option value="">Select Department</option>
               {DEPARTMENT_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
+                <option key={opt.id} value={opt.value}>
                   {opt.label}
                 </option>
               ))}
@@ -198,13 +197,13 @@ const EditJobOpening = () => {
               name="jobType"
               value={formData.jobType}
               onChange={(e)=>{
-                setFormData({ ...formData, jobType: Number(e.target.value) })
+                setFormData({ ...formData, jobType: e.target.value })
               }}
               className="border p-2 rounded w-full"
             >
               <option value="">Select Job Type</option>
               {JOB_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
+                <option key={opt.id} value={opt.label}>
                   {opt.label}
                 </option>
               ))}
@@ -220,13 +219,13 @@ const EditJobOpening = () => {
               name="education"
               value={formData.education}
               onChange={(e)=>{
-                setFormData({ ...formData, education: Number(e.target.value) })
+                setFormData({ ...formData, education: e.target.value })
               }}
               className="border p-2 rounded w-full"
             >
               <option value="">Select Education</option>
               {EDUCATION_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
+                <option key={opt.id} value={opt.label}>
                   {opt.label}
                 </option>
               ))}

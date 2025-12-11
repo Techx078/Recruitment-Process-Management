@@ -395,6 +395,18 @@ namespace WebApis.Controllers
             if (job == null)
                 return NotFound(new { message = "Job not found." });
 
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            int userId = int.Parse(userIdClaim);
+
+            var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
+
+            if (recruiter == null || job.CreatedById != recruiter.Id)
+            {
+                return BadRequest(new { message = "You are not authorized to update this job." });
+            }
             // Check reviewers exist
             var existingReviewers = await _db.Reviewers
                 .Where(r => reviewerIds.Contains(r.Id))
@@ -441,6 +453,19 @@ namespace WebApis.Controllers
             if (job == null)
                 return NotFound(new { message = "Job not found." });
 
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            int userId = int.Parse(userIdClaim);
+
+            var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
+
+            if (recruiter == null || job.CreatedById != recruiter.Id)
+            {
+                return BadRequest(new { message = "You are not authorized to update this job." });
+            }
+
             var existingInterviewers = await _db.Interviewers
                 .Where(i => interviewerIds.Contains(i.Id))
                 .Select(i => i.Id)
@@ -472,6 +497,19 @@ namespace WebApis.Controllers
 
             if (job == null)
                 return NotFound(new { message = "Job not found." });
+
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            int userId = int.Parse(userIdClaim);
+
+            var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
+
+            if (recruiter == null || job.CreatedById != recruiter.Id)
+            {
+                return BadRequest(new { message = "You are not authorized to update this job." });
+            }
 
             var documentIds = documents.Select(d => d.DocumentId).ToList();
 
@@ -508,6 +546,19 @@ namespace WebApis.Controllers
 
             if (job == null)
                 return NotFound(new { message = "Job not found." });
+
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            int userId = int.Parse(userIdClaim);
+
+            var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
+
+            if (recruiter == null || job.CreatedById != recruiter.Id)
+            {
+                return BadRequest(new { message = "You are not authorized to update this job." });
+            }
 
             // Extract skill names from the request
             var skillNames = skills.Select(s => s.SkillName.Trim().ToLower()).ToList();
@@ -557,6 +608,19 @@ namespace WebApis.Controllers
 
             if (jobOpening == null)
                 return NotFound(new { message = "Job not found." });
+
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null)
+                return Unauthorized(new { message = "Invalid token." });
+
+            int userId = int.Parse(userIdClaim);
+
+            var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
+
+            if (recruiter == null || jobOpening.CreatedById != recruiter.Id)
+            {
+                return BadRequest(new { message = "You are not authorized to update this job." });
+            }
 
             // Delete linked entries first (junction tables)
             _db.JobReviewer.RemoveRange(jobOpening.JobReviewers);

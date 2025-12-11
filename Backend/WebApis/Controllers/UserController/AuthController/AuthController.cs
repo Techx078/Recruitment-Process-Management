@@ -276,6 +276,8 @@ namespace WebApis.Controllers.UserController.AuthController
 
             return Ok(new
             {
+                id= candidate.Id,
+                resumePath=candidate.ResumePath,
                 message = "Candidate created successfully by Recruiter.",
                 user = new {  id = user.Id, name = user.FullName, email = user.Email, role = user.RoleName , user.Domain,user.DomainExperienceYears }
             });

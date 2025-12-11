@@ -67,7 +67,7 @@ export default function JobOpeningForm({}) {
 
     setJobData((prev) => ({
       ...prev,
-      [name]: value === "" ? 0 : parseInt(value, 10),
+      [name]: value === "" ? 0 : value,
     }));
   };
 
@@ -197,6 +197,8 @@ export default function JobOpeningForm({}) {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
+      console.log(jobData);
+      
       const res=await createJobOpening(jobData, token);
       alert("Job Opening Created Successfully!");
       Navigate("/job-openings");
@@ -323,12 +325,12 @@ export default function JobOpeningForm({}) {
             <select
               name="domain"
               value={jobData.domain}
-              onChange={handleIntInputChange}
+              onChange={handleInputChange}
               className="border p-2 rounded w-full"
             >
               <option value="">Select Your Primary Domain</option>
               {DOMAIN_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
+                <option key={opt.id} value={opt.label}>
                   {opt.label}
                 </option>
               ))}
@@ -357,12 +359,12 @@ export default function JobOpeningForm({}) {
               <select
                 name="location"
                 value={jobData.location}
-                onChange={handleIntInputChange}
+                onChange={handleInputChange}
                 className="border p-2 rounded w-full"
               >
                 <option value="">Select Location</option>
                 {JOB_LOCATION_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
+                  <option key={opt.id} value={opt.label}>
                     {opt.label}
                   </option>
                 ))}
@@ -377,12 +379,12 @@ export default function JobOpeningForm({}) {
               <select
                 name="department"
                 value={jobData.department}
-                onChange={handleIntInputChange}
+                onChange={handleInputChange}
                 className="border p-2 rounded w-full"
               >
                 <option value="">Select Department</option>
                 {DEPARTMENT_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
+                  <option key={opt.id} value={opt.label}>
                     {opt.label}
                   </option>
                 ))}
@@ -395,12 +397,12 @@ export default function JobOpeningForm({}) {
               <select
                 name="jobType"
                 value={jobData.jobType}
-                onChange={handleIntInputChange}
+                onChange={handleInputChange}
                 className="border p-2 rounded w-full"
               >
                 <option value="">Select Job Type</option>
                 {JOB_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
+                  <option key={opt.id} value={opt.label}>
                     {opt.label}
                   </option>
                 ))}
@@ -415,12 +417,12 @@ export default function JobOpeningForm({}) {
               <select
                 name="education"
                 value={jobData.education}
-                onChange={handleIntInputChange}
+                onChange={handleInputChange}
                 className="border p-2 rounded w-full"
               >
                 <option value="">Select Education</option>
                 {EDUCATION_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
+                  <option key={opt.id} value={opt.label}>
                     {opt.label}
                   </option>
                 ))}
