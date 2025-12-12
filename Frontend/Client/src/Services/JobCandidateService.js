@@ -15,3 +15,18 @@ export const CreateJobCandidateService = async (token, JobcandidateData) => {
     throw error;
   } 
 };
+
+export const CreateJobCandidateBulkService = async (token, Data) => { 
+    try {
+    const response = await axios.post(`${API_BASE_URL}/CreateBulk`, Data, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        },
+    });
+    return response.data;
+    } catch (error) {
+    console.error("Error in Create Job Candidate Bulk:", error);
+    throw error;
+  }
+};

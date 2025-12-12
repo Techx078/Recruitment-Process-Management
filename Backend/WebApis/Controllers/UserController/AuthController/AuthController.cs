@@ -57,8 +57,10 @@ namespace WebApis.Controllers.UserController.AuthController
             if (candidatesDto == null || !candidatesDto.Any())
                 return BadRequest(new { message = "Candidate list is empty." });
 
-            var resultCreated = new List<object>();
             var resultSkipped = new List<object>();
+            // Store candidate references for getting IDs after SaveChanges
+            var createdCandidates = new List<(Candidate candidate, User user)>();
+
 
             //get all mails from body
             var incomingEmails = candidatesDto
@@ -167,15 +169,20 @@ namespace WebApis.Controllers.UserController.AuthController
                     }
                 }
 
-                resultCreated.Add(new
-                {
-                    name = user.FullName,
-                    email = user.Email
-                });
+                createdCandidates.Add((candidate, user));
+
             }
 
-           //commin everthing a once
+            //commin everthing a once
             await _db.SaveChangesAsync();
+
+            var resultCreated = createdCandidates.Select(x => new
+            {
+                CandidateId = x.Item1.Id,
+                ResumePath = x.Item1.ResumePath,
+                name = x.Item2.FullName,
+                email = x.Item2.Email
+            }).ToList();
 
             return Ok(new
             {
