@@ -25,7 +25,8 @@ import EditJobReviewers from "./Pages/JobOpenings/EditJobReviewers.jsx";
 import EditJobInterviewers from "./Pages/JobOpenings/EditJobInterviewer.jsx";
 import EditJobDocument from "./Pages/JobOpenings/EditJobDocument.jsx";
 import EditJobSkill from "./Pages/JobOpenings/EditJobSkill.jsx";
-
+import CandidateProfile from "./Pages/Profile/CandidateProfile.jsx";
+import CandidateUpdate from "./Pages/Auth/CandidateUpdate.jsx";
 function App() {
   return (
     <AuthUserContextProvider>
@@ -93,7 +94,7 @@ function App() {
               }
             />
             <Route
-              path="/Recruiter/Profile/:recruiterId"
+              path="/Recruiter/Profile/:UserId"
               element={
                 <RecruiterProtector>
                   <RecruiterProfile />
@@ -101,7 +102,7 @@ function App() {
               }
             />
             <Route
-              path="/Interviewer/Profile/:interviewerId"
+              path="/Interviewer/Profile/:UserId"
               element={
                 <OrganizationUserProtector>
                   <InterviewerProfile />
@@ -109,11 +110,25 @@ function App() {
               }
             />
             <Route
-              path="/Reviewer/Profile/:reviewerId"
+              path="/Reviewer/Profile/:UserId"
               element={
                 <OrganizationUserProtector>
                   <ReviewerProfile />
                 </OrganizationUserProtector>
+              }
+            />
+             <Route
+              path="/Candidate/Profile/:UserId"
+              element={
+               
+                  <CandidateProfile />
+               
+              }
+            />
+            <Route
+              path="/Candidate/update/:UserId"
+              element={
+                  <CandidateUpdate />
               }
             />
             <Route path="/forgot-password" element={<ForgotPassword />} />

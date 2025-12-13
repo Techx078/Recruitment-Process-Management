@@ -4,7 +4,7 @@ import { fetchRecruiterService } from "../../Services/RecruiterService";
 import { useNavigate, Link, useParams } from "react-router-dom";
 
 export default function RecruiterProfile() {
-  let { recruiterId } = useParams();
+  let { UserId } = useParams();
   const [recruiter, setRecruiter] = useState(null);
 
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ export default function RecruiterProfile() {
     const fetchRecruiter = async () => {
       const data = await fetchRecruiterService(
         localStorage.getItem("token"),
-        recruiterId
+        UserId
       );
       setRecruiter(data);
     };

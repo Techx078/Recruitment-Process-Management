@@ -1,4 +1,5 @@
-﻿using WebApis.Dtos;
+﻿using System.ComponentModel.DataAnnotations;
+using WebApis.Dtos;
 
 public class RegisterCandidateRequestDto
 {
@@ -21,10 +22,21 @@ public class RegisterCandidateRequestDto
 }
 public class EducationDto
 {
-    public string Degree { get; set; }        // B.Tech, M.Tech, BCA, MCA, etc.
+    [Required(ErrorMessage = "Degree is required.")]
+    public string Degree { get; set; }
+
+    [Required(ErrorMessage = "University is required.")]
     public string University { get; set; }
+
+    [Required(ErrorMessage = "College is required.")]
     public string College { get; set; }
+
+    [Required(ErrorMessage = "passingYear is required.")]
+    [Range(1950,2050,ErrorMessage = "passingyear between 1950 and 2050 is required.")]
     public int PassingYear { get; set; }
+
+    [Required(ErrorMessage = "Percentage is required.")]
+    [Range(0,100, ErrorMessage = "percentage shoul be valid.")]
     public decimal Percentage { get; set; }
 }
 public enum Domain

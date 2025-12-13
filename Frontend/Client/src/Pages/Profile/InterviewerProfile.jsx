@@ -4,14 +4,14 @@ import { fetchInterviewerService } from "../../services/InterviewerService";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function InterviewerProfile({}) {
-  let {interviewerId} = useParams();
+  let {UserId} = useParams();
   let [interviewer, setInterviewer] = useState(null);
   
   let navigate = useNavigate();
   
   useEffect(() => {
     let fetchInterviewer = async () => {
-      let data = await fetchInterviewerService(localStorage.getItem("token"), interviewerId);
+      let data = await fetchInterviewerService(localStorage.getItem("token"), UserId);
       setInterviewer(data);
     };
     fetchInterviewer();

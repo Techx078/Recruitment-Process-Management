@@ -4,13 +4,13 @@ import { fetchReviewerService } from "../../Services/ReviewerService";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function ReviewerProfile({}) {
-  let {reviewerId} = useParams();
+  let {UserId} = useParams();
   let [reviewer, setReviewer] = useState(null);
   let navigate = useNavigate();
   useEffect(() => {
     let fetchReviewer = async () => {
       let data;
-      data = await fetchReviewerService(localStorage.getItem("token"), reviewerId);
+      data = await fetchReviewerService(localStorage.getItem("token"), UserId);
       setReviewer(data);
     };
     fetchReviewer();

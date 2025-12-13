@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using WebApis.Dtos.JobCandidateDtos;
 using WebApis.Dtos.JobOpeningDto;
 using WebApis.Repository;
+using WebApis.Repository.CandidateRepository;
 using WebApis.Repository.JobCandidateRepository;
 using WebApis.Service;
 using WebApis.Service.EmailService;
@@ -25,6 +26,7 @@ namespace WebApis
 
             builder.Services.AddScoped(typeof(ICommonRepository<>), typeof(CommonRepository<>));
             builder.Services.AddScoped<IJobCandidateRepository, JobCandidateRepository>();
+            builder.Services.AddScoped<ICandidateRepository, CandidateRepository>();
             builder.Services.AddScoped<ICommonValidator<JobCandidateCreateDto>, JobCandidateCreateValidator>();
             // Add services to the container.
             builder.Services.AddControllers()
