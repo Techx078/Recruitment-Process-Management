@@ -1,7 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using WebApis.Data;
+using WebApis.Dtos;
+using WebApis.Repository;
+using WebApis.Service.ErrroHandlingService;
 
 
 namespace WebApis.Controllers.UserController.RecruiterController
@@ -10,96 +14,72 @@ namespace WebApis.Controllers.UserController.RecruiterController
     [Route("api/[controller]")]
     public class RecruiterController : Controller
     {
-        private readonly AppDbContext _db;
-        public RecruiterController(AppDbContext db)
+        private readonly ICommonRepository<Recruiter> _recruiterRepository;
+        private readonly ICommonRepository<JobOpening> _jobOpeningRepository;
+        public RecruiterController(
+            ICommonRepository<Recruiter> recruiterRepository,
+            ICommonRepository<JobOpening> jobOpeningRepository)
         {
-            _db = db;
+            _recruiterRepository = recruiterRepository;
+            _jobOpeningRepository = jobOpeningRepository;
         }
-        [HttpGet("All")]
-        public async Task<IActionResult> GetAllRecruiters()
-        {
-            var Recruiters = await _db.Recruiter
-                .Select(i => new
-                {
-                    i.Id,
-                    i.Department,
-                    User = new
-                    {
-                        i.User.Id,
-                        i.User.FullName,
-                        i.User.Email,
-                        Skills = i.User.UserSkills
-                            .Select(s => new
-                            {
-                                Id = s.Skill.SkillId,
-                                s.Skill.Name
-                            })
-                    },
-
-                })
-                .ToListAsync();
-
-            return Ok(Recruiters);
-        }
-        [HttpGet("{UserId}")]
+        [HttpGet("{userId}")]
         [Authorize(Roles = "Recruiter,Admin")]
-
-        public async Task<IActionResult> GetRecruiterById(int UserId)
+        public async Task<IActionResult> GetRecruiterById(int userId)
         {
-            var recruiter = await _db.Recruiter
-                .Where(r => r.UserId == UserId)
-                .FirstOrDefaultAsync();
+            var userIdClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
+            var userRoleClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            int loggedInUserId = int.Parse(userIdClaim);
+
+            if (userRoleClaim == "Recruiter" && loggedInUserId != userId)
+                throw new AppException("You are unauthorized recruiter", 403);
+
+            var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
             if (recruiter == null)
-                return NotFound(new { Message = "Recruiter not found" });
-
-            var CreatedJobOpenings = await _db.JobOpening
-                .AsNoTracking()
-                .Where(j => j.CreatedById == recruiter.Id)
-                .Select(j => new
+                throw new KeyNotFoundException("Recruiter not found");
+            var createdJobOpenings = await _jobOpeningRepository.GetAllByFilterAsync(
+                j => j.CreatedById == recruiter.Id,
+                j => new AssignedJobOpeningDto
                 {
-                    j.Id,
-                    j.Title,
-                    j.Status,
-                    j.Department,
-                    j.JobType,
-                    j.CreatedAt,
+                   JobOpeningId = j.Id,
+                   Title = j.Title,
+                   Status = j.Status,
+                   Department = j.Department,
+                   JobType = j.JobType,
+                   CreatedAt = j.CreatedAt,
                     CandidateCount = j.JobCandidates.Count,
-                    j.minDomainExperience,
-                    j.Domain
-                })
-                .ToListAsync();
+                   MinDomainExperience = j.minDomainExperience,
+                   Domain = j.Domain
+                });
 
-            var recruiterDetail = await _db.Recruiter
-                .Where(r => r.Id == recruiter.Id)
-                .Select(r => new
+            var recruiterDetails = await _recruiterRepository.GetByFilterAsync(
+                r => r.Id == recruiter.Id,
+                r => new ReviewerInterviewerDetailsDto
                 {
-                    r.Id,
-                    r.Department,
+                    Id =r.Id,
+                   Department = r.Department,
 
-                    User = new
+                    User = new UserDto
                     {
-                        r.User.Id,
-                        r.User.FullName,
-                        r.User.Email,
-                        r.User.PhoneNumber,
-                        r.User.Domain,
-                        r.User.DomainExperienceYears,
-
-                        Skills = r.User.UserSkills.Select(us => new
-                        {
-                            UserSkillId = us.Id,
-                            SkillId = us.SkillId,
-                            SkillName = us.Skill.Name,
-                            SkillExperience = us.YearsOfExperience,
-                        }).ToList()
+                        Id= r.User.Id,
+                        FullName = r.User.FullName,
+                        Email =r.User.Email,
+                        PhoneNumber = r.User.PhoneNumber,
+                        Domain = r.User.Domain,
+                        DomainExperienceYears = r.User.DomainExperienceYears,
                     },
-
-                    CreatedJobOpenings
-                })
-                .FirstOrDefaultAsync();
-
-            return Ok(recruiterDetail);
+                    AssignedJobOpenings = createdJobOpenings
+                }
+                );
+            return Ok(recruiterDetails);
         }
+
     }
-    }
+}

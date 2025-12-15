@@ -9,7 +9,7 @@ const OrganizationUserProtector = ({ children }) => {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if ( !authUser || (authUser.role == "Interviewer" && authUser.role == "Recruiter" && authUser.role == "Reviewer" , authUser.role == "Admin" )) {
+    if ( !authUser || (authUser.role == "Interviewer" && authUser.role == "Recruiter" && authUser.role == "Reviewer" && authUser.role == "Admin" )) {
       alert("Access denied. Only Organizational user can access.");
       navigate("/login");
     } else {

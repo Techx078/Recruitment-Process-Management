@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using WebApis.Data;
 using WebApis.Dtos;
+using WebApis.Repository;
+using WebApis.Service.ErrroHandlingService;
 
 
 namespace WebApis.Controllers.UserController.InteviewerController
@@ -11,53 +14,60 @@ namespace WebApis.Controllers.UserController.InteviewerController
     [Route("api/[controller]")]
     public class InterviewerController : Controller
     {
-        private readonly AppDbContext _db;
+        private readonly ICommonRepository<Interviewer> _interviewerRepository;
 
-        public InterviewerController(AppDbContext db)
+        public InterviewerController( ICommonRepository<Interviewer> interviewerRepository)
         {
-            _db = db;
+            _interviewerRepository = interviewerRepository;
         }
 
         [HttpGet("All")]
-        [Authorize(Roles = "Recruiter,Interviewer,Admin,Reviewer")]
+        [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> GetAllInterviewers()
         {
-            var interviewers = await _db.Interviewers
-                .Select(i => new
+            var interviewerList = await _interviewerRepository.GetAllByFilterAsync(
+                i => true,
+                i => new ReviewerInterviewerDetailsDto
                 {
-                    i.Id,
-                    i.Department,
-                    User = new
+                    Id = i.Id,
+                    Department = i.Department,
+                    User = new UserDto
                     {
-                        i.User.Id,
-                        i.User.FullName,
-                        i.User.Email,
-                        Skills = i.User.UserSkills
-                            .Select(s => new
-                            {
-                                Id = s.Skill.SkillId,
-                                s.Skill.Name
-                            })
-                    },
-                    Jobs = i.JobInterviewers
-                        .Select(j => new
-                        {
-                            j.JobOpeningId,
-                            j.JobOpening.Title
-                        })
-                })
-                .ToListAsync();
+                        Id = i.User.Id,
+                        FullName = i.User.FullName,
+                        Email = i.User.Email,
+                        PhoneNumber = i.User.PhoneNumber,
+                        Domain = i.User.Domain,
+                        DomainExperienceYears = i.User.DomainExperienceYears
+                    }
+                });
 
-            return Ok(interviewers);
+            if (interviewerList == null || !interviewerList.Any())
+                throw new KeyNotFoundException("No interviewers found");
+
+            return Ok(interviewerList);
         }
 
-        [HttpGet("{id}")]
-        [Authorize(Roles = "Reviewer,Admin,Recruiter,Interviewer")]
-        public async Task<IActionResult> GetInterviewerById(int id)
+        [HttpGet("{UserId}")]
+        [Authorize(Roles = "Admin,Recruiter,Interviewer")]
+        public async Task<IActionResult> GetInterviewerById(int userId)
         {
-            var interviewer = await _db.Interviewers
-                .Where(i => i.UserId == id)
-                .Select(i => new ReviewerInterviewerDetailsDto
+            var userIdClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            var userRoleClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            int loggedInUserId = int.Parse(userIdClaim);
+
+            if (userRoleClaim == "Interviewer" && loggedInUserId != userId)
+                throw new AppException("You are unauthorized recruiter", 403);
+            var interviewer = await _interviewerRepository.GetByFilterAsync(
+                i => i.UserId == userId,
+                i => new ReviewerInterviewerDetailsDto
                 {
                     Id = i.Id,
                     Department = i.Department,
@@ -86,15 +96,16 @@ namespace WebApis.Controllers.UserController.InteviewerController
                             MinDomainExperience = j.JobOpening.minDomainExperience,
                             Domain = j.JobOpening.Domain
                         })
-                      .ToList()
-                })
-                .FirstOrDefaultAsync();
+                        .ToList()
+                }
+            );
+
 
             if (interviewer == null)
-            {
-                return NotFound();
-            }
+                throw new KeyNotFoundException("Interviewer not found");
+
             return Ok(interviewer);
         }
+
     }
 }

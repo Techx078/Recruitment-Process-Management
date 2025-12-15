@@ -12,19 +12,16 @@ namespace WebApis.Controllers.UserController.AuthController
     [Route("api/[controller]")]
     public class ForgotPasswordController : Controller
     {
-        private readonly AppDbContext _db;
         private readonly IEmailService _emailService;
         ICommonRepository<PasswordReset> _passwordResetRepository;
         ICommonRepository<User> _userRepository;
 
         public ForgotPasswordController(
-            AppDbContext db, 
             IEmailService emailService,
             ICommonRepository<PasswordReset> passwordResetRepository,
             ICommonRepository<User> userRepository
         )
         {
-            _db = db;
             _emailService = emailService;
             _passwordResetRepository = passwordResetRepository;
             _userRepository = userRepository;
@@ -33,7 +30,8 @@ namespace WebApis.Controllers.UserController.AuthController
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] String Email)
         {
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == Email);
+           
+            var user = await _userRepository.GetByFilterAsync(u => u.Email == Email);
             if (user == null)
                 return BadRequest(new { message = "Email not found" });
 
@@ -62,10 +60,11 @@ namespace WebApis.Controllers.UserController.AuthController
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
         {
             //. Check OTP entry
-            var entry = await _db.PasswordResets
-                .Where(p => p.Email == dto.Email && p.OTP == dto.OTP)
-                .OrderByDescending(p => p.Id)
-                .FirstOrDefaultAsync();
+            var entry = await _passwordResetRepository.GetByorderAsync(
+                        p => p.Email == dto.Email && p.OTP == dto.OTP,
+                        p => p.Id,
+                        descending: true
+                    );
 
             if (entry == null)
                 return BadRequest(new { message = "Invalid OTP" });
@@ -80,7 +79,7 @@ namespace WebApis.Controllers.UserController.AuthController
 
             // Update password
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
-
+            await _userRepository.UpdateAsync(user);
             // Remove OTP entry so it cannot be reused
             await _passwordResetRepository.DeleteAsync(entry);
           

@@ -6,12 +6,17 @@ import { useNavigate, useParams } from "react-router-dom";
 export default function ReviewerProfile({}) {
   let {UserId} = useParams();
   let [reviewer, setReviewer] = useState(null);
+  let [notFound , SetNotFound] = useState(false);
   let navigate = useNavigate();
   useEffect(() => {
     let fetchReviewer = async () => {
-      let data;
-      data = await fetchReviewerService(localStorage.getItem("token"), UserId);
+      try{
+      let data = await fetchReviewerService(localStorage.getItem("token"), UserId);
       setReviewer(data);
+      }catch(e){
+        alert("revieewer not found")
+        SetNotFound(true)
+      }
     };
     fetchReviewer();
   }, []);
@@ -19,7 +24,9 @@ export default function ReviewerProfile({}) {
   if (!reviewer) {
     return <div>Loading...</div>;
   }
-
+  if( notFound){
+    return <div>Not found...</div>;
+  }
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto space-y-6">

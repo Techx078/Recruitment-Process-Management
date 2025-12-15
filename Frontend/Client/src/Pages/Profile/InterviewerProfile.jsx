@@ -6,13 +6,18 @@ import { useNavigate, useParams } from "react-router-dom";
 export default function InterviewerProfile({}) {
   let {UserId} = useParams();
   let [interviewer, setInterviewer] = useState(null);
-  
+  let [notFound , SetNotFound] = useState(false);
   let navigate = useNavigate();
   
   useEffect(() => {
     let fetchInterviewer = async () => {
+      try{
       let data = await fetchInterviewerService(localStorage.getItem("token"), UserId);
       setInterviewer(data);
+      }catch(e){
+        alert("interviewer not found")
+        SetNotFound(true);
+      }
     };
     fetchInterviewer();
   }, []);
@@ -20,7 +25,9 @@ export default function InterviewerProfile({}) {
   if (!interviewer) {
     return <div>Loading...</div>;
   }
-
+   if( notFound ){
+    return <div>Not found...</div>;
+  }
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto space-y-6">

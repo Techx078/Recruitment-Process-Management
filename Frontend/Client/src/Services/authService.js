@@ -15,11 +15,12 @@ export const registerCandidate = async (candidateData, token) => {
     );
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message ||
-      error.response?.data ||
-      "Registration failed"
-    );
+    // Throw error to be handled in frontend catch
+    if (error.response) {
+      throw error.response; // include status and data
+    } else {
+      throw error; // network or other error
+    }
   }
 };
 
@@ -37,12 +38,12 @@ export const registerOtherUser = async (userData, token) => {
     );
     return response.data;
   } catch (error) {
-    console.log(error);
-    throw new Error(
-      error.response?.data?.message ||
-      error.response?.data ||
-      "Registration failed"
-    );
+     // Throw error to be handled in frontend catch
+    if (error.response) {
+      throw error.response; // include status and data
+    } else {
+      throw error; // network or other error
+    }
   }
 };
 

@@ -7,15 +7,26 @@ export default function CandidateProfile({}) {
   let { UserId } = useParams();
   let [candidate, setCandidate] = useState(null);
   let [jobApplications, setJobApplications] = useState([]);
+  let [notFound , SetNotFound] = useState(false);
   const navigate = useNavigate();
   useEffect(() => {
+      let token = localStorage.getItem("token");
     let fetchCandidate = async () => {
-      let data = await getCandidateDetails(UserId);
+      try{
+      let data = await getCandidateDetails(UserId,token);
       setCandidate(data);
+      }catch(e){
+        alert("detail not found !");
+        SetNotFound(true);
+      }
     };
     let fetchJobApplications = async () => {
-      let jobs = await getCandidateJobOpenings(UserId);
+      try{
+      let jobs = await getCandidateJobOpenings(UserId,token);
       setJobApplications(jobs);
+      }catch(e){
+        alert("detail not found of job opening")
+      }
     };
     fetchCandidate();
     fetchJobApplications();
@@ -23,6 +34,9 @@ export default function CandidateProfile({}) {
 
   if (!candidate) {
     return <div>Loading...</div>;
+  }
+   if( notFound ){
+    return <div>Not found...</div>;
   }
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
@@ -167,7 +181,7 @@ export default function CandidateProfile({}) {
         <div className="bg-white rounded-2xl shadow p-6">
           <h2 className="text-2xl font-semibold mb-4">Job Applications</h2>
 
-          {jobApplications.length === 0 ? (
+          {jobApplications?.length === 0 ? (
             <p className="text-gray-500">No job applications yet.</p>
           ) : (
             <div className="space-y-4">

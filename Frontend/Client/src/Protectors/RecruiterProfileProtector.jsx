@@ -1,19 +1,19 @@
-
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState  } from "react";
+import { useNavigate  , useParams} from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
 
-const CandidateProtector = ({ children }) => {
+
+const RecruiterProfileProtector = ({ children }) => {
   const navigate = useNavigate();
   const { authUser } = useAuthUserContext();
   const {UserId} = useParams();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if ( authUser && (authUser.role == "Candidate" && authUser.id == parseInt(UserId))) {
+    if (authUser && ((authUser.role == "Recruiter" && authUser.id == parseInt(UserId)) || authUser.role == "Admin") ) {
       setChecking(false);
     } else {
-      alert("Access denied. Only Candidates can access.");
+    alert("Access denied");
       navigate("/login");
     }
   }, []);
@@ -25,4 +25,4 @@ const CandidateProtector = ({ children }) => {
   return children;
 };
 
-export default CandidateProtector;
+export default RecruiterProfileProtector;

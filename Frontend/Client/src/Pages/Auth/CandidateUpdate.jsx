@@ -7,7 +7,7 @@ import {
 import { getAllSkills } from "../../Services/JobOpeningService";
 
 export default function CandidateUpdate() {
-  const { UserId } = useParams(); 
+  const { UserId } = useParams();
   const navigate = useNavigate();
 
   const id = UserId;
@@ -178,14 +178,32 @@ export default function CandidateUpdate() {
         skills,
       };
 
-      let token = localStorage.getItem("token");
-      console.log(payload);
+      const token = localStorage.getItem("token");
       await updateCandidateService(id, payload, token);
 
       alert("Candidate Profile Updated!");
       navigate(`/candidate/Profile/${id}`);
-    } catch (err) {
-      alert("Update failed: ");
+    } catch (error) {
+
+      if (!error.status) {
+        alert("Network error. Please try again.");
+        return;
+      }
+      const { status, data } = error;
+      // Validation errors (400)
+      if (status === 400 && data.errors) {
+        if (Array.isArray(data.errors)) {
+          data.errors.forEach((msg) => alert(msg));
+        } else {
+          Object.values(data.errors)
+            .flat()
+            .forEach((msg) => alert(msg));
+        }
+        return; 
+      }
+      // Other backend errors
+      alert(data.message || "Something went wrong");
+      return; 
     } finally {
       setSaving(false);
     }
@@ -254,7 +272,7 @@ export default function CandidateUpdate() {
             />
             <p>sample:https://www.linkedin.com/in/xyz</p>
           </div>
-            
+
           {/* Github */}
           <div>
             <label>GitHub</label>
@@ -266,7 +284,7 @@ export default function CandidateUpdate() {
             />
             <p>sample:https://github.com/xyz</p>
           </div>
-            
+
           {/* Resume */}
           <div>
             <label>Upload New Resume</label>

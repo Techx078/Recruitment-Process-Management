@@ -11,8 +11,12 @@ export const CreateJobCandidateService = async (token, JobcandidateData) => {
     });
     return response.data;
     } catch (error) {
-    console.error("Error in Create Job Candidate:", error);
-    throw error;
+     // Throw error to be handled in frontend catch
+        if (error.response) {
+          throw error.response; // include status and data
+        } else {
+          throw error; // network or other error
+        }
   } 
 };
 
@@ -26,7 +30,11 @@ export const CreateJobCandidateBulkService = async (token, Data) => {
     });
     return response.data;
     } catch (error) {
-    console.error("Error in Create Job Candidate Bulk:", error);
-    throw error;
+     // Throw error to be handled in frontend catch
+    if (error.response) {
+      throw error.response; // include status and data
+    } else {
+      throw error; // network or other error
+    }
   }
 };

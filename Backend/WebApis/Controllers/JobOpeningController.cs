@@ -185,7 +185,6 @@ namespace WebApis.Controllers
         ////get all job listings with linked reviewers, interviewers, and documents
         ////pending:- link cadidate to job opening retrieval
         [HttpGet("list")]
-        [Authorize]
         public async Task<IActionResult> GetAllJobOpenings()
         {
             var jobs = await _db.JobOpening
@@ -311,7 +310,6 @@ namespace WebApis.Controllers
              .FirstOrDefaultAsync();
             return Ok(jobOpening);
         }
-
 
         //update fields by recruiter only
         [HttpPut("{id}/fields")]

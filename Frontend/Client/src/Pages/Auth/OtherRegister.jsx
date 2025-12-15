@@ -15,7 +15,6 @@ export default function OtherRegister() {
   });
   const [skills, setSkills] = useState([{ name: "", experience: "" }]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const navigateTo = useNavigate();
   const DEPARTMENT_OPTIONS = [
     "SoftwareDevelopment",
@@ -70,7 +69,6 @@ export default function OtherRegister() {
   // Handle form submission for registration
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
     try {
@@ -103,9 +101,24 @@ export default function OtherRegister() {
       });
       setSkills([{ name: "", experience: "" }]);
       navigateTo("/Recruiter/Profile");
-    } catch (err) {
-      console.log(err);
-      setError(err.message);
+    } catch (error) {
+      if (!error.status) {
+        alert("Network error. Please try again.");
+        return;
+      }
+      const { status, data } = error;
+      if (status === 400 && data.errors) {
+        if (Array.isArray(data.errors)) {
+          data.errors.forEach((msg) => alert(msg));
+        } else {
+          Object.values(data.errors)
+            .flat()
+            .forEach((msg) => alert("fields are required"));
+        }
+        return;
+      }
+      alert(data.Message || "Something went wrong");
+      return;
     } finally {
       setLoading(false);
     }
@@ -289,9 +302,6 @@ export default function OtherRegister() {
             </button>
           </div>
         </form>
-
-        {error && <p className="text-red-600 text-center mt-3">{error}</p>}
-
         <p className="text-center text-sm text-gray-600 mt-4">
           Already have an account?{" "}
           <Link

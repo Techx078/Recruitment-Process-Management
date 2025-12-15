@@ -26,7 +26,7 @@ export default function ForgotPassword() {
       alert("OTP sent to your email");
       setStep(2);
     } catch (err) {
-      alert(err.response?.data?.message || "Something went wrong");
+      alert(err || "Something went wrong");
     }finally{
       setIsLoading(false);
     }
@@ -51,7 +51,7 @@ export default function ForgotPassword() {
       alert("Password reset successful. Redirecting...");
       navigate("/login");
     } catch (err) {
-      alert(err.response?.data?.message || "Error resetting password");
+      alert(err || "Error resetting password");
     }finally{
       setIsLoading(false);
     }

@@ -11,7 +11,6 @@ namespace WebApis.Repository.CandidateRepository
         {
             _db = db;
         }
-
         public async Task<CandidateDto> GetCandidateDetailsByUserId(int UserId)
         {
             var candidate = await _db.Candidates

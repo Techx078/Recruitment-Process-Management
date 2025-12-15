@@ -148,8 +148,23 @@ export default function CandidateBulkRegister() {
       alert("Candidate successfully applied to job!");
       navigate(`/Recruiter/Profile/${authUser.id}`);
     } catch (err) {
-      alert("Failed to create Job Candidate entry");
-      console.error(err);
+      if (!error.status) {
+        alert("Network error. Please try again.");
+        return;
+      }
+      const { status, data } = error;
+      if (status === 400 && data.errors) {
+        if (Array.isArray(data.errors)) {
+          data.errors.forEach((msg) => alert(msg));
+        } else {
+          Object.values(data.errors)
+            .flat()
+            .forEach((msg) => alert("fields are required"));
+        }
+        return;
+      }
+      alert(data.Message || "Something went wrong");
+      return;
     } finally {
       setJobLoading(false);
     }

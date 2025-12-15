@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using WebApis.Data;
 using WebApis.Dtos;
 using WebApis.Repository.CandidateRepository;
+using WebApis.Service.ErrroHandlingService;
+using WebApis.Service.ValidationService;
 
 namespace WebApis.Controllers.UserController.CandidateController
 {
@@ -10,49 +14,97 @@ namespace WebApis.Controllers.UserController.CandidateController
     [Route("/api/[controller]")]
     public class CandidateController : ControllerBase
     {
-        private readonly AppDbContext _db;
         private readonly ICandidateRepository _candidateRepository;
-        public CandidateController(AppDbContext db , ICandidateRepository candidateRepository ) {
-            _db = db;
+        private readonly ICommonValidator<UpdateCandidateDto> _updateCandidateValidator;
+        public CandidateController(ICandidateRepository candidateRepository, ICommonValidator<UpdateCandidateDto> updateCandidateValidator) {
             _candidateRepository = candidateRepository;
+            _updateCandidateValidator = updateCandidateValidator;
         }
-        [HttpGet("{UserId}")]
-        public async Task<IActionResult> GetCandidateDetailsByUserId(int UserId)
+        [HttpGet("{userId}")]
+        [Authorize(Roles = "Recruiter,Interviewer,Admin,Reviewer,Candidate")]
+        public async Task<IActionResult> GetCandidateDetailsByUserId(int userId)
         {
-            try { 
-                var Candidate = await _candidateRepository.GetCandidateDetailsByUserId(UserId);
-                return Ok(Candidate);
-            }catch (KeyNotFoundException ex){
-                return NotFound(ex.Message);
-            }catch (Exception ex){
-                return StatusCode(500, "An error occurred while processing your request.");
+            var userIdClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-            }
+            var userRoleClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            int loggedInUserId = int.Parse(userIdClaim);
+
+            if (userRoleClaim == "Candidate" && loggedInUserId != userId)
+                throw new AppException("You are unauthorized candidate", 403);
+
+            var candidate = await _candidateRepository.GetCandidateDetailsByUserId(userId);
+
+            
+            if (candidate == null)
+                throw new KeyNotFoundException("Candidate not found");
+
+            return Ok(candidate);
         }
 
-        [HttpGet("jobOpening/{UserId}")]
-        public async Task<IActionResult> GetCnadidateJobOpeningDetailsByUserId(int UserId)
+        [HttpGet("jobOpening/{userId}")]
+        [Authorize(Roles = "Recruiter,Interviewer,Admin,Reviewer,Candidate")]
+        public async Task<IActionResult> GetCnadidateJobOpeningDetailsByUserId(int userId)
         {
-            try{
-                var jobOpenings = await _candidateRepository.GetCnadidateJobOpeningDetailsByUserId(UserId);
-                return Ok(jobOpenings);
-            }catch (KeyNotFoundException ex){
-                return NotFound(ex.Message);
-            }catch (Exception ex){
-                return StatusCode(500, "An error occurred while processing your request.");
+            var userIdClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-            }
+            var userRoleClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            int loggedInUserId = int.Parse(userIdClaim);
+
+            if (userRoleClaim == "Candidate" && loggedInUserId != userId)
+                throw new AppException("You are not authorized", 403);
+
+            var jobOpenings =
+                await _candidateRepository.GetCnadidateJobOpeningDetailsByUserId(userId);
+
+            if (jobOpenings == null)
+                throw new KeyNotFoundException("Job openings not found");
+
+            return Ok(jobOpenings);
         }
 
         [HttpPut("update/{UserId}")]
+        [Authorize(Roles = "Candidate")]
         public async Task<IActionResult> UpdateCandidateDetails(int UserId ,UpdateCandidateDto dto )
         {
-            if (!ModelState.IsValid)
-                return BadRequest("here");
+            var validationResult = await _updateCandidateValidator.ValidateAsync(dto);
+
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    errors = validationResult.Errors
+                });
+            }
+            //check for valid candidate
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            int loggedInUserId = int.Parse(userIdClaim);
+            if (loggedInUserId != UserId)
+            {
+                throw new AppException("You are not authorized", 403);
+            }
+           
             var candidate = await _candidateRepository.GetCandidateWithUserAsync(UserId);
 
             if (candidate == null)
-                return NotFound("Candidate not found");
+                throw new KeyNotFoundException("Candidate not found");
 
             await _candidateRepository.UpdateCandidateAsync(candidate, dto);
             return Ok(new

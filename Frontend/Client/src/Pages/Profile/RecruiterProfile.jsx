@@ -6,16 +6,21 @@ import { useNavigate, Link, useParams } from "react-router-dom";
 export default function RecruiterProfile() {
   let { UserId } = useParams();
   const [recruiter, setRecruiter] = useState(null);
-
+  let [notFound , SetNotFound] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRecruiter = async () => {
-      const data = await fetchRecruiterService(
-        localStorage.getItem("token"),
-        UserId
-      );
-      setRecruiter(data);
+      try {
+        const data = await fetchRecruiterService(
+          localStorage.getItem("token"),
+          UserId
+        );
+        setRecruiter(data);
+      } catch (e) {
+        console.log("recruiter not found");
+        SetNotFound(true)
+      }
     };
 
     fetchRecruiter();
@@ -24,7 +29,9 @@ export default function RecruiterProfile() {
   if (!recruiter) {
     return <div>Loading...</div>;
   }
-
+  if( notFound ){
+    return <div>Not found...</div>;
+  }
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -93,12 +100,12 @@ export default function RecruiterProfile() {
           </div>
 
           <div className="space-y-4">
-            {recruiter.createdJobOpenings.length === 0 ? (
+            {recruiter.assignedJobOpenings.length === 0 ? (
               <p className="text-gray-500">No job openings created yet.</p>
             ) : (
-              recruiter.createdJobOpenings.map((job) => (
+              recruiter.assignedJobOpenings.map((job) => (
                 <div
-                  key={job.id}
+                  key={job.jobOpeningId}
                   className="border rounded-xl p-4 shadow-sm bg-white"
                 >
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
@@ -142,14 +149,14 @@ export default function RecruiterProfile() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-4">
                     <button
                       className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
-                      onClick={() => navigate(`/job-openings/${job.id}`)}
+                      onClick={() => navigate(`/job-openings/${job.jobOpeningId}`)}
                     >
                       Show
                     </button>
 
                     <button
                       className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
-                      onClick={() => navigate(`/job-openings/${job.id}/edit`)}
+                      onClick={() => navigate(`/job-openings/${job.jobOpeningId}/edit`)}
                     >
                       Update fields
                     </button>
@@ -157,7 +164,7 @@ export default function RecruiterProfile() {
                     <button
                       className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
                       onClick={() =>
-                        navigate(`/job-openings/${job.id}/editReviewer`)
+                        navigate(`/job-openings/${job.jobOpeningId}/editReviewer`)
                       }
                     >
                       Update Reviewer
@@ -166,7 +173,7 @@ export default function RecruiterProfile() {
                     <button
                       className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
                       onClick={() =>
-                        navigate(`/job-openings/${job.id}/editInterviewer`)
+                        navigate(`/job-openings/${job.jobOpeningId}/editInterviewer`)
                       }
                     >
                       Update Interviewer
@@ -175,7 +182,7 @@ export default function RecruiterProfile() {
                     <button
                       className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
                       onClick={() =>
-                        navigate(`/job-openings/${job.id}/editDocument`)
+                        navigate(`/job-openings/${job.jobOpeningId}/editDocument`)
                       }
                     >
                       Update Document

@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using WebApis.Data;
 
 
 using WebApis.Dtos;
 using WebApis.Repository;
+using WebApis.Service.ErrroHandlingService;
 
 
 namespace WebApis.Controllers.UserController.ReviewerController
@@ -14,91 +16,85 @@ namespace WebApis.Controllers.UserController.ReviewerController
     [Route("api/[controller]")]
     public class ReviewerController : Controller
     {
-        private readonly AppDbContext _db;
-        public ReviewerController(AppDbContext db)
+        private readonly ICommonRepository<Reviewer> _reviewerRepository;
+        public ReviewerController(ICommonRepository<Reviewer> reviewerRepository)
         {
-            _db = db;
+            _reviewerRepository = reviewerRepository;
         }
         [HttpGet("All")]
-        [Authorize(Roles = "Reviewer,Admin,Recruiter,Interviewer")]
+        [Authorize(Roles = "Admin,Recruiter")]
         public async Task<IActionResult> GetAllReviewer()
         {
-            var reviewers = await _db.Reviewers
-                            .Select(r => new
-                            {
-                                r.Id,
-                                r.Department,
-                                User = new
-                                {
-                                    r.User.Id,
-                                    r.User.FullName,
-                                    r.User.Email,
-                                    Skills = r.User.UserSkills
-                                            .Select(s => new
-                                            {
-                                                Id = s.Skill.SkillId,
-                                                s.Skill.Name
-                                            })
-
-                                },
-                                Jobs = r.JobReviewers
-                                .Select(j => new
-                                {
-                                    j.JobOpeningId,
-                                    j.JobOpening.Title
-                                })
-                            })
-                             .ToListAsync();
-
-
-            return Ok(reviewers);
+            var reviewersList = await _reviewerRepository.GetAllByFilterAsync(
+                r => true,
+                r => new ReviewerInterviewerDetailsDto
+                {
+                    Id = r.Id,
+                    Department = r.Department,
+                    User = new UserDto
+                    {
+                       Id = r.User.Id,
+                       FullName = r.User.FullName,
+                       Email = r.User.Email,
+                       PhoneNumber = r.User.PhoneNumber,
+                       Domain = r.User.Domain,
+                       DomainExperienceYears = r.User.DomainExperienceYears
+                    }
+                });
+            if (reviewersList == null || !reviewersList.Any())
+                throw new KeyNotFoundException("No reviewers found");
+            return Ok(reviewersList);
         }
 
-        [HttpGet("{id}")]
-        [Authorize(Roles = "Reviewer,Admin,Recruiter,Interviewer")]
-        public async Task<IActionResult> GetReviewerById(int id)
+        [HttpGet("{UserId}")]
+        [Authorize(Roles = "Reviewer,Admin,Recruiter")]
+        public async Task<IActionResult> GetReviewerById(int userId)
         {
-            var reviewer = await _db.Reviewers
-                         .Where(i => i.UserId == id)
-                         .Select(i => new ReviewerInterviewerDetailsDto
-                         {
-                             Id = i.Id,
-                             Department = i.Department,
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            var userRoleClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
 
-                             User = new UserDto
-                             {
-                                 Id = i.User.Id,
-                                 FullName = i.User.FullName,
-                                 Email = i.User.Email,
-                                 PhoneNumber = i.User.PhoneNumber,
-                                 Domain = i.User.Domain,
-                                 DomainExperienceYears = i.User.DomainExperienceYears
-                             },
-                             AssignedJobOpenings = i.JobReviewers
-                                 .Select(j => new AssignedJobOpeningDto
-                                 {
-                                     JobOpeningId = j.JobOpeningId,
-                                     Title = j.JobOpening.Title,
-                                     Status = j.JobOpening.Status,
-                                     Department = j.JobOpening.Department,
-                                     JobType = j.JobOpening.JobType,
-                                     CreatedAt = j.JobOpening.CreatedAt,
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
+                throw new UnauthorizedAccessException("Invalid token");
 
-                                     CandidateCount = j.JobOpening.JobCandidates.Count,
-                                     ReviewerCount = j.JobOpening.JobReviewers.Count,
+            int loggedInUserId = int.Parse(userIdClaim);
 
-                                     MinDomainExperience = j.JobOpening.minDomainExperience,
-                                     Domain = j.JobOpening.Domain
-                                 })
-                                 .ToList()
-                         })
-                         .FirstOrDefaultAsync();
+            if (userRoleClaim == "Reviewer" && loggedInUserId != userId)
+                throw new AppException("You are unauthorized", 403);
+            var reviewerDetails = await _reviewerRepository.GetByFilterAsync(
+                r => r.UserId == userId,
+                r => new ReviewerInterviewerDetailsDto
+                {   
+                    Id = r.Id,
+                    Department = r.Department,
+                    User = new UserDto
+                    {
+                        Id = r.User.Id,
+                        FullName = r.User.FullName,
+                        Email = r.User.Email,
+                        PhoneNumber = r.User.PhoneNumber,
+                        Domain = r.User.Domain,
+                        DomainExperienceYears = r.User.DomainExperienceYears
+                    },
+                    AssignedJobOpenings = r.JobReviewers
+                        .Select(j => new AssignedJobOpeningDto
+                        {
+                            JobOpeningId = j.JobOpeningId,
+                            Title = j.JobOpening.Title,
+                            Status = j.JobOpening.Status,
+                            Department = j.JobOpening.Department,
+                            JobType = j.JobOpening.JobType,
+                            CreatedAt = j.JobOpening.CreatedAt,
+                            CandidateCount = j.JobOpening.JobCandidates.Count,
+                            ReviewerCount = j.JobOpening.JobReviewers.Count,
+                            MinDomainExperience = j.JobOpening.minDomainExperience,
+                            Domain = j.JobOpening.Domain
+                        })
+                        .ToList()
+            }); 
+            if (reviewerDetails == null)
+                throw new KeyNotFoundException("Reviewer not found");
 
-            if (reviewer == null)
-            {
-                return NotFound(new { Message = "Reviewer not found." });
-            }
-            return Ok(reviewer);
+            return Ok(reviewerDetails);
         }
     }
 }

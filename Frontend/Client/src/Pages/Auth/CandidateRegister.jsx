@@ -46,7 +46,7 @@ export default function CandidateRegister() {
   }
 
   const [skills, setSkills] = useState([{ name: "", experience: "" }]);
-  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeFile, setResumeFile] = useState("hello");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -160,7 +160,6 @@ export default function CandidateRegister() {
   // Handle form submission for registration
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
     try {
@@ -175,7 +174,7 @@ export default function CandidateRegister() {
       const candidateData = {
         ...formData,
         roleName: "Candidate",
-        resumePath: resumeUrl,
+        resumePath: resumeUrl || "No Resume",
         Educations: educations.map((edu) => ({
           degree: edu.degree,
           university: edu.university,
@@ -194,7 +193,7 @@ export default function CandidateRegister() {
         alert("you are not a recruiter ! login with recruiter id");
         navigateTo("/login");
       }
-      
+
       const response = await registerCandidate(candidateData, token);
       setCandidateId(response.id);
       setCvPath(response.resumePath);
@@ -221,8 +220,24 @@ export default function CandidateRegister() {
           percentage: "",
         },
       ]);
-    } catch (err) {
-      setError(err.message);
+    } catch (error) {
+      if (!error.status) {
+        alert("Network error. Please try again.");
+        return;
+      }
+      const { status, data } = error;
+      if (status === 400 && data.errors) {
+        if (Array.isArray(data.errors)) {
+          data.errors.forEach((msg) => alert(msg));
+        } else {
+          Object.values(data.errors)
+            .flat()
+            .forEach((msg) => alert("fields are required"));
+        }
+        return;
+      }
+      alert(data.Message || "Something went wrong");
+      return;
     } finally {
       setLoading(false);
     }
@@ -252,8 +267,23 @@ export default function CandidateRegister() {
 
       navigateTo(`/Recruiter/Profile/${authUser.id}`);
     } catch (err) {
-      alert("Failed to create Job Candidate entry");
-      console.error(err);
+      if (!error.status) {
+        alert("Network error. Please try again.");
+        return;
+      }
+      const { status, data } = error;
+      if (status === 400 && data.errors) {
+        if (Array.isArray(data.errors)) {
+          data.errors.forEach((msg) => alert(msg));
+        } else {
+          Object.values(data.errors)
+            .flat()
+            .forEach((msg) => alert("fields are required"));
+        }
+        return;
+      }
+      alert(data.Message || "Something went wrong");
+      return;
     } finally {
       setJobLoading(false);
     }

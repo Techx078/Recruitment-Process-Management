@@ -27,6 +27,13 @@ import EditJobDocument from "./Pages/JobOpenings/EditJobDocument.jsx";
 import EditJobSkill from "./Pages/JobOpenings/EditJobSkill.jsx";
 import CandidateProfile from "./Pages/Profile/CandidateProfile.jsx";
 import CandidateUpdate from "./Pages/Auth/CandidateUpdate.jsx";
+import InterviewerProfileProtector from "./Protectors/InterviewerProfileProtector.jsx";
+import ReviewerProfileProtector from "./Protectors/ReviewerProfileProtector.jsx";
+import RecruiterProfileProtector from "./Protectors/RecruiterProfileProtector.jsx";
+import CandidateProfileProtector from "./Protectors/CandidateProfileProtector.jsx";
+import CandidateProtector from "./Protectors/CandidateProtector.jsx";
+import JobOpeningEditProtector from "./Protectors/JobOpeningEditProtector.jsx";
+import authUserProtector from "./Protectors/authUserProtector.jsx";
 function App() {
   return (
     <AuthUserContextProvider>
@@ -40,11 +47,32 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
 
-            <Route path="/Candidate-register" element={<CandidateRegister />} />
-            <Route path="/Other-register" element={<OtherRegister />} />
+            <Route
+              path="/Candidate-register"
+              element={
+                <RecruiterProtector>
+                  <CandidateRegister />
+                </RecruiterProtector>
+              }
+            />
+            <Route
+              path="/Other-register"
+              element={
+                <RecruiterProtector>
+                  <OtherRegister />
+                </RecruiterProtector>
+              }
+            />
             <Route path="/job-openings" element={<JobOpeningsListWrapper />} />
 
-            <Route path="/job-openings/:id" element={<JobOpeningDetails />} />
+            <Route
+              path="/job-openings/:id"
+              element={
+                <authUserProtector>
+                  <JobOpeningDetails />
+                </authUserProtector>
+              }
+            />
             <Route
               path="/job-openings/Create"
               element={
@@ -56,79 +84,81 @@ function App() {
             <Route
               path="/job-openings/:id/edit"
               element={
-                <RecruiterProtector>
+                <JobOpeningEditProtector>
                   <EditJobOpening />
-                </RecruiterProtector>
+                </JobOpeningEditProtector>
               }
             />
             <Route
               path="/job-openings/:id/editReviewer"
               element={
-                <RecruiterProtector>
+                <JobOpeningEditProtector>
                   <EditJobReviewers />
-                </RecruiterProtector>
+                </JobOpeningEditProtector>
               }
             />
-             <Route
+            <Route
               path="/job-openings/:id/editInterviewer"
               element={
-                <RecruiterProtector>
+                <JobOpeningEditProtector>
                   <EditJobInterviewers />
-                </RecruiterProtector>
+                </JobOpeningEditProtector>
               }
             />
-             <Route
+            <Route
               path="/job-openings/:id/editDocument"
               element={
-                <RecruiterProtector>
+                <JobOpeningEditProtector>
                   <EditJobDocument />
-                </RecruiterProtector>
+                </JobOpeningEditProtector>
               }
             />
             <Route
               path="/job-openings/:id/editSkill"
               element={
-                <RecruiterProtector>
+                <JobOpeningEditProtector>
                   <EditJobSkill />
-                </RecruiterProtector>
+                </JobOpeningEditProtector>
               }
             />
             <Route
               path="/Recruiter/Profile/:UserId"
               element={
-                <RecruiterProtector>
+                <RecruiterProfileProtector>
                   <RecruiterProfile />
-                </RecruiterProtector>
+                </RecruiterProfileProtector>
               }
             />
             <Route
               path="/Interviewer/Profile/:UserId"
               element={
-                <OrganizationUserProtector>
+                <InterviewerProfileProtector>
                   <InterviewerProfile />
-                </OrganizationUserProtector>
+                </InterviewerProfileProtector>
               }
             />
             <Route
               path="/Reviewer/Profile/:UserId"
               element={
-                <OrganizationUserProtector>
+                <ReviewerProfileProtector>
                   <ReviewerProfile />
-                </OrganizationUserProtector>
+                </ReviewerProfileProtector>
               }
             />
-             <Route
+            <Route
               path="/Candidate/Profile/:UserId"
               element={
-               
+                <CandidateProfileProtector>
                   <CandidateProfile />
-               
+                </CandidateProfileProtector>
               }
             />
             <Route
               path="/Candidate/update/:UserId"
               element={
+                <CandidateProtector>
                   <CandidateUpdate />
+                </CandidateProtector>
               }
             />
             <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -2,11 +2,16 @@
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using WebApis.Data;
 using WebApis.Dtos;
 using WebApis.Repository;
+using WebApis.Repository.UserRepository;
 using WebApis.Service;
+using WebApis.Service.ErrroHandlingService;
+using WebApis.Service.ValidationService;
+using WebApis.Service.ValidationService.AuthUserVallidator;
 
 namespace WebApis.Controllers.UserController.AuthController
 {
@@ -14,7 +19,6 @@ namespace WebApis.Controllers.UserController.AuthController
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly AppDbContext _db;
         private readonly JwtService _jwt;
         private readonly CloudinaryService _cloudinaryService;
 
@@ -25,34 +29,45 @@ namespace WebApis.Controllers.UserController.AuthController
         private readonly ICommonRepository<Reviewer> _reviewerRepository;
         private readonly ICommonRepository<Interviewer> _interviewerRepository;
         private readonly ICommonRepository<Skill> _skillRepository;
-
-        public AuthController(AppDbContext db, 
+        private readonly ICommonValidator<RegisterCandidateDto> _registerCandidateValidator;
+        private readonly IUserRepository _UserRepository;
+        private readonly ICommonRepository<Education> _educationRepository;
+        private readonly ICommonRepository<UserSkill> _userSkillRepository;
+        private readonly ICommonValidator<RegisterOtherUserDto> _registerOtherUserValidator;
+        public AuthController(
             JwtService jwt,
             CloudinaryService cloudinaryService,
-
+            ICommonValidator<RegisterCandidateDto> registerCandidateValidator,
             ICommonRepository<User> commonRepository,
             ICommonRepository<Candidate> candidateRepository,
             ICommonRepository<Recruiter> recruiterRepository,
             ICommonRepository<Reviewer> reviewerRepository,
             ICommonRepository<Interviewer> interviewerRepository,
-            ICommonRepository<Skill> skillRepository
+            ICommonRepository<Skill> skillRepository,
+            IUserRepository UserRepository,
+            ICommonRepository<Education> educationRepository,
+            ICommonRepository<UserSkill> userSkillRepository,
+            ICommonValidator<RegisterOtherUserDto> registerOtherUserValidator
         )
         {
-            _db = db;
             _jwt = jwt;
             _cloudinaryService = cloudinaryService;
-
+            _registerCandidateValidator = registerCandidateValidator;
             _userRepository = commonRepository;
             _candidateRepository = candidateRepository;
             _recruiterRepository = recruiterRepository;
             _interviewerRepository = interviewerRepository;
             _reviewerRepository = reviewerRepository;
             _skillRepository = skillRepository;
+            _UserRepository = UserRepository;
+            _educationRepository = educationRepository;
+            _userSkillRepository = userSkillRepository;
+            _registerOtherUserValidator = registerOtherUserValidator;
         }
         [HttpPost("Candidate-bulk-register")]
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> BulkRegisterCandidates(
-        [FromBody] List<RegisterCandidateRequestDto> candidatesDto)
+        [FromBody] List<RegisterCandidateDto> candidatesDto)
         {
             if (candidatesDto == null || !candidatesDto.Any())
                 return BadRequest(new { message = "Candidate list is empty." });
@@ -67,35 +82,30 @@ namespace WebApis.Controllers.UserController.AuthController
                 .Select(x => x.Email.ToLower())
                 .ToList();
 
-            //find exists mail to skip
-            var alreadyExists = await _db.Users
-                .Where(u => incomingEmails.Contains(u.Email))
-                .Select(u => u.Email)
-                .ToHashSetAsync();
-
             //get all skills from database
             var existingSkills = await _skillRepository.GetAllAsync();
 
             //main loop
             foreach (var dto in candidatesDto)
             {
-                var email = dto.Email.ToLower();
+                var validationResult = await _registerCandidateValidator.ValidateAsync(dto);
 
-                if (alreadyExists.Contains(email))
+                if (!validationResult.IsValid)
                 {
-                    resultSkipped.Add(new { email, reason = "Email already exists" });
+                    resultSkipped.Add(new { dto.Email, reason = "validation errorr" });
                     continue;
                 }
-                if( dto.DomainExperienceYears < 0)
+                if (await _UserRepository.EmailExistsAsync(dto.Email.ToLower()))
                 {
-                    resultSkipped.Add(new { email, reason = "Domain experinece can't be negative." });
+                    resultSkipped.Add(new { dto.Email, reason = "email already exits" });
                     continue;
                 }
+
                 // create a user
                 var user = new User
                 {
                     FullName = dto.FullName,
-                    Email = email,
+                    Email = dto.Email.ToLower(),
                     PhoneNumber = dto.PhoneNumber,
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                     RoleName = "Candidate",
@@ -104,9 +114,8 @@ namespace WebApis.Controllers.UserController.AuthController
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _db.Users.Add(user);
-
-
+                await _userRepository.AddAsync(user);
+               
                 // create cadidate
                 var candidate = new Candidate
                 {
@@ -118,8 +127,7 @@ namespace WebApis.Controllers.UserController.AuthController
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                _db.Candidates.Add(candidate);
-
+                await _candidateRepository.AddAsync(candidate);
 
                 //create education
                 if (dto.Educations?.Any() == true)
@@ -133,48 +141,43 @@ namespace WebApis.Controllers.UserController.AuthController
                         PassingYear = e.PassingYear,
                         Percentage = e.Percentage
                     });
-
-                    _db.Educations.AddRange(educationEntities);
+                    await _educationRepository.AddRangeAsync(educationEntities);
                 }
 
 
                 //add skill for candidate
                 if (dto.Skills?.Any() == true)
                 {
+                    var userSkills = new List<UserSkill>();
+
                     foreach (var skillDto in dto.Skills)
                     {
-                        var normalized = skillDto.Name.Trim().ToLower();
+                        var skillName = skillDto.Name.Trim().ToLower();
+                        var skill = await _skillRepository.GetByFilterAsync(s => s.Name.ToLower() == skillName.ToLower());
 
-                        var skill = existingSkills
-                            .FirstOrDefault(x => x.Name.ToLower() == normalized);
-
-                        // Create skill if missing
                         if (skill == null)
                         {
                             skill = new Skill { Name = skillDto.Name };
-
-                            _db.Skill.Add(skill);
-                            existingSkills.Add(skill);
+                            await _skillRepository.AddAsync(skill);
                         }
 
-                        _db.UserSkill.Add(new UserSkill
+                        userSkills.Add(new UserSkill
                         {
-                            User = user,          
-                            Skill = skill,
+                            UserId = user.Id,
+                            SkillId = skill.SkillId,
                             YearsOfExperience = skillDto.Experience,
                             ProficiencyLevel = "beginner",
                             CreatedAt = DateTime.UtcNow,
                             UpdatedAt = DateTime.UtcNow
                         });
                     }
+
+                    await _userSkillRepository.AddRangeAsync(userSkills);
                 }
 
                 createdCandidates.Add((candidate, user));
 
             }
-
-            //commin everthing a once
-            await _db.SaveChangesAsync();
 
             var resultCreated = createdCandidates.Select(x => new
             {
@@ -198,29 +201,33 @@ namespace WebApis.Controllers.UserController.AuthController
         //Implementation remaining that cadidate should attached to job opening when created by recruiter
         [HttpPost("register-candidate")]
         [Authorize(Roles = "Recruiter")]
-        public async Task<IActionResult> RegisterCandidate([FromBody] RegisterCandidateRequestDto dto)
+        public async Task<IActionResult> RegisterCandidate([FromBody] RegisterCandidateDto dto)
         {
-            var existingUser = await _db.Users.AnyAsync(u => u.Email == dto.Email.ToLower());
-            if (existingUser)
-                return BadRequest(new { message = "Email already registered." });
+            var validationResult = await _registerCandidateValidator.ValidateAsync(dto);
 
-            string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-
-            if (dto.DomainExperienceYears < 0)
-                return BadRequest("Experience must be positive");
-
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    errors = validationResult.Errors
+                });
+            }
+            if (await _UserRepository.EmailExistsAsync(dto.Email)) {
+                throw new AppException("Email already registered.", 400);
+            }
             var user = new User
             {
                 FullName = dto.FullName,
                 Email = dto.Email.ToLower(),
                 PhoneNumber = dto.PhoneNumber,
-                PasswordHash = passwordHash,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 Domain = dto.Domain.ToString(),
                 DomainExperienceYears = dto.DomainExperienceYears,
                 RoleName = "Candidate",
                 CreatedAt = DateTime.UtcNow
             };
             await _userRepository.AddAsync(user);
+
             var candidate = new Candidate
             {
                 UserId = user.Id,
@@ -231,35 +238,30 @@ namespace WebApis.Controllers.UserController.AuthController
                 UpdatedAt = DateTime.UtcNow
             };
             await _candidateRepository.AddAsync(candidate);
-          
-            // Add Education Records
-            if (dto.Educations != null && dto.Educations.Any())
+
+            if (dto.Educations?.Any() == true)
             {
-                foreach (var edu in dto.Educations)
+                var educations = dto.Educations.Select(e => new Education
                 {
-                    var education = new Education
-                    {
-                        CandidateId = candidate.Id,
-                        Degree = edu.Degree,
-                        University = edu.University,
-                        College = edu.College,
-                        PassingYear = edu.PassingYear,
-                        Percentage = edu.Percentage
-                    };
+                    CandidateId = candidate.Id,
+                    Degree = e.Degree,
+                    University = e.University,
+                    College = e.College,
+                    PassingYear = e.PassingYear,
+                    Percentage = e.Percentage
+                });
 
-                    _db.Educations.Add(education);
-                }
-
-                await _db.SaveChangesAsync();
+                await _educationRepository.AddRangeAsync(educations);
             }
 
-            // Add Skills Records
-            if (dto.Skills != null && dto.Skills.Any())
+            if (dto.Skills?.Any() == true)
             {
+                var userSkills = new List<UserSkill>();
+
                 foreach (var skillDto in dto.Skills)
                 {
                     var skillName = skillDto.Name.Trim().ToLower();
-                    var skill = await _db.Skill.FirstOrDefaultAsync(s => s.Name.ToLower() == skillName);
+                    var skill = await _skillRepository.GetByFilterAsync(s => s.Name.ToLower() == skillName.ToLower());
 
                     if (skill == null)
                     {
@@ -267,26 +269,25 @@ namespace WebApis.Controllers.UserController.AuthController
                         await _skillRepository.AddAsync(skill);
                     }
 
-                    var userSkill = new UserSkill
+                    userSkills.Add(new UserSkill
                     {
                         UserId = user.Id,
                         SkillId = skill.SkillId,
                         YearsOfExperience = skillDto.Experience,
-                        ProficiencyLevel = "begineer",
+                        ProficiencyLevel = "beginner",
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
-                    };
-                    _db.UserSkill.Add(userSkill);
+                    });
                 }
-                await _db.SaveChangesAsync();
+
+                await _userSkillRepository.AddRangeAsync(userSkills);
             }
 
             return Ok(new
             {
-                id= candidate.Id,
-                resumePath=candidate.ResumePath,
+                id = candidate.Id,
+                resumePath = candidate.ResumePath,
                 message = "Candidate created successfully by Recruiter.",
-                user = new {  id = user.Id, name = user.FullName, email = user.Email, role = user.RoleName , user.Domain,user.DomainExperienceYears }
             });
         }
 
@@ -310,7 +311,7 @@ namespace WebApis.Controllers.UserController.AuthController
 
         [HttpPost("register-Users")]//register recruiter reviewer and interviewer by admin
         [Authorize(Roles = "Recruiter,Admin")]
-        public async Task<IActionResult> RegisterUser([FromBody] RegisterOtherUserRequestDto dto)
+        public async Task<IActionResult> RegisterUser([FromBody] RegisterOtherUserDto dto)
         {
             //  Validate role
             var allowedRoles = new[] { "Recruiter", "Reviewer", "Interviewer" };
@@ -320,22 +321,25 @@ namespace WebApis.Controllers.UserController.AuthController
                 return BadRequest(new { message = "Invalid role", });
             }
 
+            var validationResult = await _registerOtherUserValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    errors = validationResult.Errors
+                });
+            }
             //  Check email duplication
-            var existingUser = await _userRepository.GetByFilterAsync(u => u.Email == dto.Email.ToLower());
-            if (existingUser != null )
-                return BadRequest(new { message = "Email already registered." });
-
-            if(dto.DomainExperienceYears < 0)
-                return BadRequest(new { message = "domain experience should be positie " });
+            if (await _UserRepository.EmailExistsAsync(dto.Email.ToLower()))
+                throw new AppException("Email already registered.", 400);
             
             // Create base user
-            string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
             var user = new User
             {
                 FullName = dto.FullName,
                 Email = dto.Email.ToLower(),
                 PhoneNumber = dto.PhoneNumber,
-                PasswordHash = passwordHash,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 Domain = dto.Domain.ToString(),
                 DomainExperienceYears = dto.DomainExperienceYears,
                 RoleName = dto.RoleName.ToString(),
@@ -379,12 +383,14 @@ namespace WebApis.Controllers.UserController.AuthController
                     break;
             }
 
-            if (dto.Skills != null && dto.Skills.Any())
+            if (dto.Skills?.Any() == true)
             {
+                var userSkills = new List<UserSkill>();
+
                 foreach (var skillDto in dto.Skills)
                 {
                     var skillName = skillDto.Name.Trim().ToLower();
-                    var skill = await _db.Skill.FirstOrDefaultAsync(s => s.Name.ToLower() == skillName);
+                    var skill = await _skillRepository.GetByFilterAsync(s => s.Name.ToLower() == skillName.ToLower());
 
                     if (skill == null)
                     {
@@ -392,24 +398,23 @@ namespace WebApis.Controllers.UserController.AuthController
                         await _skillRepository.AddAsync(skill);
                     }
 
-                    var userSkill = new UserSkill
+                    userSkills.Add(new UserSkill
                     {
                         UserId = user.Id,
                         SkillId = skill.SkillId,
                         YearsOfExperience = skillDto.Experience,
-                        ProficiencyLevel = "begineer",
+                        ProficiencyLevel = "beginner",
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
-                    };
-                    _db.UserSkill.Add(userSkill);
+                    });
                 }
-                await _db.SaveChangesAsync();
+
+                await _userSkillRepository.AddRangeAsync(userSkills);
             }
 
             return Ok(new
             {
-                message = $"{dto.RoleName} created successfully by Admin.",
-                user = new { id = user.Id, name = user.FullName, email = user.Email, role = user.RoleName, user.Domain,user.DomainExperienceYears }
+                message = $"{dto.RoleName} created successfully.",
             });
         }
         
@@ -417,7 +422,7 @@ namespace WebApis.Controllers.UserController.AuthController
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest req)
         {
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == req.Email.ToLower());
+            var user = await _userRepository.GetByFilterAsync(u => u.Email == req.Email.ToLower());
             if (user == null)
                 return Unauthorized(new { message = "Invalid email or password." });
 
@@ -453,18 +458,18 @@ namespace WebApis.Controllers.UserController.AuthController
 
             int userId = int.Parse(userIdClaim);
 
-            var user = await _db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => new
-                {
-                    id = u.Id,
-                    name = u.FullName,
-                    email = u.Email,
-                    phone = u.PhoneNumber,
-                    role = u.RoleName,
-                    createdAt = u.CreatedAt
-                })
-                .FirstOrDefaultAsync();
+            var user = await _userRepository.GetByFilterAsync(
+                         u => u.Id == userId,
+                         u => new
+                         {
+                             id = u.Id,
+                             name = u.FullName,
+                             email = u.Email,
+                             phone = u.PhoneNumber,
+                             role = u.RoleName,
+                             createdAt = u.CreatedAt
+                         }
+                     );
 
             if (user == null)
                 return NotFound(new { message = "User not found." });

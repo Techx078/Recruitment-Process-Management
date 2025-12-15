@@ -1,6 +1,6 @@
 ﻿namespace WebApis.Dtos
 {
-    public class RegisterOtherUserRequestDto
+    public class RegisterOtherUserDto
     {
         public string FullName { get; set; }
         public string Email { get; set; }

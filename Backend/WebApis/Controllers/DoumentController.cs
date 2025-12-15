@@ -9,11 +9,9 @@ namespace WebApis.Controllers
     [Route("api/[controller]")]
     public class DocumentController : ControllerBase
     {
-        private readonly AppDbContext _db;
         private readonly ICommonRepository<Document> _repository;
-        public DocumentController(AppDbContext db , ICommonRepository<Document>  repository )
+        public DocumentController(ICommonRepository<Document>  repository )
         {
-            _db = db;
             _repository = repository;
         }
         [HttpGet("All")]

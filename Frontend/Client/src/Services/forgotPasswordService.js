@@ -14,11 +14,10 @@ export const sendOtp = async (email) => {
     );
     return true;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message ||
-      error.response?.data ||
-      "Failed to send OTP"
-    );
+     const message =
+      error.response?.data?.message || "Something went wrong";
+
+    throw new Error(message);
   }
 };
 
@@ -34,10 +33,9 @@ export const resetPassword = async (payload) => {
     );
     return true;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message ||
-      error.response?.data ||
-      "Error resetting password"
-    );
+     const message =
+      error.response?.data?.message || "Something went wrong";
+
+    throw new Error(message);
   }
 };

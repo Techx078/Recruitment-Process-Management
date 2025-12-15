@@ -9,11 +9,9 @@ namespace WebApis.Controllers
     [Route("api/[controller]")]
     public class SkillController : ControllerBase
     {
-        private readonly AppDbContext _db;
         private readonly ICommonRepository<Skill> _repository;
-        public SkillController(AppDbContext db, ICommonRepository<Skill> repository)
+        public SkillController( ICommonRepository<Skill> repository)
         {
-            _db = db;
             _repository = repository;
         }
         [HttpGet("All")]

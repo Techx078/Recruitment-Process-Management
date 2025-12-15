@@ -7,7 +7,7 @@
 
         public UserDto User { get; set; }
 
-        public List<AssignedJobOpeningDto> AssignedJobOpenings { get; set; }
+        public List<AssignedJobOpeningDto>? AssignedJobOpenings { get; set; }
     }
 
 }
