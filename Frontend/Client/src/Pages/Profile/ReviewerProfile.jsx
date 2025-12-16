@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { fetchReviewerService } from "../../Services/ReviewerService";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -105,12 +104,20 @@ export default function ReviewerProfile({}) {
 
                       {/* Show Button */}
                       <button
-                        className="px-4 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                        className="px-4 py-1 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700"
+                        onClick={() => {
+                          navigate(`/job-openings/${job.jobOpeningId}/pending-reviews`);
+                        }}
+                      >
+                        Pending Candidates Review
+                      </button>
+                      <button
+                        className="px-4 py-1 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700"
                         onClick={() => {
                           navigate(`/job-openings/${job.jobOpeningId}`);
                         }}
                       >
-                        Show
+                        Show-Job
                       </button>
                     </div>
                   </div>

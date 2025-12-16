@@ -1,7 +1,6 @@
 import "./App.css";
 import { Routes, Route } from "react-router-dom";
 import Login from "./Pages/Auth/Login";
-
 import CandidateRegister from "./Pages/Auth/CandidateRegister.jsx";
 import Home from "./Pages/Home";
 import Navbar from "./Component/Navbar.jsx";
@@ -12,7 +11,6 @@ import JobOpeningDetails from "./Pages/JobOpenings/JobOpeningDetails.jsx";
 import CreateJobOpening from "./Pages/JobOpenings/CreateJobOpening.jsx";
 import JobOpeningsListWrapper from "./Pages/JobOpenings/JobOpeningListWrapper.jsx";
 import InterviewerProfile from "./Pages/Profile/InterviewerProfile.jsx";
-import InterviewerProtector from "./Protectors/InterviewerProtector.jsx";
 import RecruiterProtector from "./Protectors/RecruiterProtector.jsx";
 import ReviewerProtector from "./Protectors/ReviewerProtector.jsx";
 import ReviewerProfile from "./Pages/Profile/ReviewerProfile.jsx";
@@ -20,7 +18,6 @@ import ForgotPassword from "./Pages/Auth/ForgotPassword.jsx";
 import RecruiterProfile from "./Pages/Profile/RecruiterProfile.jsx";
 import EditJobOpening from "./Pages/JobOpenings/EditJobOpening.jsx";
 import CandidateBulkRegister from "./Pages/Auth/CandidateBulkRegister.jsx";
-import OrganizationUserProtector from "./Protectors/OrganizationUserProtector.jsx";
 import EditJobReviewers from "./Pages/JobOpenings/EditJobReviewers.jsx";
 import EditJobInterviewers from "./Pages/JobOpenings/EditJobInterviewer.jsx";
 import EditJobDocument from "./Pages/JobOpenings/EditJobDocument.jsx";
@@ -33,7 +30,9 @@ import RecruiterProfileProtector from "./Protectors/RecruiterProfileProtector.js
 import CandidateProfileProtector from "./Protectors/CandidateProfileProtector.jsx";
 import CandidateProtector from "./Protectors/CandidateProtector.jsx";
 import JobOpeningEditProtector from "./Protectors/JobOpeningEditProtector.jsx";
-import authUserProtector from "./Protectors/authUserProtector.jsx";
+import PendingReviews from "./Pages/PendingReviews.jsx";
+import ReviewCandidate from "./Pages/ReviewCandidate.jsx";
+import ReviewerLevelProtector from "./Protectors/ReviewerLevelProtector.jsx";
 function App() {
   return (
     <AuthUserContextProvider>
@@ -46,7 +45,6 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
-
             <Route
               path="/Candidate-register"
               element={
@@ -64,7 +62,6 @@ function App() {
               }
             />
             <Route path="/job-openings" element={<JobOpeningsListWrapper />} />
-
             <Route
               path="/job-openings/:id"
               element={
@@ -162,13 +159,28 @@ function App() {
               }
             />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-
             <Route
               path="/Candidate-bulk-register"
               element={
                 <RecruiterProtector>
                   <CandidateBulkRegister />
                 </RecruiterProtector>
+              }
+            />
+            <Route
+              path="/review/:jobCandidateId"
+              element={
+                <ReviewerProtector>
+                  <ReviewCandidate />
+                </ReviewerProtector>
+              }
+            />
+            <Route
+              path="/job-openings/:jobOpeningId/pending-reviews"
+              element={
+                <ReviewerLevelProtector>
+                  <PendingReviews />
+                </ReviewerLevelProtector>
               }
             />
           </Routes>

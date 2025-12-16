@@ -23,7 +23,7 @@ export const fetchJobOpeningsByRecruiter = async (token, id) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data.createdJobOpenings;
+    return response.data.assignedJobOpenings;
   } catch (error) {
     console.error("Error in fetch Job Openings by Recruiter ID:", error);
     throw error;

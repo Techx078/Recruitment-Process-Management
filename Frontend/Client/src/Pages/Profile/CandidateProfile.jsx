@@ -3,18 +3,20 @@ import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { getCandidateDetails } from "../../Services/CandidateService";
 import { getCandidateJobOpenings } from "../../Services/CandidateService";
+import { useAuthUserContext } from "../../Context/AuthUserContext";
 export default function CandidateProfile({}) {
   let { UserId } = useParams();
   let [candidate, setCandidate] = useState(null);
   let [jobApplications, setJobApplications] = useState([]);
   let [notFound , SetNotFound] = useState(false);
   const navigate = useNavigate();
+  const { authUser } = useAuthUserContext();
   useEffect(() => {
-      let token = localStorage.getItem("token");
+    let token = localStorage.getItem("token");
     let fetchCandidate = async () => {
       try{
-      let data = await getCandidateDetails(UserId,token);
-      setCandidate(data);
+        let data = await getCandidateDetails(UserId,token);
+        setCandidate(data);
       }catch(e){
         alert("detail not found !");
         SetNotFound(true);
@@ -22,8 +24,8 @@ export default function CandidateProfile({}) {
     };
     let fetchJobApplications = async () => {
       try{
-      let jobs = await getCandidateJobOpenings(UserId,token);
-      setJobApplications(jobs);
+        let jobs = await getCandidateJobOpenings(UserId,token);
+        setJobApplications(jobs);
       }catch(e){
         alert("detail not found of job opening")
       }
@@ -36,8 +38,8 @@ export default function CandidateProfile({}) {
     return <div>Loading...</div>;
   }
    if( notFound ){
-    return <div>Not found...</div>;
-  }
+  return <div>Not found...</div>;
+}
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -117,14 +119,18 @@ export default function CandidateProfile({}) {
                 </a>
               </div>
             )}
-            <div>
-              <button
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-blue-700"
-                onClick={() => navigate(`/candidate/update/${UserId}`)}
-              >
-                Update-Profile
-              </button>
-            </div>
+            {authUser &&
+              authUser.roleName === "Candidate" &&
+              authUser.id === candidate.userId && (
+                <div>
+                  <button
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-blue-700"
+                    onClick={() => navigate(`/candidate/update/${UserId}`)}
+                  >
+                    Update-Profile
+                  </button>
+                </div>
+              )}
           </div>
         </div>
 

@@ -586,9 +586,9 @@ export default function CandidateRegister() {
           <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-3">
             {jobOpenings.map((job) => (
               <div
-                key={job.id}
+                key={job.jobOpeningId}
                 className={`flex items-center justify-between p-2 border rounded ${
-                  selectedJobId === job.id
+                  selectedJobId === job.jobOpeningId
                     ? "bg-blue-50 border-blue-400"
                     : "bg-white"
                 }`}
@@ -596,14 +596,14 @@ export default function CandidateRegister() {
                 <label className="flex gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={selectedJobId === job.id}
-                    onChange={() => handleJobSelect(job.id)}
+                    checked={selectedJobId === job.jobOpeningId}
+                    onChange={() => handleJobSelect(job.jobOpeningId)}
                   />
                   <span className="font-medium">{job.title}</span>
                 </label>
 
                 <button
-                  onClick={() => handleShowJob(job.id)}
+                  onClick={() => handleShowJob(job.jobOpeningId)}
                   type="button"
                   className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm"
                 >
