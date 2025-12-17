@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { updateReviewStatus } from "../Services/JobCandidateService.js";
+import { useAuthUserContext } from "../Context/AuthUserContext.jsx";
+import { getJobOpeningById } from "../Services/JobOpeningService.js";
+import { getJobCandidateById } from "../Services/JobCandidateService.js";
+
 const ReviewCandidate = () => {
   const { jobCandidateId } = useParams();
   const navigate = useNavigate();
@@ -9,7 +13,20 @@ const ReviewCandidate = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [jobOpeningReviewer, setjobOpeningReviewer] = useState([]);
 
+  const { authUser } = useAuthUserContext();
+
+  //for check that reviewer is assigned to that job opening
+  useEffect(() => {
+    const fetchData = async () => {
+    const jobCandidate = await getJobCandidateById(jobCandidateId);
+     const jobOpening =await getJobOpeningById(jobCandidate.jobOpeningId, localStorage.getItem("token"))
+     setjobOpeningReviewer(jobOpening.reviewers);
+    };
+    fetchData();
+  }, []);
+ 
   const submitReview = async (isApproved) => {
     setError("");
     setSuccess("");
@@ -30,8 +47,8 @@ const ReviewCandidate = () => {
         navigate(-1); // go back to pending reviews
       }, 1500);
     } catch (error) {
-        console.log(error);
-        
+      console.log(error);
+
       if (!error.status) {
         setError("Network error. Please try again.");
         return;
@@ -42,13 +59,23 @@ const ReviewCandidate = () => {
           data.errors.forEach((msg) => setError(msg));
         }
         return;
-      } 
+      }
       setError(data.Message || "Something went wrong");
       return;
     } finally {
       setLoading(false);
     }
   };
+  if (
+   authUser.role === "Reviewer" &&
+    !jobOpeningReviewer.some((i) => i.email === authUser.email)
+  ) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        only assigned reviewer can access.
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto mt-10 px-4">

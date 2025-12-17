@@ -29,6 +29,12 @@ namespace WebApis.Repository
             Expression<Func<T, TResult>> selector,
             Expression<Func<T, object>>? orderBy = null,
             bool descending = false);
+
+        public Task<List<TResult>?> GetByOrderWithSelectorAsync<TResult>(
+          Expression<Func<T, bool>> filter,
+          Expression<Func<T, TResult>> selector,
+          Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
+
         Task<T> AddAsync(T entity);
 
         Task AddRangeAsync(IEnumerable<T> entity);

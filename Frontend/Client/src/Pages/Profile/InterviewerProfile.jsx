@@ -108,12 +108,20 @@ export default function InterviewerProfile({}) {
 
                       {/* Show Button */}
                       <button
-                        className="px-4 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                        className="px-4 py-1 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700"
                         onClick={() =>
                           navigate(`/job-openings/${job.jobOpeningId}`)
                         }
                       >
                         Show
+                      </button>
+                       <button
+                        className="px-4 py-1 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700"
+                        onClick={() =>
+                          navigate(`/job-openings/${job.jobOpeningId}/technical-pool`)
+                        }
+                      >
+                        Pending-Interview
                       </button>
                     </div>
                   </div>

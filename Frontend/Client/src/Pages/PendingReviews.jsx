@@ -43,7 +43,7 @@ const PendingReviews = () => {
       const { status, data } = error;
       if (status === 400 && data.errors) {
         if (Array.isArray(data.errors)) {
-          data.errors.forEach((msg) => setError(msg));
+          data.errors.forEach((msg) => alert(msg));
         }
         return;
       }
@@ -57,7 +57,16 @@ const PendingReviews = () => {
   const openResume = (cvPath) => {
     window.open(cvPath, "_blank");
   };
-
+  if (
+    authUser.role === "Reviewer" &&
+    !jobOpeningReviewer.some((i) => i.email === authUser.email)
+  ) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        only assigned reviewer can access.
+      </div>
+    );
+  }
   if (loading) return <p>Loading pending reviews...</p>;
   if (error)
     return (
@@ -141,10 +150,8 @@ const PendingReviews = () => {
                         View Profile
                       </button>
                       {authUser &&
-                        authUser.role === "Reviewer" &&
-                        jobOpeningReviewer.some(
-                          (r) => r.email === authUser.email
-                        ) && (
+                        authUser.role === "Reviewer" 
+                         && (
                           <button
                             onClick={() =>
                               navigate(`/review/${c.jobCandidateId}`)

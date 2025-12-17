@@ -122,6 +122,22 @@ namespace WebApis.Repository
             return await query.Select(selector).FirstOrDefaultAsync();
         }
 
+        public async Task<List<TResult>?> GetByOrderWithSelectorAsync<TResult>(
+            Expression<Func<T, bool>> filter,
+            Expression<Func<T, TResult>> selector,
+            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
+        {
+            IQueryable<T> query = _dbSet;
+
+            if (filter != null)
+                query = query.Where(filter);
+
+            if (orderBy != null)
+                query = orderBy(query);
+
+            return await query.Select(selector).ToListAsync();
+        }
+
         public async Task<T> UpdateAsync(T entity)
         {
             var updatedEntity = _dbSet.Update(entity).Entity;

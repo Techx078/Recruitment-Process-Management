@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
 
-const ReviewerLevelProtector = ({ children }) => {
+const InterviewerLevelProtector = ({ children }) => {
   const navigate = useNavigate();
   const { authUser } = useAuthUserContext();
   const [checking, setChecking] = useState(true);
@@ -10,13 +10,13 @@ const ReviewerLevelProtector = ({ children }) => {
   useEffect(() => {
     if (
       authUser &&
-      (authUser.role == "Reviewer" ||
+      (authUser.role == "Interviewer" ||
         authUser.role == "Recruiter" ||
         authUser.role == "Admin")
     ) {
       setChecking(false);
     } else {
-      alert("Access denied. Only Reviewer, Recruiter or Admin can access.");
+      alert("Access denied. Only Interviewer, Recruiter or Admin can access.");
       navigate("/login");
     }
   }, []);
@@ -28,4 +28,4 @@ const ReviewerLevelProtector = ({ children }) => {
   return children;
 };
 
-export default ReviewerLevelProtector;
+export default InterviewerLevelProtector;

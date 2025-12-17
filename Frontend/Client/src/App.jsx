@@ -33,6 +33,11 @@ import JobOpeningEditProtector from "./Protectors/JobOpeningEditProtector.jsx";
 import PendingReviews from "./Pages/PendingReviews.jsx";
 import ReviewCandidate from "./Pages/ReviewCandidate.jsx";
 import ReviewerLevelProtector from "./Protectors/ReviewerLevelProtector.jsx";
+import TechnicalInterviewPool from "./Pages/TechnicalInterviewPool.jsx";
+import InterviewerLevelProtector from "./Protectors/InterviewerLevelProtector.jsx";
+import ScheduleInterview from "./Pages/ScheduleInterview.jsx";
+import InterviewFeedback from "./Pages/InterviewFeedback.jsx";
+import InterviewerAssignedProtector from "./Protectors/InterviewerProtector.jsx";
 function App() {
   return (
     <AuthUserContextProvider>
@@ -183,6 +188,31 @@ function App() {
                 </ReviewerLevelProtector>
               }
             />
+            <Route
+              path="/job-openings/:jobOpeningId/technical-pool"
+              element={
+                <InterviewerLevelProtector>
+                  <TechnicalInterviewPool />
+                </InterviewerLevelProtector>
+              }
+            />
+            <Route
+              path="/schedule-interview/:jobCandidateId"
+              element={
+                <InterviewerAssignedProtector>
+                  <ScheduleInterview />
+                </InterviewerAssignedProtector>
+              }
+            />
+            <Route
+              path="/interview-feedback/:jobCandidateId"
+              element={
+                <InterviewerAssignedProtector>
+                  <InterviewFeedback />
+                </InterviewerAssignedProtector>
+              }
+            />
+            
           </Routes>
         </main>
 

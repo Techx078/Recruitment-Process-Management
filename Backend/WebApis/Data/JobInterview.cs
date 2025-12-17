@@ -15,6 +15,9 @@
         public string MeetingLink { get; set; }
         public DateTime ScheduledAt { get; set; }
 
+        public bool IsCompleted { get; set; }
+        public bool? IsPassed { get; set; }
+
         public int? Marks { get; set; }
         public string? Feedback { get; set; }
 
