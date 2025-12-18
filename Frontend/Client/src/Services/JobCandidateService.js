@@ -196,3 +196,25 @@ export const submitInterviewFeedback = async (jobCandidateId, data) => {
     }
   }
 };
+
+export const getHrPool = async (jobOpeningId) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/pool/hr/${jobOpeningId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    // Throw error to be handled in frontend catch
+    if (error.response) {
+      throw error.response; // include status and data
+    } else {
+      throw error; // network or other error
+    }
+  }
+};

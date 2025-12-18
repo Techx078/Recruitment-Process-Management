@@ -75,7 +75,7 @@ const EditJobInterviewers = () => {
           <div>
             <button
               type="button"
-              onClick={() => window.open(`/Interviewer/Profile/${r.user.id}`)}
+              onClick={() => window.open(`/Interviewer/Profile/${i.user.id}`,"_blank")}
               className="px-5 py-1 ml-4 rounded bg-gray-600 text-white hover:bg-gray-800"
             >
               Profile

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerOtherUser } from "../../Services/authService";
+import { useAuthUserContext } from "../../Context/AuthUserContext";
 
 export default function OtherRegister() {
+  const {authUser} = useAuthUserContext();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -100,7 +102,7 @@ export default function OtherRegister() {
         DomainExperienceYears: 0,
       });
       setSkills([{ name: "", experience: "" }]);
-      navigateTo("/Recruiter/Profile");
+      navigateTo(`/Recruiter/Profile/${authUser.id}`);
     } catch (error) {
       if (!error.status) {
         alert("Network error. Please try again.");

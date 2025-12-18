@@ -38,6 +38,7 @@ import InterviewerLevelProtector from "./Protectors/InterviewerLevelProtector.js
 import ScheduleInterview from "./Pages/ScheduleInterview.jsx";
 import InterviewFeedback from "./Pages/InterviewFeedback.jsx";
 import InterviewerAssignedProtector from "./Protectors/InterviewerProtector.jsx";
+import HrPool from "./Pages/HrPool.jsx";
 function App() {
   return (
     <AuthUserContextProvider>
@@ -212,7 +213,7 @@ function App() {
                 </InterviewerAssignedProtector>
               }
             />
-            
+            <Route path="/pool/hr/:jobOpeningId" element={<HrPool />} />
           </Routes>
         </main>
 

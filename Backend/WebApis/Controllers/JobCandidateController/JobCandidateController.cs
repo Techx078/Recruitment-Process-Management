@@ -416,8 +416,8 @@ namespace WebApis.Controllers.JobCandidateController
 
             return Ok(interviews);
         }
-
-
+        
+        
         [HttpPost("schedule/{jobCandidateId}")]
         [Authorize(Roles = "Interviewer")]
         public async Task<IActionResult> ScheduleInterview(
@@ -514,6 +514,9 @@ namespace WebApis.Controllers.JobCandidateController
             int jobCandidateId,
             [FromBody] InterviewFeedbackDto dto)
         {
+            if (dto.IsPassed && string.IsNullOrEmpty(dto.NextStep))
+                return BadRequest("NextStep is required when interview is passed");
+
             var userIdClaim = User.Claims
                 .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
@@ -535,6 +538,14 @@ namespace WebApis.Controllers.JobCandidateController
 
             if (jobCandidate == null)
                 return NotFound("Job candidate not found");
+
+            var isInterviewerAssigned = await _jobOpeningRepository.ExistsAsync(
+                j => j.Id == jobCandidate.JobOpeningId &&
+                     j.JobInterviewers.Any(i => i.InterviewerId == interviewer.Id)
+            );
+
+            if (!isInterviewerAssigned)
+                return Forbid("You are not assigned to this job opening");
 
             if (jobCandidate.Status != "ScheduledInterview")
                 return BadRequest("Candidate is not in scheduled interview state");
@@ -598,5 +609,67 @@ namespace WebApis.Controllers.JobCandidateController
 
             return Ok(new { message = "Interview feedback submitted successfully" });
         }
+
+        [HttpGet("pool/hr/{jobOpeningId}")]
+        [Authorize(Roles = "Interviewer,Recruiter,Admin")] 
+        public async Task<IActionResult> GetHrPool( int jobOpeningId )
+        {
+            if( !await _jobOpeningRepository.ExistsAsync( j => j.Id == jobOpeningId))
+            {
+                throw new KeyNotFoundException("job opening not found");
+            }
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            if (userRoleClaim == "Interviewer") {
+
+                int loggedInUserId = int.Parse(userIdClaim);
+
+                var hr = await _interviewerRepository.GetByFilterAsync(
+                    i => i.UserId == loggedInUserId && i.Department == "HR",
+                    i => new { i.Id }
+                );
+
+                if (hr == null)
+                    return Unauthorized("HR profile not found");
+
+                //Job Opening Assignment
+                var isHrAssigned = await _jobOpeningRepository.ExistsAsync(
+                    j => j.Id == jobOpeningId &&
+                         j.JobInterviewers.Any(i =>
+                             i.InterviewerId == hr.Id &&
+                             i.Interviewer.Department == "HR")
+                );
+
+                if (!isHrAssigned)
+                    return Forbid("You are not assigned to this job opening");
+
+            }
+            var candidates = await _jobCandidateRepositoryCommon
+                .GetAllByFilterAsync(
+                    c => c.JobOpeningId == jobOpeningId
+                      && c.Status == "WaitForInterView"
+                      && c.IsNextHrRound == true,
+                    c => new HrPoolCandidateDto
+                    {
+                        JobCandidateId = c.Id,
+                        CandidateId = c.CandidateId,
+                        UserId = c.Candidate.UserId,
+                        CandidateName = c.Candidate.User.FullName,
+                        Email = c.Candidate.User.Email,
+                        RoundCompleted = c.RoundNumber,
+                        JobTitle = c.JobOpening.Title,
+                        AppliedAt = c.CreatedAt
+                    }
+                );
+            return Ok(candidates);
+        }
+
+
     }
 }

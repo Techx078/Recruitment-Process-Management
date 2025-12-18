@@ -4,28 +4,39 @@ import { fetchInterviewerService } from "../../services/InterviewerService";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function InterviewerProfile({}) {
-  let {UserId} = useParams();
+  let { UserId } = useParams();
   let [interviewer, setInterviewer] = useState(null);
-  let [notFound , SetNotFound] = useState(false);
+  let [notFound, SetNotFound] = useState(false);
   let navigate = useNavigate();
-  
+
   useEffect(() => {
     let fetchInterviewer = async () => {
-      try{
-      let data = await fetchInterviewerService(localStorage.getItem("token"), UserId);
-      setInterviewer(data);
-      }catch(e){
-        alert("interviewer not found")
+      try {
+        let data = await fetchInterviewerService(
+          localStorage.getItem("token"),
+          UserId
+        );
+        setInterviewer(data);
+      } catch (e) {
+        alert("interviewer not found");
         SetNotFound(true);
       }
     };
     fetchInterviewer();
   }, []);
 
+  const navigateToPendingInterview = (department, jobOpeningId) => {
+    if (department == "HR") {
+      navigate(`/pool/hr/${jobOpeningId}`);
+    } else {
+      navigate(`/job-openings/${jobOpeningId}/technical-pool`);
+    }
+  };
+  
   if (!interviewer) {
     return <div>Loading...</div>;
   }
-   if( notFound ){
+  if (notFound) {
     return <div>Not found...</div>;
   }
   return (
@@ -81,9 +92,7 @@ export default function InterviewerProfile({}) {
                       <p className="text-gray-600">
                         Department: {job.department}
                       </p>
-                     <p className="text-gray-600">
-                        Domain: {job.domain}
-                      </p>
+                      <p className="text-gray-600">Domain: {job.domain}</p>
                       <p className="text-gray-600">
                         Experience: {job.minDomainExperience}
                       </p>
@@ -115,11 +124,15 @@ export default function InterviewerProfile({}) {
                       >
                         Show
                       </button>
-                       <button
+
+                      <button
                         className="px-4 py-1 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700"
-                        onClick={() =>
-                          navigate(`/job-openings/${job.jobOpeningId}/technical-pool`)
-                        }
+                        onClick={() => {
+                          navigateToPendingInterview(
+                            interviewer.department,
+                            job.jobOpeningId
+                          );
+                        }}
                       >
                         Pending-Interview
                       </button>

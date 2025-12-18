@@ -28,17 +28,17 @@ const JobOpeningEditProtector = ({ children }) => {
           setChecking(false);
           return;
         }
-
+          console.log(job);
+          
         const role = authUser.role;
-        const loggedInUserId = authUser.userId;
-        const recruiterUserId = job?.Recruiter?.UserId;
+        const loggedInUserId = authUser.id;
+        const recruiterUserId = job?.recruiter?.userId;
 
         // Admin → full access
         if (role === "Admin") {
           setChecking(false);
           return;
         }
-
         // Recruiter → only creator
         if (
           role === "Recruiter" &&

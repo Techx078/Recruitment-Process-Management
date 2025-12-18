@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { submitInterviewFeedback } from "../Services/JobCandidateService.js";
+import { submitInterviewFeedback } from "../Services/JobCandidateService";
+
 const InterviewFeedback = () => {
   const { jobCandidateId } = useParams();
   const navigate = useNavigate();
@@ -45,11 +46,7 @@ const InterviewFeedback = () => {
         navigate(-1);
       }, 1500);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          err.response?.data ||
-          "Failed to submit feedback"
-      );
+     setError(err.data)
     } finally {
       setLoading(false);
     }
