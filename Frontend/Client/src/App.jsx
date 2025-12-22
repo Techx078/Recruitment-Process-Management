@@ -39,6 +39,9 @@ import ScheduleInterview from "./Pages/ScheduleInterview.jsx";
 import InterviewFeedback from "./Pages/InterviewFeedback.jsx";
 import InterviewerAssignedProtector from "./Protectors/InterviewerProtector.jsx";
 import HrPool from "./Pages/HrPool.jsx";
+import FinalPool from "./Pages/FinalPool.jsx";
+import CandidateInterviewHistory from "./Pages/CandidateInterviewHistory.jsx";
+import JobCandidateDashboard from "./Pages/JobCandidateDashboard/JobCandidateDashboard.jsx";
 function App() {
   return (
     <AuthUserContextProvider>
@@ -214,6 +217,18 @@ function App() {
               }
             />
             <Route path="/pool/hr/:jobOpeningId" element={<HrPool />} />
+            <Route
+              path="/final-pool/:jobOpeningId"
+              element={<FinalPool />}
+            />
+             <Route
+              path="/History/:jobCandidateId"
+              element={<CandidateInterviewHistory />}
+            />
+             <Route
+              path="/Dashboard/:jobOpeningId"
+              element={<JobCandidateDashboard />}
+            />
           </Routes>
         </main>
 

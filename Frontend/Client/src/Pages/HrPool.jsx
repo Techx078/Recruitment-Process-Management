@@ -111,7 +111,9 @@ const HrPool = () => {
           </tbody>
         </table>
       )}
-    <MyScheduledInterviews jobOpeningId={jobOpeningId} />
+    {authUser.role == "Interviewer" &&
+      <MyScheduledInterviews jobOpeningId={jobOpeningId} />
+      }
     </div>
   );
 };

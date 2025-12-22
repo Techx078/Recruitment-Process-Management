@@ -670,6 +670,221 @@ namespace WebApis.Controllers.JobCandidateController
             return Ok(candidates);
         }
 
+        [HttpGet("history/{jobCandidateId}")]
+        [Authorize(Roles = "Recruiter,Interviewer,Reviewer,Admin")]
+        public async Task<IActionResult> GetInterviewHistory(int jobCandidateId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            var userId = int.Parse(userIdClaim);
+            var userRole = userRoleClaim;
+
+            var jobCandidate = await _jobCandidateRepositoryCommon
+                .GetWithIncludeAsync(
+                    c => c.Id == jobCandidateId,
+                    c => c,
+                    "Candidate.User",
+                    "JobOpening.CreatedBy",
+                    "JobOpening.JobReviewers.Reviewer",
+                    "JobOpening.JobInterviewers.Interviewer",
+                    "JobInterviews.Interviewer.User"
+                );
+
+            if (jobCandidate == null)
+                return NotFound("Job candidate not found");
+
+           // check :- is this user have access
+            bool hasAccess = true;
+
+            if (userRole == "Recruiter")
+            {
+                hasAccess = jobCandidate.JobOpening.CreatedBy.UserId == userId;
+            }
+            else if (userRole == "Reviewer")
+            {
+                hasAccess = jobCandidate.JobOpening.JobReviewers
+                    .Any(r => r.Reviewer.UserId == userId);
+            }
+            else if (userRole == "Interviewer")
+            {
+                hasAccess = jobCandidate.JobOpening.JobInterviewers
+                    .Any(i => i.Interviewer.UserId == userId);
+            }
+
+            if (!hasAccess)
+                return Forbid("You are not authorized to view this candidate");
+
+            /* ---------- Timeline ---------- */
+            var timeline = new InterviewTimelineDto
+            {
+                JobCandidateId = jobCandidate.Id,
+                CandidateName = jobCandidate.Candidate.User.FullName,
+                JobTitle = jobCandidate.JobOpening.Title,
+                CurrentStatus = jobCandidate.Status
+            };
+
+            // Applied
+            timeline.Timeline.Add(new TimelineEventDto
+            {
+                Title = "Application Submitted",
+                Description = "Candidate applied for the job",
+                Date = jobCandidate.CreatedAt,
+                EventType = "Applied"
+            });
+
+            // Review
+            if (jobCandidate.ReviewerId != null)
+            {
+                timeline.Timeline.Add(new TimelineEventDto
+                {
+                    Title = "Profile Reviewed",
+                    Description = jobCandidate.ReviewerComment,
+                    Date = jobCandidate.UpdatedAt,
+                    EventType = "Review"
+                });
+            }
+            // Interviews
+            if (jobCandidate.JobInterviews != null)
+            {
+                foreach (var interview in jobCandidate.JobInterviews
+                             .OrderBy(i => i.RoundNumber))
+                {
+                    timeline.Timeline.Add(new TimelineEventDto
+                    {
+                        Title = $"{interview.InterviewType} Interview (Round {interview.RoundNumber})",
+                        Description = interview.IsCompleted
+                            ? $"Result: {(interview.IsPassed == true ? "Passed" : "Rejected")}"
+                            : "Scheduled",
+                        Date = interview.ScheduledAt,
+                        EventType = "Interview"
+                    });
+                }
+            }
+            // Final Status
+            if (jobCandidate.Status == "Shortlisted")
+            {
+                timeline.Timeline.Add(new TimelineEventDto
+                {
+                    Title = "Candidate Shortlisted",
+                    Description = "Candidate cleared all rounds",
+                    Date = jobCandidate.UpdatedAt,
+                    EventType = "Final"
+                });
+            }
+            else if (jobCandidate.Status == "Rejected")
+            {
+                timeline.Timeline.Add(new TimelineEventDto
+                {
+                    Title = "Candidate Rejected",
+                    Description = "Candidate did not clear the interview process",
+                    Date = jobCandidate.UpdatedAt,
+                    EventType = "Final"
+                });
+            }
+
+            timeline.Timeline = timeline.Timeline
+                .OrderBy(t => t.Date)
+                .ToList();
+
+            return Ok(timeline);
+        }
+
+        [HttpGet("job-openings/{jobOpeningId}/final-pool")]
+        [Authorize(Roles = "Recruiter,Admin")]
+        public async Task<IActionResult> GetFinalPool(int jobOpeningId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            var userId = int.Parse(userIdClaim);
+            var role = userRoleClaim;
+               
+            var jobOpening = await _jobOpeningRepository.GetWithIncludeAsync(
+                j => j.Id == jobOpeningId,
+                j => j,
+                "CreatedBy",
+                "JobCandidates.Candidate.User",
+                "JobCandidates.JobInterviews"
+            );
+
+            if (jobOpening == null)
+                return NotFound("Job opening not found");
+
+            //// Recruiter validation
+            if (role == "Recruiter" &&
+                jobOpening.CreatedBy.UserId != userId)
+                return Forbid();
+
+            var candidates = jobOpening.JobCandidates
+                .Where(c => c.Status == "Shortlisted" || c.Status == "Selected")
+                .Select(c => new FinalPoolCandidateDto
+                {
+                    JobCandidateId = c.Id,
+                    CandidateName = c.Candidate.User.FullName,
+                    Email = c.Candidate.User.Email,
+                    TotalRounds = c.RoundNumber,
+                    LastInterviewType = c.JobInterviews
+                        .OrderByDescending(i => i.RoundNumber)
+                        .Select(i => i.InterviewType)
+                        .FirstOrDefault(),
+                    LastInterviewDate = c.JobInterviews
+                        .OrderByDescending(i => i.RoundNumber)
+                        .Select(i => i.ScheduledAt)
+                        .FirstOrDefault(),
+                    Status = c.Status
+                })
+                .ToList();
+
+            return Ok(candidates);
+        }
+
+        [HttpPost("select/{jobCandidateId}")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> SelectCandidate(int jobCandidateId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Console.WriteLine(userIdClaim);
+            if (string.IsNullOrWhiteSpace(userIdClaim))
+            {
+                throw new UnauthorizedAccessException("Invalid token");
+            }
+            var userId = int.Parse(userIdClaim);
+
+            var jobCandidate = await _jobCandidateRepositoryCommon
+                .GetWithIncludeAsync(
+                    c => c.Id == jobCandidateId,
+                    c => c,
+                    "JobOpening.CreatedBy"
+                );
+
+            if (jobCandidate == null)
+                return NotFound("Job candidate not found");
+
+            if (jobCandidate.Status != "Shortlisted")
+                return BadRequest("Only shortlisted candidates can be selected");
+
+            if (jobCandidate.JobOpening.CreatedBy.UserId != userId)
+                return Forbid("You are not authorized to select this candidate");
+
+            jobCandidate.Status = "Selected";
+            jobCandidate.UpdatedAt = DateTime.UtcNow;
+
+            await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+            return Ok(new
+            {
+                message = "Candidate selected successfully"
+            });
+        }
 
     }
 }

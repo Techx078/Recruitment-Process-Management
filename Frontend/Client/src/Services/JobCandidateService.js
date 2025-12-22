@@ -218,3 +218,68 @@ export const getHrPool = async (jobOpeningId) => {
     }
   }
 };
+
+export const getFinalPool = async (jobOpeningId) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/job-openings/${jobOpeningId}/final-pool`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    // Throw error to be handled in frontend catch
+    if (error.response) {
+      throw error.response; // include status and data
+    } else {
+      throw error; // network or other error
+    }
+  }
+};
+
+export const selectCandidate = async (jobCandidateId) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/select/${jobCandidateId}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    // Throw error to be handled in frontend catch
+    if (error.response) {
+      throw error.response; // include status and data
+    } else {
+      throw error; // network or other error
+    }
+  }
+};
+
+export const getCandidateInterviewHistory = async (jobCandidateId) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/history/${jobCandidateId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      console.log(error.response);
+      
+      throw error.response;
+    }
+    throw error;
+  }
+};

@@ -169,7 +169,9 @@ const TechnicalInterviewPool = () => {
           </table>
         </div>
       )}
+      {authUser.role == "Interviewer" &&
       <MyScheduledInterviews jobOpeningId={jobOpeningId} />
+      }
     </div>
   );
 };
