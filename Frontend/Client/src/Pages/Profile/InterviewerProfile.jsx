@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
-import { fetchInterviewerService } from "../../services/InterviewerService";
+import { fetchInterviewerService } from "../../Services/InterviewerService";
 import { useNavigate, useParams } from "react-router-dom";
+import { handleGlobalError } from "../../Services/errorHandler";
 
 export default function InterviewerProfile({}) {
   let { UserId } = useParams();
@@ -18,7 +19,7 @@ export default function InterviewerProfile({}) {
         );
         setInterviewer(data);
       } catch (e) {
-        alert("interviewer not found");
+        handleGlobalError(e);
         SetNotFound(true);
       }
     };

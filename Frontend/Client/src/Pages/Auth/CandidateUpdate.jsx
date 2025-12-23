@@ -5,6 +5,7 @@ import {
   updateCandidateService,
 } from "../../Services/CandidateService";
 import { getAllSkills } from "../../Services/JobOpeningService";
+import { handleGlobalError } from "../../Services/errorHandler";
 
 export default function CandidateUpdate() {
   const { UserId } = useParams();
@@ -16,7 +17,7 @@ export default function CandidateUpdate() {
   const [saving, setSaving] = useState(false);
 
   const [allSkills, setAllSkills] = useState([]);
-
+  const [error,setError] = useState(null);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -94,7 +95,8 @@ export default function CandidateUpdate() {
       setLoading(false);
     } catch (err) {
       setLoading(false);
-      alert("Failed to load candidate: " + err.message);
+      handleGlobalError(err);
+      setError("server error!")
     }
   }
 
@@ -145,6 +147,7 @@ export default function CandidateUpdate() {
 
   // Upload resume
   const uploadResume = async (file) => {
+    try{
     const data = new FormData();
     data.append("file", file);
     let token = localStorage.getItem("token");
@@ -154,10 +157,11 @@ export default function CandidateUpdate() {
       headers: { Authorization: `Bearer ${token}` },
       body: data,
     });
-
-    if (!res.ok) throw new Error("Resume upload failed");
     const json = await res.json();
     return json.resumeUrl;
+  }catch(error){
+    toast.error("unble to upload resume");
+  }
   };
 
   const handleSubmit = async (e) => {
@@ -184,25 +188,7 @@ export default function CandidateUpdate() {
       alert("Candidate Profile Updated!");
       navigate(`/candidate/Profile/${id}`);
     } catch (error) {
-
-      if (!error.status) {
-        alert("Network error. Please try again.");
-        return;
-      }
-      const { status, data } = error;
-      // Validation errors (400)
-      if (status === 400 && data.errors) {
-        if (Array.isArray(data.errors)) {
-          data.errors.forEach((msg) => alert(msg));
-        } else {
-          Object.values(data.errors)
-            .flat()
-            .forEach((msg) => alert(msg));
-        }
-        return; 
-      }
-      // Other backend errors
-      alert(data.message || "Something went wrong");
+      handleGlobalError(error)
       return; 
     } finally {
       setSaving(false);
@@ -215,7 +201,13 @@ export default function CandidateUpdate() {
         Loading Candidate...
       </div>
     );
-
+ if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-8">

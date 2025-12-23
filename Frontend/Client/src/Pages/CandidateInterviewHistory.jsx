@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCandidateInterviewHistory } from "../Services/JobCandidateService";
+import { handleGlobalError } from "../Services/errorHandler";
 export default function CandidateInterviewHistory() {
   const { jobCandidateId } = useParams();
   const navigate = useNavigate();
@@ -17,8 +18,8 @@ export default function CandidateInterviewHistory() {
         
         setInterviewHistory(data);
       } catch (err) {
-        console.error(err);
-        setError("Failed to load interview history");
+        handleGlobalError(err);
+        setError( err.data.Message || "Failed to load interview history");
       } finally {
         setLoading(false);
       }

@@ -1,9 +1,10 @@
-import { useState , useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { updateReviewStatus } from "../Services/JobCandidateService.js";
 import { useAuthUserContext } from "../Context/AuthUserContext.jsx";
 import { getJobOpeningById } from "../Services/JobOpeningService.js";
 import { getJobCandidateById } from "../Services/JobCandidateService.js";
+import { handleGlobalError } from "../Services/errorHandler.js";
 
 const ReviewCandidate = () => {
   const { jobCandidateId } = useParams();
@@ -20,13 +21,21 @@ const ReviewCandidate = () => {
   //for check that reviewer is assigned to that job opening
   useEffect(() => {
     const fetchData = async () => {
-    const jobCandidate = await getJobCandidateById(jobCandidateId);
-     const jobOpening =await getJobOpeningById(jobCandidate.jobOpeningId, localStorage.getItem("token"))
-     setjobOpeningReviewer(jobOpening.reviewers);
+      try {
+        const jobCandidate = await getJobCandidateById(jobCandidateId);
+        const jobOpening = await getJobOpeningById(
+          jobCandidate.jobOpeningId,
+          localStorage.getItem("token")
+        );
+        setjobOpeningReviewer(jobOpening.reviewers);
+      } catch (error) {
+        handleGlobalError(error);
+        setError("server error !");
+      }
     };
     fetchData();
   }, []);
- 
+
   const submitReview = async (isApproved) => {
     setError("");
     setSuccess("");
@@ -47,27 +56,14 @@ const ReviewCandidate = () => {
         navigate(-1); // go back to pending reviews
       }, 1500);
     } catch (error) {
-      console.log(error);
-
-      if (!error.status) {
-        setError("Network error. Please try again.");
-        return;
-      }
-      const { status, data } = error;
-      if (status === 400 && data.errors) {
-        if (Array.isArray(data.errors)) {
-          data.errors.forEach((msg) => setError(msg));
-        }
-        return;
-      }
-      setError(data.Message || "Something went wrong");
+      handleGlobalError(error);
       return;
     } finally {
       setLoading(false);
     }
   };
   if (
-   authUser.role === "Reviewer" &&
+    authUser.role === "Reviewer" &&
     !jobOpeningReviewer.some((i) => i.email === authUser.email)
   ) {
     return (

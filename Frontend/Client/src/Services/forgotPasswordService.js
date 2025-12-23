@@ -14,10 +14,9 @@ export const sendOtp = async (email) => {
     );
     return true;
   } catch (error) {
-     const message =
-      error.response?.data?.message || "Something went wrong";
+     if (error.response) throw error.response;
 
-    throw new Error(message);
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -33,9 +32,8 @@ export const resetPassword = async (payload) => {
     );
     return true;
   } catch (error) {
-     const message =
-      error.response?.data?.message || "Something went wrong";
+    if (error.response) throw error.response;
 
-    throw new Error(message);
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };

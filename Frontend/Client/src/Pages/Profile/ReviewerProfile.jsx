@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { fetchReviewerService } from "../../Services/ReviewerService";
 import { useNavigate, useParams } from "react-router-dom";
+import { handleGlobalError } from "../../Services/errorHandler";
 
 export default function ReviewerProfile({}) {
   let {UserId} = useParams();
@@ -13,7 +14,7 @@ export default function ReviewerProfile({}) {
       let data = await fetchReviewerService(localStorage.getItem("token"), UserId);
       setReviewer(data);
       }catch(e){
-        alert("revieewer not found")
+        handleGlobalError(e)
         SetNotFound(true)
       }
     };

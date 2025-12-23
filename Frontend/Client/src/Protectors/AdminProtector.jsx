@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
+import { toast } from "react-toastify";
 
 
 const AdminProtextor = ({ children }) => {
@@ -10,7 +11,7 @@ const AdminProtextor = ({ children }) => {
 
   useEffect(() => {
     if ( !authUser || authUser.role !== "Admin") {
-      alert("Access denied. Only Admin can access.");
+      toast.warning("Access denied. Only Admin can access.");
       navigate("/login");
     } else {
       setChecking(false);

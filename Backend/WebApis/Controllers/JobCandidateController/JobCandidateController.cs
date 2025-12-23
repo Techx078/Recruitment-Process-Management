@@ -6,6 +6,7 @@ using WebApis.Dtos;
 using WebApis.Dtos.JobCandidateDtos;
 using WebApis.Repository;
 using WebApis.Repository.JobCandidateRepository;
+using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
 using WebApis.Service.ValidationService;
 
@@ -44,83 +45,95 @@ namespace WebApis.Controllers.JobCandidateController
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> CreateJobCandidate([FromBody] JobCandidateCreateDto dto)
         {
-            //Validation can be added here
-            var result = await _jobCandidateCreateValidator.ValidateAsync(dto);
-            if (!result.IsValid)
+            var validationResult = await _jobCandidateCreateValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
             {
-                return BadRequest(new {
-                     errors = result.Errors
-                });
+                throw new AppException(
+                    "Please fill all required fields correctly.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest,
+                    validationResult.Errors
+                );
             }
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-            if (userIdClaim == null)
-                throw new UnauthorizedAccessException("Invalid User.");
 
-            int userId = int.Parse(userIdClaim);
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                throw new UnauthorizedAccessException("invalid token !");
 
-            bool jobOpeningExists = await _jobOpeningRepository.ExistsAsync(
-                                     j => j.Id == dto.JobOpeningId && j.CreatedBy.UserId == userId);
-
-            if (!jobOpeningExists)
-                throw new UnauthorizedAccessException("You are not authorized to add candidates to this job opening.");
-
-            //call repository method to create jobCandidate
-            JobCandidate JobCandidate = await _jobCandidateRepository.CreateJobCandidate(dto);
-
-            return CreatedAtAction(nameof(CreateJobCandidate),
-            new { id = JobCandidate.Id },
-            new
-            {
-                Message = "JobCandidate Created SuccessFully"
-            });
-        }
-
-        [HttpPost("CreateBulk")]
-        [Authorize(Roles = "Recruiter")]
-        public async Task<IActionResult> CreateJobCandidateBulk([FromBody] JobCandidateCreateBulkDto dto)
-        {
-            if (dto == null)
-            {
-                return BadRequest("Request body cannot be null or empty.");
-            }
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-            if (userIdClaim == null)
-                throw new UnauthorizedAccessException("Invalid User.");
             int userId = int.Parse(userIdClaim);
 
             bool jobOpeningExists = await _jobOpeningRepository.ExistsAsync(
                                       j => j.Id == dto.JobOpeningId && j.CreatedBy.UserId == userId);
-
             if (!jobOpeningExists)
-                throw new UnauthorizedAccessException("You are not authorized to add candidates to this job opening.");
+                throw new AppException(
+                    "You are not authorized to add candidates to this job opening.",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
+
+            var jobCandidate = await _jobCandidateRepository.CreateJobCandidate(dto);
+
+            return CreatedAtAction(nameof(CreateJobCandidate),
+                new { id = jobCandidate.Id },
+                new
+                {
+                    Message = "JobCandidate created successfully"
+                });
+        }
+
+        [HttpPost("createBulk")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> CreateJobCandidateBulk([FromBody] JobCandidateCreateBulkDto dto)
+        {
+            if (dto == null)
+                throw new AppException(
+                    "Request body cannot be null or empty.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                throw new UnauthorizedAccessException();
+
+            int userId = int.Parse(userIdClaim);
+
+            bool jobOpeningExists = await _jobOpeningRepository.ExistsAsync(
+                                       j => j.Id == dto.JobOpeningId && j.CreatedBy.UserId == userId);
+            if (!jobOpeningExists)
+                throw new AppException(
+                    "You are not authorized to add candidates to this job opening.",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
 
             int successCount = 0;
             int failureCount = 0;
+            var failedItems = new List<object>();
 
-            List<object> failedItems = new List<object>();
-            //validation for each candidate 
-            for (int candidateIndex = 0; candidateIndex < dto.CandidateId.Count; candidateIndex++)
+            for (int i = 0; i < dto.CandidateId.Count; i++)
             {
                 try
                 {
-                    JobCandidateCreateDto jobCandidateDto = new JobCandidateCreateDto
+                    var jobCandidateDto = new JobCandidateCreateDto
                     {
                         JobOpeningId = dto.JobOpeningId,
-                        CandidateId = dto.CandidateId[candidateIndex],
-                        CvPath = dto.CvPath[candidateIndex]
+                        CandidateId = dto.CandidateId[i],
+                        CvPath = dto.CvPath[i]
                     };
-                    var result = await _jobCandidateCreateValidator.ValidateAsync(jobCandidateDto);
-                    if (!result.IsValid)
+
+                    var validationResult = await _jobCandidateCreateValidator.ValidateAsync(jobCandidateDto);
+                    if (!validationResult.IsValid)
                     {
                         failureCount++;
                         failedItems.Add(new
                         {
                             CandidateId = jobCandidateDto.CandidateId,
-                            Errors = result.Errors
+                            Errors = validationResult.Errors
                         });
-                        continue; //skip invalid entries
+                        continue;
                     }
-                    //call repository method to create jobCandidate
+
                     await _jobCandidateRepository.CreateJobCandidate(jobCandidateDto);
                     successCount++;
                 }
@@ -129,81 +142,92 @@ namespace WebApis.Controllers.JobCandidateController
                     failureCount++;
                     failedItems.Add(new
                     {
-                        CandidateId = dto.CandidateId[candidateIndex],
+                        CandidateId = dto.CandidateId[i],
                         Errors = new List<string> { ex.Message }
                     });
                     continue;
                 }
             }
-                return CreatedAtAction(nameof(CreateJobCandidateBulk),
+
+            return CreatedAtAction(nameof(CreateJobCandidateBulk),
                 new
                 {
                     TotalProcessed = dto.CandidateId.Count,
                     SuccessfullyLinked = successCount,
                     Failed = failureCount,
                     FailedItems = failedItems,
-                    Message = "JobCandidates Created Successfully"
+                    Message = "JobCandidates processed successfully"
                 });
-            }
+        }
 
         [HttpGet("get/{jobCandidateId}")]
         [Authorize(Roles = "Recruiter,Reviewer,Admin,Interviewer")]
-        public async Task<IActionResult> GetJobCandidateById( int jobCandidateId )
+        public async Task<IActionResult> GetJobCandidateById(int jobCandidateId)
         {
             var jobCandidate = await _jobCandidateRepositoryCommon.GetByFilterAsync(j => j.Id == jobCandidateId);
             if (jobCandidate == null)
-                throw new KeyNotFoundException("job Candidate Not found");
+                throw new AppException(
+                    "Job candidate not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
             return Ok(jobCandidate);
         }
 
-        [HttpGet("pending-review/{JobOpeningId}")]
+        [HttpGet("pending-review/{jobOpeningId}")]
         [Authorize(Roles = "Recruiter,Reviewer,Admin")]
-        public async Task<IActionResult> GetPendingReviews(int JobOpeningId)
+        public async Task<IActionResult> GetPendingReviews(int jobOpeningId)
         {
-            var jobOpeningExists = await _jobOpeningRepository.ExistsAsync(j => j.Id == JobOpeningId);
+            var jobOpeningExists = await _jobOpeningRepository.ExistsAsync(j => j.Id == jobOpeningId);
             if (!jobOpeningExists)
-            {
-                throw new KeyNotFoundException("Job Opening not found.");
-            }
-           
-            //check for reviewer is assigned to that jobOpeningId
-            var userIdClaim = User.Claims
-               .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                throw new AppException(
+                    "Job opening not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
 
-            var userRoleClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.FindFirstValue(ClaimTypes.Role);
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
                 throw new UnauthorizedAccessException("Invalid token");
 
-            if (!int.TryParse(userIdClaim, out int loggedInUserId))
-                return Unauthorized("Invalid user id");
+            int loggedInUserId = int.Parse(userIdClaim);
 
-            var isReviewerAssigned = await _jobOpeningRepository.ExistsAsync(
-                j => j.Id == JobOpeningId &&
-                 j.JobReviewers.Any(r => r.Reviewer.UserId == loggedInUserId)
-            );
+            if (userRoleClaim == "Reviewer")
+            {
+                var isReviewerAssigned = await _jobOpeningRepository.ExistsAsync(
+                    j => j.Id == jobOpeningId &&
+                         j.JobReviewers.Any(r => r.Reviewer.UserId == loggedInUserId)
+                );
 
-            if (userRoleClaim == "Reviewer" && !isReviewerAssigned)
-                throw new UnauthorizedAccessException("You are unauthorized reviewer for this job opening");
+                if (!isReviewerAssigned)
+                    throw new AppException(
+                        "You are not authorized to review this job opening.",
+                        ErrorCodes.Forbidden,
+                        StatusCodes.Status403Forbidden
+                    );
+            }
 
-            if( userRoleClaim == "Recruiter")
+            if (userRoleClaim == "Recruiter")
             {
                 var isRecruiterJobOpening = await _jobOpeningRepository.ExistsAsync(
-                    j => j.Id == JobOpeningId &&
-                    j.CreatedBy.UserId == loggedInUserId
+                    j => j.Id == jobOpeningId &&
+                         j.CreatedBy.UserId == loggedInUserId
                 );
+
                 if (!isRecruiterJobOpening)
-                {
-                    throw new UnauthorizedAccessException("You are unauthorized recruiter for this job opening");
-                }
+                    throw new AppException(
+                        "You are not authorized to manage this job opening.",
+                        ErrorCodes.Forbidden,
+                        StatusCodes.Status403Forbidden
+                    );
             }
 
             var pendingReviewCandidates = await _jobCandidateRepositoryCommon
                 .GetAllByFilterAsync(
-                    c =>
-                    c.JobOpeningId == JobOpeningId &&
-                    c.Status == "Applied",
+                    c => c.JobOpeningId == jobOpeningId && c.Status == "Applied",
                     c => new PendingReviewCandidateDto
                     {
                         JobCandidateId = c.Id,
@@ -215,69 +239,74 @@ namespace WebApis.Controllers.JobCandidateController
                         AppliedAt = c.CreatedAt,
                         UserId = c.Candidate.UserId
                     }
-
                 );
-            if( pendingReviewCandidates == null)
-            {
-                throw new KeyNotFoundException("no candidate exits or wrong jobOpeningId");
-            }
+
+            if (pendingReviewCandidates == null || !pendingReviewCandidates.Any())
+                throw new AppException(
+                    "No candidates found for this job opening.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
             return Ok(pendingReviewCandidates);
         }
 
         [HttpPut("review-status/{jobCandidateId}")]
         [Authorize(Roles = "Reviewer")]
-        public async Task<IActionResult> UpdateReviewStatus(
-            int jobCandidateId,
-            [FromBody] ReviewDecisionDto dto)
+        public async Task<IActionResult> UpdateReviewStatus(int jobCandidateId, [FromBody] ReviewDecisionDto dto)
         {
-            //get jobCandidate by id
-            var jobCandidate = await _jobCandidateRepositoryCommon
-                .GetByFilterAsync(c => c.Id == jobCandidateId);
-            //check if jobCandidate exists
+            var jobCandidate = await _jobCandidateRepositoryCommon.GetByFilterAsync(c => c.Id == jobCandidateId);
             if (jobCandidate == null)
-                throw new KeyNotFoundException("Job candidate not found");
+                throw new AppException(
+                    "Job candidate not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
 
-            //check if logged in user is authorized reviewer for this jobCandidate
-            var userIdClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
-            var userRoleClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.FindFirstValue(ClaimTypes.Role);
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
-                return Unauthorized(new { message = "Invalid token" });
+                throw new UnauthorizedAccessException();
 
             int loggedInUserId = int.Parse(userIdClaim);
-           
-            if (userRoleClaim == "Reviewer")
-            {
-                var isReviewerAssigned = await _jobOpeningRepository.ExistsAsync(
-                    j => j.Id == jobCandidate.JobOpeningId &&
+
+            var isReviewerAssigned = await _jobOpeningRepository.ExistsAsync(
+                j => j.Id == jobCandidate.JobOpeningId &&
                      j.JobReviewers.Any(r => r.Reviewer.UserId == loggedInUserId)
+            );
+
+            if (!isReviewerAssigned)
+                throw new AppException(
+                    "You are not authorized to review this candidate.",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
                 );
-                if (!isReviewerAssigned)
-                    throw new UnauthorizedAccessException("You are unauthorized reviewer for this job candidate");
 
-                //set reviewerId
-                var loggedInReviewerId = await _reviewerRepository
-                    .GetByFilterAsync(
-                        r => r.UserId == loggedInUserId,
-                        r => r.Id
-                    );
-                if( loggedInReviewerId == null)
-                    throw new UnauthorizedAccessException("Reviewer profile not found for the logged-in user.");
-                jobCandidate.ReviewerId = loggedInReviewerId;
-            }
+            var loggedInReviewerId = await _reviewerRepository.GetByFilterAsync(
+                r => r.UserId == loggedInUserId,
+                r => r.Id
+            );
 
-            // Only candidates in Applied state can be reviewed
+            if (loggedInReviewerId == null)
+                throw new AppException(
+                    "Reviewer profile not found for the logged-in user.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
+            jobCandidate.ReviewerId = loggedInReviewerId;
+
             if (jobCandidate.Status != "Applied")
-                throw new AppException("Only candidates in 'Applied' state can be reviewed.", 400);
+                throw new AppException(
+                    "Only candidates in 'Applied' state can be reviewed.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
 
-            //add comments
             jobCandidate.ReviewerComment = dto.ReviewerComment;
             jobCandidate.UpdatedAt = DateTime.UtcNow;
 
-            //if approved move to technical round else rejected
             if (dto.IsApproved)
             {
                 jobCandidate.Status = "Reviewed";
@@ -293,12 +322,12 @@ namespace WebApis.Controllers.JobCandidateController
             }
 
             await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
-           
+
             return Ok(new
             {
                 message = dto.IsApproved
-                    ? "Candidate approved and sent to technical pool"
-                    : "Candidate rejected successfully"
+                    ? "Candidate approved and sent to technical pool."
+                    : "Candidate rejected successfully."
             });
         }
 
@@ -308,48 +337,54 @@ namespace WebApis.Controllers.JobCandidateController
         {
             var jobOpeningExists = await _jobOpeningRepository.ExistsAsync(j => j.Id == jobOpeningId);
             if (!jobOpeningExists)
-            {
-                throw new KeyNotFoundException("Job Opening not found.");
-            }
+                throw new AppException(
+                    "Job opening not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
 
-            //check for reviewer is assigned to that jobOpeningId
-            var userIdClaim = User.Claims
-               .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
-            var userRoleClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.FindFirstValue(ClaimTypes.Role);
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
-                throw new UnauthorizedAccessException("Invalid token");
+                throw new UnauthorizedAccessException();
 
-            if (!int.TryParse(userIdClaim, out int loggedInUserId))
-                throw new UnauthorizedAccessException("user id not valid");
+            int loggedInUserId = int.Parse(userIdClaim);
 
-            var isInterviewerAssigned = await _jobOpeningRepository.ExistsAsync(
-                j => j.Id == jobOpeningId &&
-                 j.JobInterviewers.Any(i => i.Interviewer.UserId == loggedInUserId)
-            );
+            if (userRoleClaim == "Interviewer")
+            {
+                var isInterviewerAssigned = await _jobOpeningRepository.ExistsAsync(
+                    j => j.Id == jobOpeningId &&
+                         j.JobInterviewers.Any(i => i.Interviewer.UserId == loggedInUserId)
+                );
 
-            if (userRoleClaim == "Interviewer" && !isInterviewerAssigned)
-                throw new UnauthorizedAccessException("You are unauthorized reviewer for this job opening");
+                if (!isInterviewerAssigned)
+                    throw new AppException(
+                        "You are not authorized to access this technical pool.",
+                        ErrorCodes.Forbidden,
+                        StatusCodes.Status403Forbidden
+                    );
+            }
 
             if (userRoleClaim == "Recruiter")
             {
                 var isRecruiterJobOpening = await _jobOpeningRepository.ExistsAsync(
                     j => j.Id == jobOpeningId &&
-                    j.CreatedBy.UserId == loggedInUserId
+                         j.CreatedBy.UserId == loggedInUserId
                 );
+
                 if (!isRecruiterJobOpening)
-                {
-                    throw new UnauthorizedAccessException("You are unauthorized recruiter for this job opening");
-                }
+                    throw new AppException(
+                        "You are not authorized to access this technical pool.",
+                        ErrorCodes.Forbidden,
+                        StatusCodes.Status403Forbidden
+                    );
             }
-            var candidates = await _jobCandidateRepositoryCommon.GetByOrderWithSelectorAsync
-                (c =>
-                    c.JobOpeningId == jobOpeningId &&
-                    c.IsNextTechnicalRound &&
-                    (c.Status == "Reviewed" || c.Status == "WaitForInterView")
-                ,
+
+            var candidates = await _jobCandidateRepositoryCommon.GetByOrderWithSelectorAsync(
+                c => c.JobOpeningId == jobOpeningId &&
+                     c.IsNextTechnicalRound &&
+                     (c.Status == "Reviewed" || c.Status == "WaitForInterView"),
                 c => new TechnicalPoolCandidateDto
                 {
                     jobCandidateId = c.Id,
@@ -359,12 +394,10 @@ namespace WebApis.Controllers.JobCandidateController
                     roundNumber = c.RoundNumber,
                     lastUpdatedAt = c.UpdatedAt,
                     candidateId = c.CandidateId,
-                    userId = c.Candidate.UserId,
+                    userId = c.Candidate.UserId
                 },
-                q => q
-                      .OrderBy(c => c.RoundNumber)
-                      .ThenBy(c => c.UpdatedAt)
-                );
+                q => q.OrderBy(c => c.RoundNumber).ThenBy(c => c.UpdatedAt)
+            );
 
             return Ok(candidates);
         }
@@ -375,117 +408,92 @@ namespace WebApis.Controllers.JobCandidateController
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized("Invalid token");
+                throw new UnauthorizedAccessException("Invalid token");
 
             int loggedInUserId = int.Parse(userIdClaim);
 
-            var interviewer = await _interviewerRepository
-                .GetByFilterAsync(
-                    i => i.UserId == loggedInUserId,
-                    i => new { i.Id }
-                );
+            var interviewer = await _interviewerRepository.GetByFilterAsync(
+                i => i.UserId == loggedInUserId,
+                i => i.Id
+            );
 
             if (interviewer == null)
-                return Unauthorized("Interviewer profile not found");
+                throw new AppException("Interviewer profile not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var isAssigned = await _jobOpeningRepository.ExistsAsync(
                 j => j.Id == jobOpeningId &&
-                     j.JobInterviewers.Any(i => i.InterviewerId == interviewer.Id)
+                     j.JobInterviewers.Any(i => i.InterviewerId == interviewer)
             );
 
             if (!isAssigned)
-                return Forbid("You are not assigned to this job opening");
+                throw new AppException("You are not assigned to this job opening", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
 
-            var interviews = await _jobInterviewRepository
-                .GetAllByFilterAsync(
-                    i => i.InterviewerId == interviewer.Id
-                      && !i.IsCompleted
-                      && i.JobCandidate.JobOpeningId == jobOpeningId,
-                    i => new MyScheduledInterviewDto
-                    {
-                        JobInterviewId = i.Id,
-                        JobCandidateId = i.JobCandidateId,
-                        CandidateName = i.JobCandidate.Candidate.User.FullName,
-                        CandidateEmail = i.JobCandidate.Candidate.User.Email,
-                        InterviewType = i.InterviewType,
-                        RoundNumber = i.RoundNumber,
-                        ScheduledAt = i.ScheduledAt,
-                        MeetingLink = i.MeetingLink
-                    }
-                );
+            var interviews = await _jobInterviewRepository.GetAllByFilterAsync(
+                i => i.InterviewerId == interviewer &&
+                     !i.IsCompleted &&
+                     i.JobCandidate.JobOpeningId == jobOpeningId,
+                i => new MyScheduledInterviewDto
+                {
+                    JobInterviewId = i.Id,
+                    JobCandidateId = i.JobCandidateId,
+                    CandidateName = i.JobCandidate.Candidate.User.FullName,
+                    CandidateEmail = i.JobCandidate.Candidate.User.Email,
+                    InterviewType = i.InterviewType,
+                    RoundNumber = i.RoundNumber,
+                    ScheduledAt = i.ScheduledAt,
+                    MeetingLink = i.MeetingLink
+                }
+            );
 
             return Ok(interviews);
         }
-        
-        
+
         [HttpPost("schedule/{jobCandidateId}")]
         [Authorize(Roles = "Interviewer")]
-        public async Task<IActionResult> ScheduleInterview(
-            int jobCandidateId,
-            [FromBody] ScheduleInterviewDto dto)
+        public async Task<IActionResult> ScheduleInterview(int jobCandidateId, [FromBody] ScheduleInterviewDto dto)
         {
-            //get jobCandidate by id
-            var jobCandidate = await _jobCandidateRepositoryCommon
-                .GetByFilterAsync(c => c.Id == jobCandidateId)
-                ?? throw new KeyNotFoundException("Job candidate not found");
-            
+            var jobCandidate = await _jobCandidateRepositoryCommon.GetByFilterAsync(c => c.Id == jobCandidateId)
+                               ?? throw new AppException("Job candidate not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
-            //check if logged in user is authorized reviewer for this jobCandidate
-            var userIdClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized(new { message = "Invalid token" });
+                throw new UnauthorizedAccessException("Invalid token");
 
-            if (!int.TryParse(userIdClaim, out int loggedInUserId))
-                throw new UnauthorizedAccessException("Invalid user id in token");
+            int loggedInUserId = int.Parse(userIdClaim);
 
             var isInterviewerAssigned = await _jobOpeningRepository.ExistsAsync(
                 j => j.Id == jobCandidate.JobOpeningId &&
-                j.JobInterviewers.Any(r => r.Interviewer.UserId == loggedInUserId)
+                     j.JobInterviewers.Any(r => r.Interviewer.UserId == loggedInUserId)
             );
             if (!isInterviewerAssigned)
-                throw new UnauthorizedAccessException("You are unauthorized reviewer for this job candidate");
+                throw new AppException("You are not authorized for this job candidate", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
 
             if (dto.InterviewDate <= DateTime.UtcNow)
-                return BadRequest(new
-                {
-                    errros = new[] { "Interview date must be in the future" }
-                });
+                throw new AppException("Interview date must be in the future", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
-            if( jobCandidate.Status == "ScheduledInterview")
-            {
-                return BadRequest(new
-                {
-                    erros = new[] {"Cnadidate already scheduled for this round"}
-                });
-            }
+            if (jobCandidate.Status == "ScheduledInterview")
+                throw new AppException("Candidate already scheduled for this round", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
+
             var hasActiveInterview = await _jobInterviewRepository.ExistsAsync(
-                                        i => i.JobCandidateId == jobCandidate.Id && i.IsCompleted == false
-                                    );
+                i => i.JobCandidateId == jobCandidate.Id && !i.IsCompleted
+            );
             if (hasActiveInterview)
-                return BadRequest(new
-                {
-                    error = new[] { "Candidate already has an active interview" }
-                });
+                throw new AppException("Candidate already has an active interview", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
             if (!jobCandidate.IsNextTechnicalRound && !jobCandidate.IsNextHrRound)
-                return BadRequest(new
-                {
-                    errors = new[] { "Candidate is not ready for interview" }
-                });
-            //set interviewerId
-            var InterviewerId = await _interviewerRepository.GetByFilterAsync(
-                                            r => r.UserId == loggedInUserId,
-                                            r => r.Id
-                                        );
-            if (InterviewerId == null)
-                throw new UnauthorizedAccessException("Interviewer profile not found for the logged-in user.");
+                throw new AppException("Candidate is not ready for interview", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
+
+            var interviewerId = await _interviewerRepository.GetByFilterAsync(
+                r => r.UserId == loggedInUserId,
+                r => r.Id
+            );
+            if (interviewerId == null)
+                throw new AppException("Interviewer profile not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var interview = new JobInterview
             {
                 JobCandidateId = jobCandidate.Id,
-                InterviewerId = InterviewerId,
+                InterviewerId = interviewerId,
                 RoundNumber = jobCandidate.RoundNumber + 1,
                 ScheduledAt = dto.InterviewDate,
                 InterviewType = jobCandidate.IsNextHrRound ? "HR" : "Technical",
@@ -499,45 +507,32 @@ namespace WebApis.Controllers.JobCandidateController
 
             jobCandidate.Status = "ScheduledInterview";
             jobCandidate.UpdatedAt = DateTime.UtcNow;
-
             await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
 
-            return Ok(new
-            {
-                message = "Interview scheduled successfully"
-            });
+            return Ok(new { message = "Interview scheduled successfully" });
         }
 
         [HttpPost("feedback/{jobCandidateId}")]
         [Authorize(Roles = "Interviewer")]
-        public async Task<IActionResult> SubmitInterviewFeedback(
-            int jobCandidateId,
-            [FromBody] InterviewFeedbackDto dto)
+        public async Task<IActionResult> SubmitInterviewFeedback(int jobCandidateId, [FromBody] InterviewFeedbackDto dto)
         {
             if (dto.IsPassed && string.IsNullOrEmpty(dto.NextStep))
-                return BadRequest("NextStep is required when interview is passed");
+                throw new AppException("NextStep is required when interview is passed", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
-            var userIdClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized("Invalid token");
+                throw new UnauthorizedAccessException("Invalid token");
 
             int loggedInUserId = int.Parse(userIdClaim);
 
-            var interviewer = await _interviewerRepository.GetByFilterAsync(i => i.UserId == loggedInUserId);
-           
-            if (interviewer == null)
-                throw new UnauthorizedAccessException("Interviewer profile not found");
+            var interviewer = await _interviewerRepository.GetByFilterAsync(i => i.UserId == loggedInUserId)
+                              ?? throw new AppException("Interviewer profile not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var jobCandidate = await _jobCandidateRepositoryCommon.GetWithIncludeAsync(
-                    c => c.Id == jobCandidateId,
-                    c => c,
-                    "JobInterviews"
-                );
-
-            if (jobCandidate == null)
-                return NotFound("Job candidate not found");
+                c => c.Id == jobCandidateId,
+                c => c,
+                "JobInterviews"
+            ) ?? throw new AppException("Job candidate not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var isInterviewerAssigned = await _jobOpeningRepository.ExistsAsync(
                 j => j.Id == jobCandidate.JobOpeningId &&
@@ -545,21 +540,16 @@ namespace WebApis.Controllers.JobCandidateController
             );
 
             if (!isInterviewerAssigned)
-                return Forbid("You are not assigned to this job opening");
+                throw new AppException("You are not assigned to this job opening", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
 
             if (jobCandidate.Status != "ScheduledInterview")
-                return BadRequest("Candidate is not in scheduled interview state");
+                throw new AppException("Candidate is not in scheduled interview state", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
-            var interview = jobCandidate.JobInterviews
-                .FirstOrDefault(i =>
-                    i.IsCompleted == false &&
-                    i.InterviewerId == interviewer.Id);
-
-            if (interview == null)
-                return Forbid("No active interview found for this interviewer");
+            var interview = jobCandidate.JobInterviews.FirstOrDefault(i => !i.IsCompleted && i.InterviewerId == interviewer.Id)
+                            ?? throw new AppException("No active interview found for this interviewer", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             if (interview.InterviewType == "HR" && dto.NextStep == "Technical")
-                return BadRequest("HR cannot move candidate back to technical");
+                throw new AppException("HR cannot move candidate back to technical", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
             interview.Feedback = dto.Feedback;
             interview.Marks = dto.Marks;
@@ -586,87 +576,77 @@ namespace WebApis.Controllers.JobCandidateController
                         jobCandidate.IsNextTechnicalRound = true;
                         jobCandidate.IsNextHrRound = false;
                         break;
-
                     case "HR":
                         jobCandidate.Status = "WaitForInterView";
                         jobCandidate.IsNextTechnicalRound = false;
                         jobCandidate.IsNextHrRound = true;
                         break;
-
                     case "Finish":
                         jobCandidate.Status = "Shortlisted";
                         jobCandidate.IsNextTechnicalRound = false;
                         jobCandidate.IsNextHrRound = false;
                         break;
-
                     default:
-                        return BadRequest("Invalid next step");
+                        throw new AppException("Invalid next step", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
                 }
             }
 
-            jobCandidate.UpdatedAt = DateTime.UtcNow;
             await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
 
             return Ok(new { message = "Interview feedback submitted successfully" });
         }
 
         [HttpGet("pool/hr/{jobOpeningId}")]
-        [Authorize(Roles = "Interviewer,Recruiter,Admin")] 
-        public async Task<IActionResult> GetHrPool( int jobOpeningId )
+        [Authorize(Roles = "Interviewer,Recruiter,Admin")]
+        public async Task<IActionResult> GetHrPool(int jobOpeningId)
         {
-            if( !await _jobOpeningRepository.ExistsAsync( j => j.Id == jobOpeningId))
-            {
-                throw new KeyNotFoundException("job opening not found");
-            }
+            if (!await _jobOpeningRepository.ExistsAsync(j => j.Id == jobOpeningId))
+                throw new AppException("Job opening not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userRoleClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userRoleClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
                 throw new UnauthorizedAccessException("Invalid token");
 
-            if (userRoleClaim == "Interviewer") {
-
+            if (userRoleClaim == "Interviewer")
+            {
                 int loggedInUserId = int.Parse(userIdClaim);
 
                 var hr = await _interviewerRepository.GetByFilterAsync(
                     i => i.UserId == loggedInUserId && i.Department == "HR",
-                    i => new { i.Id }
+                    i => i.Id
                 );
 
                 if (hr == null)
-                    return Unauthorized("HR profile not found");
+                    throw new AppException("HR profile not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
-                //Job Opening Assignment
                 var isHrAssigned = await _jobOpeningRepository.ExistsAsync(
                     j => j.Id == jobOpeningId &&
-                         j.JobInterviewers.Any(i =>
-                             i.InterviewerId == hr.Id &&
-                             i.Interviewer.Department == "HR")
+                         j.JobInterviewers.Any(i => i.InterviewerId == hr && i.Interviewer.Department == "HR")
                 );
 
                 if (!isHrAssigned)
-                    return Forbid("You are not assigned to this job opening");
-
+                    throw new AppException("You are not assigned to this job opening", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
             }
-            var candidates = await _jobCandidateRepositoryCommon
-                .GetAllByFilterAsync(
-                    c => c.JobOpeningId == jobOpeningId
-                      && c.Status == "WaitForInterView"
-                      && c.IsNextHrRound == true,
-                    c => new HrPoolCandidateDto
-                    {
-                        JobCandidateId = c.Id,
-                        CandidateId = c.CandidateId,
-                        UserId = c.Candidate.UserId,
-                        CandidateName = c.Candidate.User.FullName,
-                        Email = c.Candidate.User.Email,
-                        RoundCompleted = c.RoundNumber,
-                        JobTitle = c.JobOpening.Title,
-                        AppliedAt = c.CreatedAt
-                    }
-                );
+
+            var candidates = await _jobCandidateRepositoryCommon.GetAllByFilterAsync(
+                c => c.JobOpeningId == jobOpeningId &&
+                     c.Status == "WaitForInterView" &&
+                     c.IsNextHrRound,
+                c => new HrPoolCandidateDto
+                {
+                    JobCandidateId = c.Id,
+                    CandidateId = c.CandidateId,
+                    UserId = c.Candidate.UserId,
+                    CandidateName = c.Candidate.User.FullName,
+                    Email = c.Candidate.User.Email,
+                    RoundCompleted = c.RoundNumber,
+                    JobTitle = c.JobOpening.Title,
+                    AppliedAt = c.CreatedAt
+                }
+            );
+
             return Ok(candidates);
         }
 
@@ -675,51 +655,34 @@ namespace WebApis.Controllers.JobCandidateController
         public async Task<IActionResult> GetInterviewHistory(int jobCandidateId)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userRoleClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userRoleClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
                 throw new UnauthorizedAccessException("Invalid token");
 
             var userId = int.Parse(userIdClaim);
-            var userRole = userRoleClaim;
 
-            var jobCandidate = await _jobCandidateRepositoryCommon
-                .GetWithIncludeAsync(
-                    c => c.Id == jobCandidateId,
-                    c => c,
-                    "Candidate.User",
-                    "JobOpening.CreatedBy",
-                    "JobOpening.JobReviewers.Reviewer",
-                    "JobOpening.JobInterviewers.Interviewer",
-                    "JobInterviews.Interviewer.User"
-                );
+            var jobCandidate = await _jobCandidateRepositoryCommon.GetWithIncludeAsync(
+                c => c.Id == jobCandidateId,
+                c => c,
+                "Candidate.User",
+                "JobOpening.CreatedBy",
+                "JobOpening.JobReviewers.Reviewer",
+                "JobOpening.JobInterviewers.Interviewer",
+                "JobInterviews.Interviewer.User"
+            ) ?? throw new AppException("Job candidate not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
-            if (jobCandidate == null)
-                return NotFound("Job candidate not found");
-
-           // check :- is this user have access
-            bool hasAccess = true;
-
-            if (userRole == "Recruiter")
+            bool hasAccess = userRoleClaim switch
             {
-                hasAccess = jobCandidate.JobOpening.CreatedBy.UserId == userId;
-            }
-            else if (userRole == "Reviewer")
-            {
-                hasAccess = jobCandidate.JobOpening.JobReviewers
-                    .Any(r => r.Reviewer.UserId == userId);
-            }
-            else if (userRole == "Interviewer")
-            {
-                hasAccess = jobCandidate.JobOpening.JobInterviewers
-                    .Any(i => i.Interviewer.UserId == userId);
-            }
+                "Recruiter" => jobCandidate.JobOpening.CreatedBy.UserId == userId,
+                "Reviewer" => jobCandidate.JobOpening.JobReviewers.Any(r => r.Reviewer.UserId == userId),
+                "Interviewer" => jobCandidate.JobOpening.JobInterviewers.Any(i => i.Interviewer.UserId == userId),
+                _ => false
+            };
 
             if (!hasAccess)
-                return Forbid("You are not authorized to view this candidate");
+                throw new AppException("You are not authorized to view this candidate", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
 
-            /* ---------- Timeline ---------- */
             var timeline = new InterviewTimelineDto
             {
                 JobCandidateId = jobCandidate.Id,
@@ -728,7 +691,6 @@ namespace WebApis.Controllers.JobCandidateController
                 CurrentStatus = jobCandidate.Status
             };
 
-            // Applied
             timeline.Timeline.Add(new TimelineEventDto
             {
                 Title = "Application Submitted",
@@ -737,7 +699,6 @@ namespace WebApis.Controllers.JobCandidateController
                 EventType = "Applied"
             });
 
-            // Review
             if (jobCandidate.ReviewerId != null)
             {
                 timeline.Timeline.Add(new TimelineEventDto
@@ -748,11 +709,10 @@ namespace WebApis.Controllers.JobCandidateController
                     EventType = "Review"
                 });
             }
-            // Interviews
+
             if (jobCandidate.JobInterviews != null)
             {
-                foreach (var interview in jobCandidate.JobInterviews
-                             .OrderBy(i => i.RoundNumber))
+                foreach (var interview in jobCandidate.JobInterviews.OrderBy(i => i.RoundNumber))
                 {
                     timeline.Timeline.Add(new TimelineEventDto
                     {
@@ -765,7 +725,7 @@ namespace WebApis.Controllers.JobCandidateController
                     });
                 }
             }
-            // Final Status
+
             if (jobCandidate.Status == "Shortlisted")
             {
                 timeline.Timeline.Add(new TimelineEventDto
@@ -787,9 +747,7 @@ namespace WebApis.Controllers.JobCandidateController
                 });
             }
 
-            timeline.Timeline = timeline.Timeline
-                .OrderBy(t => t.Date)
-                .ToList();
+            timeline.Timeline = timeline.Timeline.OrderBy(t => t.Date).ToList();
 
             return Ok(timeline);
         }
@@ -799,30 +757,23 @@ namespace WebApis.Controllers.JobCandidateController
         public async Task<IActionResult> GetFinalPool(int jobOpeningId)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userRoleClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userRoleClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
                 throw new UnauthorizedAccessException("Invalid token");
 
             var userId = int.Parse(userIdClaim);
-            var role = userRoleClaim;
-               
+
             var jobOpening = await _jobOpeningRepository.GetWithIncludeAsync(
                 j => j.Id == jobOpeningId,
                 j => j,
                 "CreatedBy",
                 "JobCandidates.Candidate.User",
                 "JobCandidates.JobInterviews"
-            );
+            ) ?? throw new AppException("Job opening not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
-            if (jobOpening == null)
-                return NotFound("Job opening not found");
-
-            //// Recruiter validation
-            if (role == "Recruiter" &&
-                jobOpening.CreatedBy.UserId != userId)
-                return Forbid();
+            if (userRoleClaim == "Recruiter" && jobOpening.CreatedBy.UserId != userId)
+                throw new AppException("You are not authorized to view this job opening", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
 
             var candidates = jobOpening.JobCandidates
                 .Where(c => c.Status == "Shortlisted" || c.Status == "Selected")
@@ -852,28 +803,22 @@ namespace WebApis.Controllers.JobCandidateController
         public async Task<IActionResult> SelectCandidate(int jobCandidateId)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            Console.WriteLine(userIdClaim);
             if (string.IsNullOrWhiteSpace(userIdClaim))
-            {
                 throw new UnauthorizedAccessException("Invalid token");
-            }
-            var userId = int.Parse(userIdClaim);
 
-            var jobCandidate = await _jobCandidateRepositoryCommon
-                .GetWithIncludeAsync(
-                    c => c.Id == jobCandidateId,
-                    c => c,
-                    "JobOpening.CreatedBy"
-                );
+            int userId = int.Parse(userIdClaim);
 
-            if (jobCandidate == null)
-                return NotFound("Job candidate not found");
+            var jobCandidate = await _jobCandidateRepositoryCommon.GetWithIncludeAsync(
+                c => c.Id == jobCandidateId,
+                c => c,
+                "JobOpening.CreatedBy"
+            ) ?? throw new AppException("Job candidate not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             if (jobCandidate.Status != "Shortlisted")
-                return BadRequest("Only shortlisted candidates can be selected");
+                throw new AppException("Only shortlisted candidates can be selected", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
             if (jobCandidate.JobOpening.CreatedBy.UserId != userId)
-                return Forbid("You are not authorized to select this candidate");
+                throw new AppException("You are not authorized to select this candidate", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
 
             jobCandidate.Status = "Selected";
             jobCandidate.UpdatedAt = DateTime.UtcNow;
@@ -885,6 +830,5 @@ namespace WebApis.Controllers.JobCandidateController
                 message = "Candidate selected successfully"
             });
         }
-
     }
 }

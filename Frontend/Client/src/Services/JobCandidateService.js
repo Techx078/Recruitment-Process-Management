@@ -15,12 +15,9 @@ export const CreateJobCandidateService = async (token, JobcandidateData) => {
     );
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -34,12 +31,9 @@ export const CreateJobCandidateBulkService = async (token, Data) => {
     });
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -52,12 +46,9 @@ export const getJobCandidateById = async (jobCandidateId) => {
     });
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -74,12 +65,9 @@ export const getPendingReviewCandidate = async (jobOpeningId, token) => {
     );
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -96,14 +84,9 @@ export const updateReviewStatus = async (jobCandidateId, data) => {
     );
     return response.data;
   } catch (error) {
-    console.log(error);
+    if (error.response) throw error.response;
 
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -120,12 +103,9 @@ export const getTechnicalInterviewPool = async (jobOpeningId) => {
 
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -142,12 +122,9 @@ export const getMyScheduledInterviews = async (jobOpeningId) => {
 
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -165,12 +142,9 @@ export const scheduleInterview = async (jobCandidateId, data) => {
 
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+   if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -188,12 +162,9 @@ export const submitInterviewFeedback = async (jobCandidateId, data) => {
 
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+   if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -210,12 +181,9 @@ export const getHrPool = async (jobOpeningId) => {
 
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -232,12 +200,9 @@ export const getFinalPool = async (jobOpeningId) => {
 
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -254,12 +219,9 @@ export const selectCandidate = async (jobCandidateId) => {
     );
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -275,11 +237,8 @@ export const getCandidateInterviewHistory = async (jobCandidateId) => {
     );
     return response.data;
   } catch (error) {
-    if (error.response) {
-      console.log(error.response);
-      
-      throw error.response;
-    }
-    throw error;
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };

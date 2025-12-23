@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
+import { toast } from "react-toastify";
 
 const ReviewerLevelProtector = ({ children }) => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const ReviewerLevelProtector = ({ children }) => {
     ) {
       setChecking(false);
     } else {
-      alert("Access denied. Only Reviewer, Recruiter or Admin can access.");
+      toast.warning("Access denied. Only Reviewer, Recruiter or Admin can access.");
       navigate("/login");
     }
   }, []);

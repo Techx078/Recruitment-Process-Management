@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using WebApis.Data;
 using WebApis.Dtos;
 using WebApis.Repository;
+using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
-
 
 namespace WebApis.Controllers.UserController.InteviewerController
 {
@@ -16,7 +15,7 @@ namespace WebApis.Controllers.UserController.InteviewerController
     {
         private readonly ICommonRepository<Interviewer> _interviewerRepository;
 
-        public InterviewerController( ICommonRepository<Interviewer> interviewerRepository)
+        public InterviewerController(ICommonRepository<Interviewer> interviewerRepository)
         {
             _interviewerRepository = interviewerRepository;
         }
@@ -43,28 +42,34 @@ namespace WebApis.Controllers.UserController.InteviewerController
                 });
 
             if (interviewerList == null || !interviewerList.Any())
-                throw new KeyNotFoundException("No interviewers found");
+                throw new AppException(
+                    "No interviewers found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
 
             return Ok(interviewerList);
         }
 
-        [HttpGet("{UserId}")]
+        [HttpGet("{userId}")]
         [Authorize(Roles = "Admin,Recruiter,Interviewer")]
         public async Task<IActionResult> GetInterviewerById(int userId)
         {
-            var userIdClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
-            var userRoleClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.FindFirstValue(ClaimTypes.Role);
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
-                throw new UnauthorizedAccessException("Invalid token");
+                throw new UnauthorizedAccessException();
 
-            int loggedInUserId = int.Parse(userIdClaim);
+            var loggedInUserId = int.Parse(userIdClaim);
 
             if (userRoleClaim == "Interviewer" && loggedInUserId != userId)
-                throw new AppException("You are unauthorized recruiter", 403);
+                throw new AppException(
+                    "You don’t have permission to view this interviewer.",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
+
             var interviewer = await _interviewerRepository.GetByFilterAsync(
                 i => i.UserId == userId,
                 i => new ReviewerInterviewerDetailsDto
@@ -100,12 +105,14 @@ namespace WebApis.Controllers.UserController.InteviewerController
                 }
             );
 
-
             if (interviewer == null)
-                throw new KeyNotFoundException("Interviewer not found");
+                throw new AppException(
+                    "Interviewer not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
 
             return Ok(interviewer);
         }
-
     }
 }

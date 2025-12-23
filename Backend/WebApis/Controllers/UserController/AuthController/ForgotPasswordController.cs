@@ -6,6 +6,9 @@ using WebApis.Dtos;
 using WebApis.Dtos.ForgotPasswordDtos;
 using WebApis.Repository;
 using WebApis.Service.EmailService;
+using WebApis.Service.ErrorHandlingService;
+using WebApis.Service.ErrroHandlingService;
+using WebApis.Service.ValidationService;
 namespace WebApis.Controllers.UserController.AuthController
 {
     [ApiController]
@@ -15,75 +18,101 @@ namespace WebApis.Controllers.UserController.AuthController
         private readonly IEmailService _emailService;
         ICommonRepository<PasswordReset> _passwordResetRepository;
         ICommonRepository<User> _userRepository;
+        ICommonValidator<ResetPasswordDto> _resetPassvalidator;
 
         public ForgotPasswordController(
             IEmailService emailService,
             ICommonRepository<PasswordReset> passwordResetRepository,
-            ICommonRepository<User> userRepository
+            ICommonRepository<User> userRepository,
+            ICommonValidator<ResetPasswordDto> resetPassvalidator
         )
         {
             _emailService = emailService;
             _passwordResetRepository = passwordResetRepository;
             _userRepository = userRepository;
+            _resetPassvalidator = resetPassvalidator;
         }
 
-        [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] String Email)
+        public async Task ForgotPasswordAsync(string email)
         {
-           
-            var user = await _userRepository.GetByFilterAsync(u => u.Email == Email);
+            if (string.IsNullOrWhiteSpace(email))
+                return; 
+
+            var user = await _userRepository.GetByFilterAsync(u => u.Email == email);
+
             if (user == null)
-                return BadRequest(new { message = "Email not found" });
+                return; 
 
-            var otp = new Random().Next(100000, 999999).ToString(); // 6 digit OTP
+            var otp = new Random().Next(100000, 999999).ToString();
 
-            // Save OTP , expiry (5 mins)
-            var resetEntry = new PasswordReset
+            await _passwordResetRepository.AddAsync(new PasswordReset
             {
                 Email = user.Email,
                 OTP = otp,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(5)
-            };
-            await _passwordResetRepository.AddAsync(resetEntry);
-           
-            // Send email 
+            });
+
             await _emailService.SendEmailAsync(
                 user.Email,
                 "Your Password Reset OTP",
                 $"Your OTP is: {otp}. It will expire in 5 minutes."
             );
-
-            return Ok(new { message = "OTP sent to email" });
         }
 
-        [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+
+        public async Task ResetPasswordAsync(ResetPasswordDto dto)
         {
-            //. Check OTP entry
+            var validationResult = await _resetPassvalidator.ValidateAsync(dto);
+
+            if (!validationResult.IsValid)
+            {
+                throw new AppException(
+                  "Email, OTP and new password are required.",
+                  ErrorCodes.ValidationError,
+                  StatusCodes.Status400BadRequest
+                );
+            }
+
             var entry = await _passwordResetRepository.GetByorderAsync(
-                        p => p.Email == dto.Email && p.OTP == dto.OTP,
-                        p => p.Id,
-                        descending: true
-                    );
+                p => p.Email == dto.Email && p.OTP == dto.OTP,
+                p => p.Id,
+                descending: true
+            );
 
             if (entry == null)
-                return BadRequest(new { message = "Invalid OTP" });
+            {
+                throw new AppException(
+                    "Invalid OTP.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+            }
 
             if (entry.ExpiresAt < DateTime.UtcNow)
-                return BadRequest(new { message = "OTP expired" });
+            {
+                throw new AppException(
+                    "OTP expired.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+            }
 
-            // Get user
             var user = await _userRepository.GetByFilterAsync(u => u.Email == dto.Email);
-            if (user == null)
-                return BadRequest(new { message = "User not found" });
 
-            // Update password
+            if (user == null)
+            {
+                throw new AppException(
+                    "User not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+            }
+
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             await _userRepository.UpdateAsync(user);
-            // Remove OTP entry so it cannot be reused
+
             await _passwordResetRepository.DeleteAsync(entry);
-          
-            return Ok(new { message = "Password reset successful" });
         }
+
     }
 }

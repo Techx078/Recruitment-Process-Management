@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerOtherUser } from "../../Services/authService";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
+import { handleGlobalError } from "../../Services/errorHandler";
 
 export default function OtherRegister() {
-  const {authUser} = useAuthUserContext();
+  const { authUser } = useAuthUserContext();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -18,6 +19,8 @@ export default function OtherRegister() {
   const [skills, setSkills] = useState([{ name: "", experience: "" }]);
   const [loading, setLoading] = useState(false);
   const navigateTo = useNavigate();
+  const [error, setError] = useState(null);
+
   const DEPARTMENT_OPTIONS = [
     "SoftwareDevelopment",
     "DataScience",
@@ -104,28 +107,19 @@ export default function OtherRegister() {
       setSkills([{ name: "", experience: "" }]);
       navigateTo(`/Recruiter/Profile/${authUser.id}`);
     } catch (error) {
-      if (!error.status) {
-        alert("Network error. Please try again.");
-        return;
-      }
-      const { status, data } = error;
-      if (status === 400 && data.errors) {
-        if (Array.isArray(data.errors)) {
-          data.errors.forEach((msg) => alert(msg));
-        } else {
-          Object.values(data.errors)
-            .flat()
-            .forEach((msg) => alert("fields are required"));
-        }
-        return;
-      }
-      alert(data.Message || "Something went wrong");
-      return;
+      handleGlobalError(error);
     } finally {
       setLoading(false);
     }
   };
 
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8">

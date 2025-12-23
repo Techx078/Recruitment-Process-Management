@@ -5,6 +5,7 @@ import {
   getJobOpeningById,
   updateJobSkill,
 } from "../../Services/JobOpeningService";
+import { handleGlobalError } from "../../Services/errorHandler";
 
 const EditJobSkill = () => {
   const { id } = useParams();
@@ -12,9 +13,12 @@ const EditJobSkill = () => {
 
   const [skill, setSkill] = useState([]);
   const [selected, setSelected] = useState([]);
-  
+  const [error, setError] = useState(null);
+   
   useEffect(() => {
+
     const load = async () => {
+      try{
       const token = localStorage.getItem("token");
 
       const allSkills = await getAllSkills(token);
@@ -28,6 +32,10 @@ const EditJobSkill = () => {
         IsRequired:j.isRequired
       }));
       setSelected(selected);
+    }catch(e){
+      handleGlobalError(e)
+      setError("server error")
+    }
     };
 
     load();
@@ -68,13 +76,24 @@ const onChangeExperience = (SkillName) => (e) => {
 };
 
   const save = async () => {
+    try{
     const token = localStorage.getItem("token");
     console.log(selected);
     await updateJobSkill(id, selected, token);
     alert("skills updated!");
     navigate(`/job-openings/${id}`);
+    }catch(e){
+      handleGlobalError(e)
+    }
   };
 
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
     <div className="p-6 max-w-xl mx-auto bg-white shadow rounded">
       <h2 className="text-xl font-bold mb-4">Update Skills</h2>

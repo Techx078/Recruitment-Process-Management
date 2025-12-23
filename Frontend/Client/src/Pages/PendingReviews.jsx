@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getPendingReviewCandidate } from "../Services/JobCandidateService.js";
 import { useAuthUserContext } from "../Context/AuthUserContext.jsx";
 import { getJobOpeningById } from "../Services/JobOpeningService.js";
+import { handleGlobalError } from "../Services/errorHandler.js";
 
 const PendingReviews = () => {
   const { jobOpeningId } = useParams();
@@ -24,6 +25,8 @@ const PendingReviews = () => {
         serjobOpeningReviewer(response.reviewers);
       })
       .catch((error) => {
+        handleGlobalError(error);
+        setError("server error!")
         console.error("Error fetching job opening reviewers:", error);
       });
   };
@@ -36,18 +39,8 @@ const PendingReviews = () => {
       );
       setCandidates(response);
     } catch (error) {
-      if (!error.status) {
-        setError("Network error. Please try again.");
-        return;
-      }
-      const { status, data } = error;
-      if (status === 400 && data.errors) {
-        if (Array.isArray(data.errors)) {
-          data.errors.forEach((msg) => alert(msg));
-        }
-        return;
-      }
-      setError(data.Message || "Something went wrong");
+      handleGlobalError(erros)
+      setError("enable to fetch pending reviewer!")
       return;
     } finally {
       setLoading(false);

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link , useNavigate } from "react-router-dom";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { loginUser } from "../../Services/authService";
+import { handleGlobalError } from "../../Services/errorHandler";
+import { toast } from "react-toastify";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,14 +21,13 @@ export default function LoginPage() {
 
     try {
       const data = await loginUser(email, password);
-    //store JWT
     localStorage.setItem("token", data.token);
     // store logged-in user in state
     setAuthUser(data.user);
-    alert("Login successful!");
+    toast.success("Login successful!")
       navigateTo("/");
     } catch (err) {
-      setError(err.message);
+      handleGlobalError(err);
     } finally {
       setLoading(false);
     }
@@ -83,7 +84,12 @@ export default function LoginPage() {
           
         </div>
       </div>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error &&
+           (
+            <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+              {error}
+            </div>
+          )}
     </div>
     
   );

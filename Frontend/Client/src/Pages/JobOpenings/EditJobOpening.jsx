@@ -11,6 +11,8 @@ import {
   JOB_LOCATION_OPTIONS,
   DEPARTMENT_OPTIONS,
 } from "../../Assets/Arrays_for_options/Array";
+import { handleGlobalError } from "../../Services/errorHandler";
+import { toast } from "react-toastify";
 
 const EditJobOpening = () => {
   const { id } = useParams();
@@ -18,7 +20,8 @@ const EditJobOpening = () => {
 
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [error, setError] = useState(null);
+  
   const parseJsonArray = (data) => {
     try {
       const parsed = JSON.parse(data);
@@ -51,7 +54,8 @@ const EditJobOpening = () => {
           deadLine: job.deadLine ? job.deadLine.split("T")[0] : "",
         });
       } catch (err) {
-        console.error("Failed to load job", err);
+        handleGlobalError(err)
+        setError("server error")
       } finally {
         setLoading(false);
       }
@@ -63,13 +67,11 @@ const EditJobOpening = () => {
   const handleSave = async () => {
     try {
       const token = localStorage.getItem("token");
-      console.log(formData);
       await updateJobFields(id, formData, token);
-      alert("Job updated successfully!");
+      toast.success("Job updated successfully!");
       navigate(`/job-openings/${id}`);
     } catch (err) {
-      console.error(err);
-      alert("Failed to update job. form");
+      handleGlobalError(err)
     }
   };
 
@@ -78,7 +80,14 @@ const EditJobOpening = () => {
       <div className="text-center py-10 text-gray-500">Loading job info...</div>
     );
   }
-
+  
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-6">
       <div className="max-w-3xl mx-auto bg-white shadow-md border rounded-lg p-8">

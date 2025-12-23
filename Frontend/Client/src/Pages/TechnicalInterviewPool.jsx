@@ -4,6 +4,7 @@ import { getTechnicalInterviewPool } from "../Services/JobCandidateService";
 import MyScheduledInterviews from "./MyScheduledInterviews";
 import { useAuthUserContext } from "../Context/AuthUserContext";
 import { getJobOpeningById } from "../Services/JobOpeningService.js";
+import { handleGlobalError } from "../Services/errorHandler.js";
 const TechnicalInterviewPool = () => {
   const { jobOpeningId } = useParams();
   const navigate = useNavigate();
@@ -23,22 +24,7 @@ const TechnicalInterviewPool = () => {
       const data = await getTechnicalInterviewPool(jobOpeningId);
       setCandidates(data);
     } catch (error) {
-      if (!error.status) {
-        setError("Network error. Please try again.");
-        return;
-      }
-      const { status, data } = error;
-      if (status === 400 && data.errors) {
-        if (Array.isArray(data.errors)) {
-          data.errors.forEach((msg) => alert(msg));
-        } else {
-          Object.values(data.errors)
-            .flat()
-            .forEach(() => alert("fields are required"));
-        }
-        return;
-      }
-      setError(data.Message || "Something went wrong");
+      handleGlobalError(error);
       return;
     } finally {
       setLoading(false);
@@ -50,7 +36,7 @@ const TechnicalInterviewPool = () => {
         setJobOpeningInterviewer(response.interviewers);
       })
       .catch((error) => {
-        console.error("Error fetching job opening reviewers:", error);
+        handleGlobalError(error);
       });
   };
 

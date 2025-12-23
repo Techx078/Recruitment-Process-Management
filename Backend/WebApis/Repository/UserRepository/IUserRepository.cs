@@ -1,10 +1,13 @@
 ﻿using WebApis.Data;
+using WebApis.Dtos;
 
 namespace WebApis.Repository.UserRepository
 {
     public interface IUserRepository
     {
-        Task<bool> EmailExistsAsync(string email);
+        Task AddEducationsAsync(Candidate candidate, IEnumerable<EducationDto> educations);
+        Task AddSkillsAsync(User user, IEnumerable<SkillsDto> skills);
+
     }
 
 }

@@ -1,14 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using WebApis.Data;
-
-
 using WebApis.Dtos;
 using WebApis.Repository;
+using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
-
 
 namespace WebApis.Controllers.UserController.ReviewerController
 {
@@ -21,6 +18,7 @@ namespace WebApis.Controllers.UserController.ReviewerController
         {
             _reviewerRepository = reviewerRepository;
         }
+
         [HttpGet("All")]
         [Authorize(Roles = "Admin,Recruiter")]
         public async Task<IActionResult> GetAllReviewer()
@@ -33,37 +31,48 @@ namespace WebApis.Controllers.UserController.ReviewerController
                     Department = r.Department,
                     User = new UserDto
                     {
-                       Id = r.User.Id,
-                       FullName = r.User.FullName,
-                       Email = r.User.Email,
-                       PhoneNumber = r.User.PhoneNumber,
-                       Domain = r.User.Domain,
-                       DomainExperienceYears = r.User.DomainExperienceYears
+                        Id = r.User.Id,
+                        FullName = r.User.FullName,
+                        Email = r.User.Email,
+                        PhoneNumber = r.User.PhoneNumber,
+                        Domain = r.User.Domain,
+                        DomainExperienceYears = r.User.DomainExperienceYears
                     }
                 });
+
             if (reviewersList == null || !reviewersList.Any())
-                throw new KeyNotFoundException("No reviewers found");
+                throw new AppException(
+                    "No reviewers found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
             return Ok(reviewersList);
         }
 
-        [HttpGet("{UserId}")]
+        [HttpGet("{userId}")]
         [Authorize(Roles = "Reviewer,Admin,Recruiter")]
         public async Task<IActionResult> GetReviewerById(int userId)
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-            var userRoleClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.FindFirstValue(ClaimTypes.Role);
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
-                throw new UnauthorizedAccessException("Invalid token");
+                throw new UnauthorizedAccessException();
 
-            int loggedInUserId = int.Parse(userIdClaim);
+            var loggedInUserId = int.Parse(userIdClaim);
 
             if (userRoleClaim == "Reviewer" && loggedInUserId != userId)
-                throw new AppException("You are unauthorized", 403);
+                throw new AppException(
+                    "You don’t have permission to view this reviewer.",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
+
             var reviewerDetails = await _reviewerRepository.GetByFilterAsync(
                 r => r.UserId == userId,
                 r => new ReviewerInterviewerDetailsDto
-                {   
+                {
                     Id = r.Id,
                     Department = r.Department,
                     User = new UserDto
@@ -90,9 +99,14 @@ namespace WebApis.Controllers.UserController.ReviewerController
                             Domain = j.JobOpening.Domain
                         })
                         .ToList()
-            }); 
+                });
+
             if (reviewerDetails == null)
-                throw new KeyNotFoundException("Reviewer not found");
+                throw new AppException(
+                    "Reviewer not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
 
             return Ok(reviewerDetails);
         }

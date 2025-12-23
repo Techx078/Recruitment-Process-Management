@@ -1,6 +1,7 @@
 import { useEffect, useState  } from "react";
 import { useNavigate  , useParams} from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
+import { toast } from "react-toastify";
 
 
 const RecruiterProfileProtector = ({ children }) => {
@@ -13,7 +14,7 @@ const RecruiterProfileProtector = ({ children }) => {
     if (authUser && ((authUser.role == "Recruiter" && authUser.id == parseInt(UserId)) || authUser.role == "Admin") ) {
       setChecking(false);
     } else {
-    alert("Access denied");
+    toast.warning("Access denied");
       navigate("/login");
     }
   }, []);

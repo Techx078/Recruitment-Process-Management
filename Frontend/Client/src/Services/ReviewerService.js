@@ -13,7 +13,8 @@ export  const fetchReviewerService = async (token , id) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error in fetching reviewer by ID:", error);
-    throw error;
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };

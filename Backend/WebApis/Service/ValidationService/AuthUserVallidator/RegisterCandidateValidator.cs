@@ -64,7 +64,7 @@ namespace WebApis.Service.ValidationService.AuthUserVallidator
             }
 
             // Educations
-            if (dto.Educations != null && !dto.Educations.Any())
+            if (dto.Educations == null || !dto.Educations.Any())
                 result.Errors.Add("Education list cannot be empty.");
 
             foreach (var edu in dto.Educations)
@@ -83,7 +83,7 @@ namespace WebApis.Service.ValidationService.AuthUserVallidator
             }
 
             // Skills
-            if (dto.Skills != null && !dto.Skills.Any())
+            if (dto.Skills == null || !dto.Skills.Any())
                 result.Errors.Add("Skills list cannot be empty.");
 
             foreach (var skill in dto.Skills)

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -6,6 +7,9 @@ using System.Text.Json;
 using WebApis.Data;
 using WebApis.Dtos.JobOpeningDto;
 using WebApis.Repository;
+using WebApis.Repository.JobOpeningRepository;
+using WebApis.Service.ErrorHandlingService;
+using WebApis.Service.ErrroHandlingService;
 using WebApis.Service.ValidationService;
 
 namespace WebApis.Controllers
@@ -14,7 +18,6 @@ namespace WebApis.Controllers
     [Route("api/[controller]")]
     public class JobOpeningController : Controller
     {
-        private readonly AppDbContext _db;
         private readonly ICommonRepository<Recruiter> _recruiterRepository;
         private readonly ICommonRepository<JobOpening> _jobOpeningRepository;
         private readonly ICommonRepository<JobReviewer> _jobReviewerRepository;
@@ -23,9 +26,16 @@ namespace WebApis.Controllers
         private readonly ICommonRepository<JobSkill> _jobSkillRepository;
         private readonly ICommonRepository<Skill> _skillRepository;
         private readonly ICommonValidator<JobOpeningDto> _jobOpeningDtoValidator;
+        private readonly IJobOpeningRepository _JobOpeningRepository;
+        private readonly ICommonValidator<JobOpeningUpdateDto> _jobOpeningUpdateDtoValidator;
+        private readonly ICommonRepository<Reviewer> _reviewerRepository;
+        private readonly ICommonRepository<Interviewer> _interviewerRepository;
+        private readonly ICommonRepository<Document> _documentRepository;
 
         public JobOpeningController(
-            AppDbContext db,
+            ICommonRepository<Document> documentRepository,
+            ICommonRepository<Interviewer> interviewerRepository,
+            ICommonRepository<Reviewer> reviewerRepository,
             ICommonRepository<Recruiter> recruiterRepository,
             ICommonRepository<JobOpening> jobOpeningRepository,
             ICommonRepository<JobReviewer> jobReviewerRepository,
@@ -33,10 +43,13 @@ namespace WebApis.Controllers
             ICommonRepository<JobInterviewer> jobInterviewerRepository,
             ICommonRepository<JobSkill> jobSkillRepository,
             ICommonRepository<Skill> skillRepository,
-            ICommonValidator<JobOpeningDto> jobOpeningDtoValidator
+            ICommonValidator<JobOpeningDto> jobOpeningDtoValidator,
+            IJobOpeningRepository JobOpeningRepository,
+            ICommonValidator<JobOpeningUpdateDto> jobOpeningUpdateValidator
         )
         {
-            _db = db;
+            _documentRepository = documentRepository;
+            _interviewerRepository = interviewerRepository;
             _recruiterRepository = recruiterRepository;
             _jobOpeningRepository = jobOpeningRepository;
             _jobReviewerRepository = jobReviewerRepository;
@@ -45,10 +58,12 @@ namespace WebApis.Controllers
             _jobSkillRepository = jobSkillRepository;
             _skillRepository = skillRepository;
             _jobOpeningDtoValidator = jobOpeningDtoValidator;
+            _JobOpeningRepository = JobOpeningRepository;
+            _jobOpeningUpdateDtoValidator = jobOpeningUpdateValidator;
+            _reviewerRepository = reviewerRepository;
         }
 
         //create job listing with linked reviewers, interviewers, and documents
-        //Pending:-link cadidate to job opening
         [HttpPost("create")]
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> CreateJobOpening([FromBody] JobOpeningDto dto)
@@ -57,11 +72,16 @@ namespace WebApis.Controllers
             var validation = await _jobOpeningDtoValidator.ValidateAsync(dto);
 
             if (!validation.IsValid)
-                return BadRequest(validation.Errors);
+                throw new AppException(
+                   "Validation failed",
+                   ErrorCodes.ValidationError,
+                   StatusCodes.Status400BadRequest,
+                   validation.Errors
+               );
 
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null)
-                return Unauthorized(new { message = "User is not authorized." });
+               throw new UnauthorizedAccessException("Invalid token");
 
             int recruiterUserId = int.Parse(userIdClaim);
 
@@ -69,7 +89,11 @@ namespace WebApis.Controllers
             var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == recruiterUserId);
             
             if (recruiter == null)
-                return BadRequest(new { message = "Recruiter does not exist." });
+                throw new AppException(
+                     "Recruiter does not exist",
+                     ErrorCodes.NotFound,
+                     StatusCodes.Status404NotFound
+                 );
 
             //  Create JobOpening entity
             var job = new JobOpening
@@ -100,78 +124,12 @@ namespace WebApis.Controllers
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-
-
             await _jobOpeningRepository.AddAsync(job);
-           
-            // Add Reviewers
-            if (dto.ReviewerIds != null)
-            {
-                foreach (var reviewerId in dto.ReviewerIds)
-                {
-                    _db.JobReviewer.Add(new JobReviewer
-                    {
-                        JobOpeningId = job.Id,
-                        ReviewerId = reviewerId
-                    });
-                }
-            }
 
-            //  Add Interviewers
-            if (dto.InterviewerIds != null)
-            {
-                foreach (var interviewerId in dto.InterviewerIds)
-                {
-                    _db.jobInterviewer.Add(new JobInterviewer
-                    {
-                        JobOpeningId = job.Id,
-                        InterviewerId = interviewerId
-                    });
-                }
-            }
-
-            //  Add Documents
-            if (dto.Documents != null)
-            {
-                foreach (var doc in dto.Documents)
-                {
-                    _db.JobDocuments.Add(new JobDocument
-                    {
-                        JobOpeningId = job.Id,
-                        DocumentId = doc.DocumentId,
-                        IsMandatory = doc.IsMandatory
-                    });
-                }
-            }
-
-            // Add Skills (Required / Preferred)
-            if (dto.JobSkills != null)
-            {
-                foreach (var skill in dto.JobSkills)
-                {
-                    var skillTemp = await _skillRepository.GetByFilterAsync(s => s.Name.ToLower() == skill.SkillName.ToLower());
-                   
-                    if(skillTemp == null)
-                    {
-                        // Create new Skill if it doesn't exist
-                        skillTemp = new Skill
-                        {
-                            Name = skill.SkillName
-                        };
-                        await _skillRepository.AddAsync(skillTemp);
-                        
-                    }
-                    _db.jobSkills.Add(new JobSkill
-                    {
-                        JobOpeningId = job.Id,
-                        SkillId = skillTemp.SkillId,
-                        IsRequired = skill.IsRequired,
-                        minExperience = skill.minExperience
-                    });
-                }
-            }
-
-            await _db.SaveChangesAsync();
+            await _JobOpeningRepository.AddReviewersAsync(job.Id, dto.ReviewerIds);
+            await _JobOpeningRepository.AddInterviewersAsync(job.Id, dto.InterviewerIds);
+            await _JobOpeningRepository.AddDocumentsAsync(job.Id, dto.Documents);
+            await _JobOpeningRepository.AddJobSkillsAsync(job.Id, dto.JobSkills);
 
             return Ok(new
             {
@@ -181,133 +139,146 @@ namespace WebApis.Controllers
             });
         }
 
-
         ////get all job listings with linked reviewers, interviewers, and documents
-        ////pending:- link cadidate to job opening retrieval
         [HttpGet("list")]
         public async Task<IActionResult> GetAllJobOpenings()
         {
-            var jobs = await _db.JobOpening
-                .Select(j => new
-                {
-                    j.Id,
-                    j.Title,
-                    j.Description,
-                    j.Requirement,       
-                    j.SalaryRange,      
-                    j.Benefits,
-                    j.Education,
-                    j.Location,
-                    j.Department,
-                    j.JobType,
-                    j.minDomainExperience,
-                    j.Domain,
-                    j.Status,
-                    j.DeadLine,
-                    j.CreatedAt,
 
-                    Recruiter = j.CreatedBy == null ? null : new
-                    {
-                        j.CreatedBy.Id,
-                        j.CreatedBy.UserId
-                    },
+            var jobs = await _jobOpeningRepository.GetAllByFilterAsync(
+             j => true,
+             j => new showJobOpeningDto
+             {
+                 Id = j.Id,
+                 Title = j.Title,
+                 Description = j.Description,
+                 Requirement = j.Requirement,
+                 SalaryRange = j.SalaryRange,
+                 Benefits = j.Benefits,
+                 Education = j.Education,
+                 Location = j.Location,
+                 Department = j.Department,
+                 JobType = j.JobType,
+                 MinDomainExperience = j.minDomainExperience,
+                 Domain = j.Domain,
+                 Status = j.Status,
+                 DeadLine = j.DeadLine,
+                 CreatedAt = j.CreatedAt,
 
-                    Reviewers = j.JobReviewers.Select(r => new
-                    {
-                        r.Reviewer.Id,
-                        Email = r.Reviewer.User != null ? r.Reviewer.User.Email : null
-                    }),
+                 Recruiter = j.CreatedBy == null ? null : new RecruiterDto
+                 {
+                     Id = j.CreatedBy.Id,
+                     UserId = j.CreatedBy.UserId
+                 },
 
-                    Interviewers = j.JobInterviewers.Select(i => new
-                    {
-                        i.Interviewer.Id,
-                        Email = i.Interviewer.User != null ? i.Interviewer.User.Email : null
-                    }),
+                 Reviewers = j.JobReviewers.Select(r => new ReviewerDto
+                 {
+                     Id = r.Reviewer.Id,
+                     Email = r.Reviewer.User != null ? r.Reviewer.User.Email : null
+                 }).ToList(),
 
-                    Documents = j.JobDocuments.Select(d => new
-                    {
-                        d.Document.id,       
-                        d.Document.Name,
-                        d.Document.Description,
-                        d.IsMandatory
-                    }),
+                 Interviewers = j.JobInterviewers.Select(i => new InterviewerDto
+                 {
+                     Id = i.Interviewer.Id,
+                     Email = i.Interviewer.User != null ? i.Interviewer.User.Email : null
+                 }).ToList(),
 
-                    JobSkills = j.JobSkills.Select(s => new
-                    {
-                        s.Skill.SkillId,
-                        s.Skill.Name,
-                        s.IsRequired,
-                        s.minExperience
-                    })
-                })
-                .ToListAsync();
+                 Documents = j.JobDocuments.Select(d => new DocumentDto
+                 {
+                     Id = d.Document.id,
+                     Name = d.Document.Name,
+                     Description = d.Document.Description,
+                     IsMandatory = d.IsMandatory
+                 }).ToList(),
+
+                 JobSkills = j.JobSkills.Select(s => new JobSkillDto
+                 {
+                     SkillId = s.Skill.SkillId,
+                     Name = s.Skill.Name,
+                     IsRequired = s.IsRequired,
+                     MinExperience = s.minExperience
+                 }).ToList()
+             });
+       
+            if (jobs == null)
+            {
+                throw new AppException(
+                     "job not found !",
+                     ErrorCodes.NotFound,
+                     StatusCodes.Status404NotFound
+                 );
+            }
 
             return Ok(jobs);
         }
 
 
         ////get specific by id job listing with linked reviewers, interviewers, and documents
-        ////pending:- link cadidate to job opening retrieval
         [HttpGet("{id}")]
         [Authorize]
         public async Task<IActionResult> GetJobOpeningById(int id)
         {
-            var jobOpening = await _db.JobOpening
-             .Where(j => j.Id == id)
-             .Select(j => new
+            var jobOpening = await _jobOpeningRepository.GetByFilterAsync(
+             j => j.Id == id,
+             j => new showJobOpeningDto
              {
-                 j.Id,
-                 j.Title,
-                 j.Description,
-                 j.Requirement,
-                 j.SalaryRange,
-                 j.Benefits,
-                 j.Education,
-                 j.Responsibilities,
-                 j.Location,
-                 j.Department,
-                 j.JobType,
-                 j.minDomainExperience,
-                 j.Domain,
-                 j.Status,
-                 j.DeadLine,
-                 j.CreatedAt,
+                 Id = j.Id,
+                 Title = j.Title,
+                 Description = j.Description,
+                 Requirement = j.Requirement,
+                 SalaryRange = j.SalaryRange,
+                 Benefits = j.Benefits,
+                 Education = j.Education,
+                 Location = j.Location,
+                 Department = j.Department,
+                 JobType = j.JobType,
+                 MinDomainExperience = j.minDomainExperience,
+                 Domain = j.Domain,
+                 Status = j.Status,
+                 DeadLine = j.DeadLine,
+                 CreatedAt = j.CreatedAt,
 
-                 Recruiter = j.CreatedBy == null ? null : new
+                 Recruiter = j.CreatedBy == null ? null : new RecruiterDto
                  {
-                     j.CreatedBy.Id,
-                     j.CreatedBy.UserId
+                     Id = j.CreatedBy.Id,
+                     UserId = j.CreatedBy.UserId
                  },
 
-                 Reviewers = j.JobReviewers.Select(r => new
+                 Reviewers = j.JobReviewers.Select(r => new ReviewerDto
                  {
-                     r.Reviewer.Id,
+                     Id = r.Reviewer.Id,
                      Email = r.Reviewer.User != null ? r.Reviewer.User.Email : null
-                 }),
+                 }).ToList(),
 
-                 Interviewers = j.JobInterviewers.Select(i => new
+                 Interviewers = j.JobInterviewers.Select(i => new InterviewerDto
                  {
-                     i.Interviewer.Id,
+                     Id = i.Interviewer.Id,
                      Email = i.Interviewer.User != null ? i.Interviewer.User.Email : null
-                 }),
+                 }).ToList(),
 
-                 Documents = j.JobDocuments.Select(d => new
+                 Documents = j.JobDocuments.Select(d => new DocumentDto
                  {
-                     d.Document.id,
-                     d.Document.Name,
-                     d.Document.Description,
-                     d.IsMandatory
-                 }),
+                     Id = d.Document.id,
+                     Name = d.Document.Name,
+                     Description = d.Document.Description,
+                     IsMandatory = d.IsMandatory
+                 }).ToList(),
 
-                 JobSkills = j.JobSkills.Select(s => new
+                 JobSkills = j.JobSkills.Select(s => new JobSkillDto
                  {
-                     s.Skill.SkillId,
-                     s.Skill.Name,
-                     s.IsRequired,
-                     s.minExperience
-                 })
-             })
-             .FirstOrDefaultAsync();
+                     SkillId = s.Skill.SkillId,
+                     Name = s.Skill.Name,
+                     IsRequired = s.IsRequired,
+                     MinExperience = s.minExperience
+                 }).ToList()
+             });
+
+            if (jobOpening == null)
+                throw new AppException(
+                    "Job opening not found",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
             return Ok(jobOpening);
         }
 
@@ -316,25 +287,34 @@ namespace WebApis.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> UpdateJobOpeningFields(int id, [FromBody] JobOpeningUpdateDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
 
+            var validation = await _jobOpeningUpdateDtoValidator.ValidateAsync(dto);
+
+            if (!validation.IsValid)
+                throw new AppException(
+                  "Validation failed",
+                  ErrorCodes.ValidationError,
+                  StatusCodes.Status400BadRequest,
+                  validation.Errors
+                );
             var job = await _jobOpeningRepository.GetByFilterAsync(j => j.Id == id);
             if (job == null)
-                return NotFound(new { message = "Job not found." });
+                throw new AppException("Job not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null)
-                return Unauthorized(new { message = "Invalid token." });
+                throw new UnauthorizedAccessException("Invalid token");
 
             int userId = int.Parse(userIdClaim);
 
             var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
             
             if (recruiter == null || job.CreatedById != recruiter.Id)
-            {
-                return BadRequest(new { message = "You are not authorized to update this job." });
-            }
+                throw new AppException(
+                   "You are not authorized to update this job",
+                   ErrorCodes.Forbidden,
+                   StatusCodes.Status403Forbidden
+               );
 
             job.Title = dto.Title;
             job.Description = dto.Description;
@@ -363,8 +343,7 @@ namespace WebApis.Controllers
             // Update timestamp
             job.UpdatedAt = DateTime.UtcNow;
 
-            // Save
-            await _db.SaveChangesAsync();
+            await _jobOpeningRepository.UpdateAsync(job);
 
             return Ok(new { message = "Job fields updated successfully." });
         }
@@ -375,54 +354,57 @@ namespace WebApis.Controllers
         public async Task<IActionResult> UpdateJobReviewers(int id, [FromBody] List<int> reviewerIds)
         {
             if (id <= 0)
-                return BadRequest(new { message = "Invalid Job ID." });
+                throw new AppException("Invalid Job ID.", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
             if (reviewerIds == null)
-                return BadRequest(new { message = "reviewer list cannot be null." });
+                throw new AppException("Reviewer cannot be empty !", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
             if (!reviewerIds.Any())
-                return BadRequest(new { message = "At least one reviewer must be selected." });
+                throw new AppException("At least slect one reviewer", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
             if (reviewerIds.Count != reviewerIds.Distinct().Count())
-                return BadRequest(new { message = "Duplicate reviewer IDs are not allowed." });
+                throw new AppException("Dublicate reviewr not allowed", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
-            var job = await _db.JobOpening
-                .Include(j => j.JobReviewers)
-                .FirstOrDefaultAsync(j => j.Id == id);
-
+            var job = await _jobOpeningRepository.GetWithIncludeAsync(
+                j => j.Id == id,
+                j => j,
+                "JobReviewers");
+           
             if (job == null)
-                return NotFound(new { message = "Job not found." });
+                throw new AppException("Job not found.", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null)
-                return Unauthorized(new { message = "Invalid token." });
+                throw new UnauthorizedAccessException("Invalid token");
 
             int userId = int.Parse(userIdClaim);
 
             var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
 
             if (recruiter == null || job.CreatedById != recruiter.Id)
-            {
-                return BadRequest(new { message = "You are not authorized to update this job." });
-            }
-            // Check reviewers exist
-            var existingReviewers = await _db.Reviewers
-                .Where(r => reviewerIds.Contains(r.Id))
-                .Select(r => r.Id)
-                .ToListAsync();
+                throw new AppException("You are not authorized to update this job.",
+                   ErrorCodes.Forbidden,
+                   StatusCodes.Status403Forbidden);
 
+            // Check reviewers exist
+            var existingReviewers = await _reviewerRepository.GetAllByFilterAsync(
+                r => reviewerIds.Contains(r.Id),
+                r => r.Id);
+         
             if (existingReviewers.Count != reviewerIds.Count)
-                return BadRequest(new { message = "Some reviewer IDs do not exist." });
+                throw new AppException("Some reviewer IDs do not exist.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest);
 
             // Replace old reviewers
-            _db.JobReviewer.RemoveRange(job.JobReviewers);
+            await _jobReviewerRepository.RemoveRangeAsync(job.JobReviewers);
             job.JobReviewers = reviewerIds.Select(rid => new JobReviewer
             {
                 ReviewerId = rid,
                 JobOpeningId = job.Id
             }).ToList();
 
-            await _db.SaveChangesAsync();
+            await _jobOpeningRepository.SaveChangesAsync();
 
             return Ok(new { message = "Reviewers updated successfully." });
         }
@@ -433,54 +415,55 @@ namespace WebApis.Controllers
         public async Task<IActionResult> UpdateJobInterviewers(int id, [FromBody] List<int> interviewerIds)
         {
             if (id <= 0)
-                return BadRequest(new { message = "Invalid Job ID." });
+                throw new AppException("Invalid Job ID.", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
             if (interviewerIds == null)
-                return BadRequest(new { message = "Interviewer list cannot be null." });
+                throw new AppException("Interviewer list cannot be null.", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
             if (!interviewerIds.Any())
-                return BadRequest(new { message = "At least one interviewer must be selected." });
+                throw new AppException("At least one interviewer must be selected.", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
             if (interviewerIds.Count != interviewerIds.Distinct().Count())
-                return BadRequest(new { message = "Duplicate interviewer IDs are not allowed." });
+                throw new AppException("Duplicate interviewer IDs are not allowed.", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
-            var job = await _db.JobOpening
-                .Include(j => j.JobInterviewers)
-                .FirstOrDefaultAsync(j => j.Id == id);
+            var job = await _jobOpeningRepository.GetWithIncludeAsync(
+               j => j.Id == id,
+               j => j,
+               "JobInterviewers");
 
             if (job == null)
-                return NotFound(new { message = "Job not found." });
+                throw new AppException("Job not found.", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null)
-                return Unauthorized(new { message = "Invalid token." });
+                throw new UnauthorizedAccessException("Invalid token");
 
             int userId = int.Parse(userIdClaim);
 
             var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
 
             if (recruiter == null || job.CreatedById != recruiter.Id)
-            {
-                return BadRequest(new { message = "You are not authorized to update this job." });
-            }
+                throw new AppException("You are not authorized to update this job.",
+                ErrorCodes.Forbidden,
+                StatusCodes.Status403Forbidden);
 
-            var existingInterviewers = await _db.Interviewers
-                .Where(i => interviewerIds.Contains(i.Id))
-                .Select(i => i.Id)
-                .ToListAsync();
-
+            var existingInterviewers = await _interviewerRepository.GetAllByFilterAsync(
+                    i => interviewerIds.Contains(i.Id),
+                    i => i.Id );
             if (existingInterviewers.Count != interviewerIds.Count)
-                return BadRequest(new { message = "Some interviewer IDs do not exist." });
+                throw new AppException("Some interviewer do not exist.",
+                   ErrorCodes.ValidationError,
+                   StatusCodes.Status400BadRequest);
 
-            _db.jobInterviewer.RemoveRange(job.JobInterviewers);
+            await _jobInterviewerRepository.RemoveRangeAsync(job.JobInterviewers);
             job.JobInterviewers = interviewerIds.Select(iid => new JobInterviewer
             {
                 InterviewerId = iid,
                 JobOpeningId = job.Id
             }).ToList();
 
-            await _db.SaveChangesAsync();
-
+            await _jobOpeningRepository.SaveChangesAsync();
+          
             return Ok(new { message = "Interviewers updated successfully." });
         }
 
@@ -489,37 +472,38 @@ namespace WebApis.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> UpdateJobDocuments(int id, [FromBody] List<jobDocumentDto> documents)
         {
-            var job = await _db.JobOpening
-                .Include(j => j.JobDocuments)
-                .FirstOrDefaultAsync(j => j.Id == id);
-
+            var job = await _jobOpeningRepository.GetWithIncludeAsync(
+                j => j.Id == id,
+                j => j,
+                "JobDocuments");
             if (job == null)
-                return NotFound(new { message = "Job not found." });
+                throw new AppException("Job not found.", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null)
-                return Unauthorized(new { message = "Invalid token." });
+                throw new UnauthorizedAccessException("Invalid token");
 
             int userId = int.Parse(userIdClaim);
 
             var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
 
             if (recruiter == null || job.CreatedById != recruiter.Id)
-            {
-                return BadRequest(new { message = "You are not authorized to update this job." });
-            }
+                throw new AppException("You are not authorized to update this job.",
+                   ErrorCodes.Forbidden,
+                   StatusCodes.Status403Forbidden);
 
             var documentIds = documents.Select(d => d.DocumentId).ToList();
 
-            var existingDocs = await _db.Documents
-                .Where(d => documentIds.Contains(d.id))
-                .Select(d => d.id)
-                .ToListAsync();
-
+            var existingDocs = await _documentRepository.GetAllByFilterAsync(
+                d => documentIds.Contains(d.id),
+                d => d.id);
+           
             if (existingDocs.Count != documentIds.Count)
-                return BadRequest(new { message = "Some document IDs do not exist." });
+                throw new AppException("Some document IDs do not exist.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest);   
 
-            _db.JobDocuments.RemoveRange(job.JobDocuments);
+            await _jobDocumentRepository.RemoveRangeAsync(job.JobDocuments);
             job.JobDocuments = documents.Select(doc => new JobDocument
             {
                 JobOpeningId = job.Id,
@@ -527,7 +511,7 @@ namespace WebApis.Controllers
                 IsMandatory = doc.IsMandatory
             }).ToList();
 
-            await _db.SaveChangesAsync();
+            await _jobOpeningRepository.SaveChangesAsync();
 
             return Ok(new { message = "Documents updated successfully." });
         }
@@ -535,97 +519,121 @@ namespace WebApis.Controllers
         //update job skills linked to a job listing
         [HttpPatch("update-skills/{id}")]
         [Authorize(Roles = "Recruiter")]
-        public async Task<IActionResult> UpdateJobSkills(int id, [FromBody] List<jobSkillDto> skills)
+        public async Task<IActionResult> UpdateJobSkills(
+            int id,
+            [FromBody] List<jobSkillDto> skills)
         {
-            var job = await _db.JobOpening
-                .Include(j => j.JobSkills)
-                .ThenInclude(js => js.Skill)
-                .FirstOrDefaultAsync(j => j.Id == id);
+            if (skills == null || !skills.Any())
+                throw new AppException("At least one skill is required.", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
+
+            var job = await _jobOpeningRepository.GetWithIncludeAsync(
+                j => j.Id == id,
+                j => j,
+                "JobSkills.Skill");
 
             if (job == null)
-                return NotFound(new { message = "Job not found." });
+                throw new AppException("Job not found.", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
-                return Unauthorized(new { message = "Invalid token." });
+                throw new  UnauthorizedAccessException("Invalid token.");
 
             int userId = int.Parse(userIdClaim);
 
             var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
-
             if (recruiter == null || job.CreatedById != recruiter.Id)
+                throw new AppException("You are not authorized to update this job.", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
+
+            var requestedSkillNames = skills
+                .Select(s => s.SkillName.Trim())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var existingSkills = await _skillRepository.GetAllByFilterAsync(
+                s => requestedSkillNames
+                    .Select(n => n.ToLower())
+                    .Contains(s.Name.ToLower()),
+                s => s
+            );
+
+            var existingSkillNames = existingSkills
+                .Select(s => s.Name.ToLower())
+                .ToHashSet();
+
+            var newSkills = requestedSkillNames
+                .Where(name => !existingSkillNames.Contains(name.ToLower()))
+                .Select(name => new Skill
+                {
+                    Name = name
+                })
+                .ToList();
+
+            if (newSkills.Any())
             {
-                return BadRequest(new { message = "You are not authorized to update this job." });
+                await _skillRepository.AddRangeAsync(newSkills);
+                existingSkills.AddRange(newSkills);
             }
 
-            // Extract skill names from the request
-            var skillNames = skills.Select(s => s.SkillName.Trim().ToLower()).ToList();
+            await _jobSkillRepository.RemoveRangeAsync(job.JobSkills);
 
-            // Fetch existing skills from DB that match provided names
-            var existingSkills = await _db.Skill
-                .Where(s => skillNames.Contains(s.Name.ToLower()))
-                .ToListAsync();
-
-            // Validation: check if all provided skill names exist
-            if (existingSkills.Count != skillNames.Count)
+            job.JobSkills = skills.Select(s =>
             {
-                var existingNames = existingSkills.Select(s => s.Name.ToLower()).ToHashSet();
-                var missingNames = skillNames.Where(s => !existingNames.Contains(s)).ToList();
-                return BadRequest(new { message = $"These skills do not exist: {string.Join(", ", missingNames)}" });
-            }
+                var skill = existingSkills.First(es =>
+                    es.Name.Equals(s.SkillName, StringComparison.OrdinalIgnoreCase));
 
-            // Remove old job-skill relationships
-            _db.jobSkills.RemoveRange(job.JobSkills);
-
-            // Add new job-skill relationships
-            job.JobSkills = skills.Select(s => new JobSkill
-            {
-                JobOpeningId = job.Id,
-                SkillId = existingSkills.First(es => es.Name.Equals(s.SkillName, StringComparison.OrdinalIgnoreCase)).SkillId,
-                IsRequired = s.IsRequired,
-                minExperience = s.minExperience
+                return new JobSkill
+                {
+                    JobOpeningId = job.Id,
+                    SkillId = skill.SkillId,
+                    IsRequired = s.IsRequired,
+                    minExperience = s.minExperience
+                };
             }).ToList();
 
-            await _db.SaveChangesAsync();
+            await _jobOpeningRepository.SaveChangesAsync();
 
             return Ok(new { message = "Skills updated successfully." });
         }
 
         //delete job listing and all linked reviewers, interviewers, and documents
-        //pending :- link Jobcandidate to job opening deletion
         [HttpDelete("delete/{id}")]
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> DeleteJobOpening(int id)
         {
-            var jobOpening = await _db.JobOpening
-                .Include(j => j.JobReviewers)
-                .Include(j => j.JobInterviewers)
-                .Include(j => j.JobDocuments)
-                .Include(j => j.JobSkills)
-                .FirstOrDefaultAsync(j => j.Id == id);
+            var jobOpening = await _jobOpeningRepository.GetWithIncludeAsync(
+                j => j.Id == id,
+                j => j,
+                "JobReviewers",
+                "JobInterviewers",
+                "JobDocuments",
+                "JobSkills"
+            );
 
             if (jobOpening == null)
-                return NotFound(new { message = "Job not found." });
+                throw new AppException("Job not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null)
-                return Unauthorized(new { message = "Invalid token." });
+                throw new UnauthorizedAccessException("Invalid token");
 
             int userId = int.Parse(userIdClaim);
 
             var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
 
             if (recruiter == null || jobOpening.CreatedById != recruiter.Id)
-            {
-                return BadRequest(new { message = "You are not authorized to update this job." });
-            }
+                throw new AppException(
+                    "You are not authorized to delete this job",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
 
             // Delete linked entries first (junction tables)
-            _db.JobReviewer.RemoveRange(jobOpening.JobReviewers);
-            _db.jobInterviewer.RemoveRange(jobOpening.JobInterviewers);
-            _db.JobDocuments.RemoveRange(jobOpening.JobDocuments);
-            _db.jobSkills.RemoveRange(jobOpening.JobSkills);
-
+            await _jobReviewerRepository.RemoveRangeAsync(jobOpening.JobReviewers);
+            await _jobInterviewerRepository.RemoveRangeAsync(jobOpening.JobInterviewers);
+            await _jobDocumentRepository.RemoveRangeAsync(jobOpening.JobDocuments);
+            await _jobSkillRepository.RemoveRangeAsync(jobOpening.JobSkills);
+            
             // Then delete main job record
             await _jobOpeningRepository.DeleteAsync(jobOpening);
             return Ok(new { message = "Job opening and related data deleted successfully." });

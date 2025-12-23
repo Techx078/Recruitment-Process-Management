@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { fetchRecruiterService } from "../../Services/RecruiterService";
 import { useNavigate, Link, useParams } from "react-router-dom";
+import { handleGlobalError } from "../../Services/errorHandler";
 
 export default function RecruiterProfile() {
   let { UserId } = useParams();
@@ -18,7 +19,7 @@ export default function RecruiterProfile() {
         );
         setRecruiter(data);
       } catch (e) {
-        console.log("recruiter not found");
+        handleGlobalError(e)
         SetNotFound(true)
       }
     };

@@ -14,8 +14,9 @@ export const getAllJobOpenings = async (token) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error in fetching job openings:", error);
-    throw error;
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -28,8 +29,9 @@ export const getJobOpeningById = async (id, token) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error in fetching job opening by ID:", error);
-    throw error;
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -42,8 +44,9 @@ export const getAllSkills = async (token) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error in fetching skills:", error);
-    throw error;
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -56,8 +59,9 @@ export const getAllReviewers = async (token) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error in fetching reviewers:", error);
-    throw error;
+     if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -73,8 +77,9 @@ export const getAllInterviewers = async (token) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error in fetching interviewers:", error);
-    throw error;
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -87,15 +92,14 @@ export const getAllDocuments = async (token) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error in fetching documents:", error);
-    throw error;
+     if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
 export const createJobOpening = async (jobData, token) => {
   try {
-    console.log(jobData);
-
     const response = await axios.post(`${API_BASE_URL}/create`, jobData, {
       headers: {
         "Content-Type": "application/json",
@@ -104,9 +108,9 @@ export const createJobOpening = async (jobData, token) => {
     });
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response.data.message || "Failed to create job opening."
-    );
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -120,9 +124,9 @@ export const updateJobFields = async (id, data, token) => {
     });
     return res.data;
   } catch (error) {
-    throw new Error(
-      error.response.data.message || "Failed to update job opening."
-    );
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -139,11 +143,9 @@ export const updateJobReviewers = async (id, reviewerIds, token) => {
       }
     );
   } catch (error) {
-    console.log(error);
+    if (error.response) throw error.response;
 
-    throw new Error(
-      error.response.data.message || "Failed to reviewer job opening."
-    );
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -160,9 +162,9 @@ export const updateJobInterviewers = async (id, interviewerIds, token) => {
       }
     );
   } catch (error) {
-    throw new Error(
-      error.response.data.message || "Failed to update Interviewer opening."
-    );
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -179,9 +181,9 @@ export const updateJobDocument = async (id, documents, token) => {
       }
     );
   } catch (error) {
-    throw new Error(
-      error.response.data.message || "Failed to update Interviewer opening."
-    );
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -198,10 +200,8 @@ export const updateJobSkill = async (id, skills, token) => {
       }
     );
   } catch (error) {
-    console.log(error);
-    
-    throw new Error(
-      error.response.data.message || "Failed to update Interviewer opening."
-    );
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };

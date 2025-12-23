@@ -5,6 +5,7 @@ import {
   getJobOpeningById,
   updateJobInterviewers,
 } from "../../Services/JobOpeningService";
+import { handleGlobalError } from "../../Services/errorHandler";
 
 const EditJobInterviewers = () => {
   const { id } = useParams();
@@ -12,9 +13,11 @@ const EditJobInterviewers = () => {
 
   const [interviewers, setInterviewers] = useState([]);
   const [selected, setSelected] = useState([]);
-
+  const [error, setError] = useState(null);
+  
   useEffect(() => {
     const load = async () => {
+      try{
       const token = localStorage.getItem("token");
 
       // Load all interviewers
@@ -24,6 +27,10 @@ const EditJobInterviewers = () => {
       // Load selected interviewers for this job
       const job = await getJobOpeningById(id, token);
       setSelected(job.interviewers.map(i => i.id));
+      }catch(e){
+        handleGlobalError(e);
+        setError("server error !")
+      }
     };
 
     load();
@@ -46,11 +53,17 @@ const EditJobInterviewers = () => {
       alert("Interviewers updated!");
       navigate(`/job-openings/${id}`);
     } catch (error) {
-      console.error("Failed to update interviewers", error);
-      alert("Update failed!");
+      handleGlobalError(error);
     }
   };
-
+   
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
     <div className="p-6 max-w-xl mx-auto bg-white shadow rounded">
       <h2 className="text-xl font-bold mb-4">Update Interviewers</h2>

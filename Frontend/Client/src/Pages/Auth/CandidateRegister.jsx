@@ -5,6 +5,8 @@ import { getAllSkills } from "../../Services/JobOpeningService";
 import { fetchJobOpeningsByRecruiter } from "../../Services/RecruiterService";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { CreateJobCandidateService } from "../../Services/JobCandidateService";
+import { handleGlobalError } from "../../Services/errorHandler";
+import { toast } from "react-toastify";
 
 export default function CandidateRegister() {
   const [formData, setFormData] = useState({
@@ -17,7 +19,7 @@ export default function CandidateRegister() {
     Domain: "",
     DomainExperienceYears: 0,
   });
-  const { authUser, setAuthUser } = useAuthUserContext();
+  const { authUser } = useAuthUserContext();
 
   const [allSkills, setAllSkills] = useState([]);
   const [educations, setEducations] = useState([
@@ -34,22 +36,28 @@ export default function CandidateRegister() {
   const [candidateId, setCandidateId] = useState(null);
   const [cvPath, setCvPath] = useState(null);
   const [jobLoading, setJobLoading] = useState(false);
+  const [error, setError] = useState("");
   useEffect(() => {
     loadData();
   }, []);
 
   async function loadData() {
-    let token = localStorage.getItem("token");
-    setAllSkills(await getAllSkills(token));
-    const jobs = await fetchJobOpeningsByRecruiter(token, authUser.id);
-    setJobOpenings(jobs);
+    try {
+      let token = localStorage.getItem("token");
+      setAllSkills(await getAllSkills(token));
+      const jobs = await fetchJobOpeningsByRecruiter(token, authUser.id);
+      setJobOpenings(jobs);
+    } catch (error) {
+      handleGlobalError(error);
+      setError("something went wrong !");
+    }
   }
 
   const [skills, setSkills] = useState([{ name: "", experience: "" }]);
   const [resumeFile, setResumeFile] = useState("hello");
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
   const navigateTo = useNavigate();
   const DEGREE_OPTIONS = [
     "B.Tech",
@@ -143,18 +151,21 @@ export default function CandidateRegister() {
     const formData = new FormData();
     formData.append("file", file);
     let token = localStorage.getItem("token");
-
-    const res = await fetch("http://localhost:5233/api/Auth/upload-resume", {
-      method: "POST",
-      body: formData,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    console.log(res);
-    if (!res.ok) throw new Error("Failed to upload resume");
-    const data = await res.json();
-    return data.resumeUrl;
+    try {
+      const res = await fetch("http://localhost:5233/api/Auth/upload-resume", {
+        method: "POST",
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(res);
+      if (!res.ok) throw new Error("Failed to upload resume");
+      const data = await res.json();
+      return data.resumeUrl;
+    } catch (error) {
+      handleGlobalError(error);
+    }
   };
 
   // Handle form submission for registration
@@ -197,7 +208,7 @@ export default function CandidateRegister() {
       const response = await registerCandidate(candidateData, token);
       setCandidateId(response.id);
       setCvPath(response.resumePath);
-      alert("Candidate created! Now select a job to apply.");
+      toast.success("Candidate created! Now select a job to apply.");
       // Reset form
       setFormData({
         fullName: "",
@@ -221,34 +232,20 @@ export default function CandidateRegister() {
         },
       ]);
     } catch (error) {
-      if (!error.status) {
-        alert("Network error. Please try again.");
-        return;
-      }
-      const { status, data } = error;
-      if (status === 400 && data.errors) {
-        if (Array.isArray(data.errors)) {
-          data.errors.forEach((msg) => alert(msg));
-        } else {
-          Object.values(data.errors)
-            .flat()
-            .forEach((msg) => alert("fields are required"));
-        }
-        return;
-      }
-      alert(data.Message || "Something went wrong");
-      return;
+      console.log(error);
+      handleGlobalError(error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
   const handleApplyToJob = async () => {
     if (!selectedJobId) {
-      alert("Select a Job Opening");
+      toast.warning("Select a Job Opening");
       return;
     }
     if (candidateId == null || cvPath == null) {
-      alert("Complete candidate registration first");
+      toast.warning("Complete candidate registration first");
       return;
     }
     const payload = {
@@ -259,36 +256,24 @@ export default function CandidateRegister() {
 
     try {
       setJobLoading(true);
-
       let token = localStorage.getItem("token");
       await CreateJobCandidateService(token, payload);
-
-      alert("Candidate successfully applied to job!");
-
+      toast.success("Candidate successfully applied to job!");
       navigateTo(`/Recruiter/Profile/${authUser.id}`);
-    } catch (err) {
-      if (!error.status) {
-        alert("Network error. Please try again.");
-        return;
-      }
-      const { status, data } = error;
-      if (status === 400 && data.errors) {
-        if (Array.isArray(data.errors)) {
-          data.errors.forEach((msg) => alert(msg));
-        } else {
-          Object.values(data.errors)
-            .flat()
-            .forEach((msg) => alert("fields are required"));
-        }
-        return;
-      }
-      alert(data.Message || "Something went wrong");
-      return;
+    } catch (error) {
+      handleGlobalError(error);
+      setError(error.message);
     } finally {
       setJobLoading(false);
     }
   };
-
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
       {!candidateId ? (

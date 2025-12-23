@@ -1,4 +1,6 @@
 import "./App.css";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { Routes, Route } from "react-router-dom";
 import Login from "./Pages/Auth/Login";
 import CandidateRegister from "./Pages/Auth/CandidateRegister.jsx";
@@ -51,6 +53,11 @@ function App() {
 
         {/* Main content */}
         <main className="flex-grow pt-16 mt-5">
+          <ToastContainer
+            position="top-right"
+            autoClose={4000}
+            hideProgressBar={false}
+          />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -217,15 +224,12 @@ function App() {
               }
             />
             <Route path="/pool/hr/:jobOpeningId" element={<HrPool />} />
+            <Route path="/final-pool/:jobOpeningId" element={<FinalPool />} />
             <Route
-              path="/final-pool/:jobOpeningId"
-              element={<FinalPool />}
-            />
-             <Route
               path="/History/:jobCandidateId"
               element={<CandidateInterviewHistory />}
             />
-             <Route
+            <Route
               path="/Dashboard/:jobOpeningId"
               element={<JobCandidateDashboard />}
             />

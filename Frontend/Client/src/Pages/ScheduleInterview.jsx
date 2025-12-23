@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {scheduleInterview} from "../Services/JobCandidateService.js";
+import { handleGlobalError } from "../Services/errorHandler.js";
 const ScheduleInterview = () => {
   const { jobCandidateId } = useParams();
   const navigate = useNavigate();
@@ -36,17 +37,7 @@ const ScheduleInterview = () => {
         navigate(-1);
       }, 1500);
     } catch (err) {
-      const apiError =
-        err.response?.data?.errors ||
-        err.response?.data?.error ||
-        err.response?.data?.errros ||
-        err.response?.data?.erros;
-
-      if (Array.isArray(apiError)) {
-        setError(apiError.join(", "));
-      } else {
-        setError(err.response?.data?.message || "Failed to schedule interview");
-      }
+      handleGlobalError(err);
     } finally {
       setLoading(false);
     }

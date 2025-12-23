@@ -6,14 +6,17 @@ using Scalar.AspNetCore;
 using System.Text;
 using System.Text.Json.Serialization;
 using WebApis.Dtos;
+using WebApis.Dtos.ForgotPasswordDtos;
 using WebApis.Dtos.JobCandidateDtos;
 using WebApis.Dtos.JobOpeningDto;
 using WebApis.Repository;
 using WebApis.Repository.CandidateRepository;
 using WebApis.Repository.JobCandidateRepository;
+using WebApis.Repository.JobOpeningRepository;
 using WebApis.Repository.UserRepository;
 using WebApis.Service;
 using WebApis.Service.EmailService;
+using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
 using WebApis.Service.ValidationService;
 using WebApis.Service.ValidationService.AuthUserVallidator;
@@ -33,7 +36,10 @@ namespace WebApis
             builder.Services.AddScoped<IJobCandidateRepository, JobCandidateRepository>();
             builder.Services.AddScoped<ICandidateRepository, CandidateRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IJobOpeningRepository, JobOpeningRepository>();
             builder.Services.AddScoped<ICommonValidator<JobCandidateCreateDto>, JobCandidateCreateValidator>();
+            builder.Services.AddScoped<ICommonValidator<ResetPasswordDto>,ResetPasswordValidator>();
+            builder.Services.AddScoped<ICommonValidator<JobOpeningUpdateDto>, JobOpeningUpdateValidator>();
             // Add services to the container.
             builder.Services.AddControllers()
                 .AddJsonOptions(options =>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
 import * as XLSX from "xlsx";
 import DataInTable from "../../Component/DataInTable";
 import { CandidateBulkRegisterService } from "../../Services/authService";
@@ -8,6 +7,7 @@ import { Navigate } from "react-router-dom";
 import { fetchJobOpeningsByRecruiter } from "../../Services/RecruiterService";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { CreateJobCandidateBulkService } from "../../Services/JobCandidateService";
+import { handleGlobalError } from "../../Services/errorHandler";
 
 export default function CandidateBulkRegister() {
   const [basicData, setBasicData] = useState([]);
@@ -20,16 +20,21 @@ export default function CandidateBulkRegister() {
   const [cvPaths, setCvPaths] = useState(null);
   const { authUser } = useAuthUserContext();
   const [jobLoading, setJobLoading] = useState(false);
-
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   useEffect(() => {
     loadData();
   }, []);
 
   async function loadData() {
+    try{
     let token = localStorage.getItem("token");
     const jobs = await fetchJobOpeningsByRecruiter(token, authUser.id);
     setJobOpenings(jobs);
+    }catch(err){
+      handleGlobalError(err);
+      setError("Server Error!")
+    }
   }
   const handleExcelUpload = (e, type) => {
     const file = e.target.files[0];
@@ -99,6 +104,7 @@ export default function CandidateBulkRegister() {
   const handleShowJob = (jobId) => {
     window.open(`/job-openings/${jobId}`, "_blank");
   };
+
   const sendToBackend = async () => {
     try {
       let token = localStorage.getItem("token");
@@ -123,8 +129,8 @@ export default function CandidateBulkRegister() {
       }));
       setFinalJson(updatedData);
     } catch (err) {
-      console.error(err);
-      alert("Failed to upload bulk candidates!");
+      handleGlobalError(err);
+      setError(err);
     }
   };
   const handleApplyToJob = async () => {
@@ -148,28 +154,19 @@ export default function CandidateBulkRegister() {
       alert("Candidate successfully applied to job!");
       navigate(`/Recruiter/Profile/${authUser.id}`);
     } catch (err) {
-      if (!error.status) {
-        alert("Network error. Please try again.");
-        return;
-      }
-      const { status, data } = error;
-      if (status === 400 && data.errors) {
-        if (Array.isArray(data.errors)) {
-          data.errors.forEach((msg) => alert(msg));
-        } else {
-          Object.values(data.errors)
-            .flat()
-            .forEach((msg) => alert("fields are required"));
-        }
-        return;
-      }
-      alert(data.Message || "Something went wrong");
+      handleGlobalError(err);
       return;
     } finally {
       setJobLoading(false);
     }
   };
-
+ if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
   <div className="max-w-4xl mx-auto p-6">
     {candidateIds == null ? (

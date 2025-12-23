@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
+import { toast } from "react-toastify";
 
 
 const authUserProtector = ({ children }) => {
@@ -10,7 +11,7 @@ const authUserProtector = ({ children }) => {
 
   useEffect(() => {
     if ( !authUser) {
-      alert("Access denied. Please log in.");
+      toast.warning("Access denied. Please log in.");
       navigate("/login");
     } else {
       setChecking(false);

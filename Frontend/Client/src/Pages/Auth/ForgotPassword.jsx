@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
-import {useNavigate} from "react-router-dom";
-import { resetPassword, sendOtp  } from "../../Services/forgotPasswordService";
+import { useNavigate } from "react-router-dom";
+import { resetPassword, sendOtp } from "../../Services/forgotPasswordService";
+import { handleGlobalError } from "../../Services/errorHandler";
+import { toast } from "react-toastify";
 
 export default function ForgotPassword() {
   const [step, setStep] = useState(1);
@@ -10,34 +12,35 @@ export default function ForgotPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
+  const [error, setError] = useState(null);
+
   const navigate = useNavigate();
 
   const handleSendOtp = async () => {
-    if(isLoading) return;
+    if (isLoading) return;
     setIsLoading(true);
     if (!email) {
       setIsLoading(false);
-      return alert("Please enter email");
+      return toast.warning("Please enter email");
     }
 
     try {
       await sendOtp(email);
-      alert("OTP sent to your email");
+      toast.success("OTP sent to your email");
       setStep(2);
     } catch (err) {
-      alert(err || "Something went wrong");
-    }finally{
+      handleGlobalError(err);
+    } finally {
       setIsLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
-    if(isLoading) return;
+    if (isLoading) return;
     setIsLoading(true);
-    if (newPassword !== confirmPassword){
+    if (newPassword !== confirmPassword) {
       setIsLoading(false);
-      return alert("Passwords do not match!");
+      return toast.warning("Passwords do not match!");
     }
 
     const payload = {
@@ -48,21 +51,26 @@ export default function ForgotPassword() {
 
     try {
       await resetPassword(payload);
-      alert("Password reset successful. Redirecting...");
+      toast.success("Password reset successful. Redirecting...");
       navigate("/login");
     } catch (err) {
-      alert(err || "Error resetting password");
-    }finally{
+      handleGlobalError(err);
+    } finally {
       setIsLoading(false);
     }
   };
 
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center mb-6">
-          Forgot Password
-        </h2>
+        <h2 className="text-2xl font-bold text-center mb-6">Forgot Password</h2>
 
         {step === 1 && (
           <>
@@ -125,7 +133,9 @@ export default function ForgotPassword() {
 
             <button
               onClick={handleResetPassword}
-              disabled={ !email || isLoading || !otp || !newPassword || !confirmPassword}
+              disabled={
+                !email || isLoading || !otp || !newPassword || !confirmPassword
+              }
               className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Resetting..." : "Reset Password"}

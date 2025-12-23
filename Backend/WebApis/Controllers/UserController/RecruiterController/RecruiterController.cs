@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using WebApis.Data;
 using WebApis.Dtos;
 using WebApis.Repository;
+using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
-
 
 namespace WebApis.Controllers.UserController.RecruiterController
 {
@@ -16,6 +15,7 @@ namespace WebApis.Controllers.UserController.RecruiterController
     {
         private readonly ICommonRepository<Recruiter> _recruiterRepository;
         private readonly ICommonRepository<JobOpening> _jobOpeningRepository;
+
         public RecruiterController(
             ICommonRepository<Recruiter> recruiterRepository,
             ICommonRepository<JobOpening> jobOpeningRepository)
@@ -23,63 +23,69 @@ namespace WebApis.Controllers.UserController.RecruiterController
             _recruiterRepository = recruiterRepository;
             _jobOpeningRepository = jobOpeningRepository;
         }
+
         [HttpGet("{userId}")]
         [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> GetRecruiterById(int userId)
         {
-            var userIdClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
-            var userRoleClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.FindFirstValue(ClaimTypes.Role);
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
-                throw new UnauthorizedAccessException("Invalid token");
+                throw new UnauthorizedAccessException();
 
-            int loggedInUserId = int.Parse(userIdClaim);
+            var loggedInUserId = int.Parse(userIdClaim);
 
             if (userRoleClaim == "Recruiter" && loggedInUserId != userId)
-                throw new AppException("You are unauthorized recruiter", 403);
+                throw new AppException(
+                    "You don’t have permission to view this recruiter.",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
 
             var recruiter = await _recruiterRepository.GetByFilterAsync(r => r.UserId == userId);
             if (recruiter == null)
-                throw new KeyNotFoundException("Recruiter not found");
+                throw new AppException(
+                    "Recruiter not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
             var createdJobOpenings = await _jobOpeningRepository.GetAllByFilterAsync(
                 j => j.CreatedById == recruiter.Id,
                 j => new AssignedJobOpeningDto
                 {
-                   JobOpeningId = j.Id,
-                   Title = j.Title,
-                   Status = j.Status,
-                   Department = j.Department,
-                   JobType = j.JobType,
-                   CreatedAt = j.CreatedAt,
+                    JobOpeningId = j.Id,
+                    Title = j.Title,
+                    Status = j.Status,
+                    Department = j.Department,
+                    JobType = j.JobType,
+                    CreatedAt = j.CreatedAt,
                     CandidateCount = j.JobCandidates.Count,
-                   MinDomainExperience = j.minDomainExperience,
-                   Domain = j.Domain
+                    MinDomainExperience = j.minDomainExperience,
+                    Domain = j.Domain
                 });
 
             var recruiterDetails = await _recruiterRepository.GetByFilterAsync(
                 r => r.Id == recruiter.Id,
                 r => new ReviewerInterviewerDetailsDto
                 {
-                    Id =r.Id,
-                   Department = r.Department,
-
+                    Id = r.Id,
+                    Department = r.Department,
                     User = new UserDto
                     {
-                        Id= r.User.Id,
+                        Id = r.User.Id,
                         FullName = r.User.FullName,
-                        Email =r.User.Email,
+                        Email = r.User.Email,
                         PhoneNumber = r.User.PhoneNumber,
                         Domain = r.User.Domain,
                         DomainExperienceYears = r.User.DomainExperienceYears,
                     },
                     AssignedJobOpenings = createdJobOpenings
                 }
-                );
+            );
+
             return Ok(recruiterDetails);
         }
-
     }
 }

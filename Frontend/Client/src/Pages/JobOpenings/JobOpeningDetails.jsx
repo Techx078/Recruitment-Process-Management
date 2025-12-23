@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getJobOpeningById } from "../../Services/JobOpeningService";
 import { useAuthUserContext } from "../../Context/AuthUserContext.jsx";
+import { handleGlobalError } from "../../Services/errorHandler.js";
 
 const JobOpeningDetails = () => {
   const { id } = useParams();
@@ -11,7 +12,8 @@ const JobOpeningDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { authUser } = useAuthUserContext();
-
+  
+  
   useEffect(() => {
     const fetchJob = async () => {
       try {
@@ -19,8 +21,7 @@ const JobOpeningDetails = () => {
         const data = await getJobOpeningById(id, token);
         setJob(data);
       } catch (err) {
-        console.error(err);
-        setError("Failed to fetch job details.");
+        handleGlobalError(err);
         setJob(null);
       } finally {
         setLoading(false);
@@ -45,8 +46,13 @@ const JobOpeningDetails = () => {
       </div>
     );
 
-  if (error)
-    return <div className="text-center py-10 text-red-500">{error}</div>;
+    if (error) {
+      return (
+        <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+          {error}
+        </div>
+      );
+    }
 
   if (!job)
     return (

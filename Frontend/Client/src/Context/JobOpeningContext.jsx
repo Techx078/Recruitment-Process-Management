@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthUserContext } from "./AuthUserContext";
 import { getAllJobOpenings } from "../Services/JobOpeningService";
 import { Navigate } from "react-router-dom";
+import { handleGlobalError } from "../Services/errorHandler";
 
 export const JobOpeningContext = createContext();
 
@@ -23,11 +24,7 @@ export default function JobOpeningContextProvider({ children }) {
         alert("Login to continue");
         navigate("/login");
       }
-      setJobOpenings(()=> []);
-      throw new Error(
-        error.response.data.message || "Failed to fetch job opening."
-      );
-      setLoading(false);
+     handleGlobalError(error)
     }
   }
 

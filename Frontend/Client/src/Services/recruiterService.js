@@ -11,8 +11,9 @@ export const fetchRecruiterService = async (token , id) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error in fetch Recruiter by ID:", error);
-    throw error;
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -25,7 +26,8 @@ export const fetchJobOpeningsByRecruiter = async (token, id) => {
     });
     return response.data.assignedJobOpenings;
   } catch (error) {
-    console.error("Error in fetch Job Openings by Recruiter ID:", error);
-    throw error;
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   } 
 };

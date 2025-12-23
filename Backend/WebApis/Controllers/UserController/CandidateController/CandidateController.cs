@@ -5,6 +5,7 @@ using System.Security.Claims;
 using WebApis.Data;
 using WebApis.Dtos;
 using WebApis.Repository.CandidateRepository;
+using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
 using WebApis.Service.ValidationService;
 
@@ -24,94 +25,107 @@ namespace WebApis.Controllers.UserController.CandidateController
         [Authorize(Roles = "Recruiter,Interviewer,Admin,Reviewer,Candidate")]
         public async Task<IActionResult> GetCandidateDetailsByUserId(int userId)
         {
-            var userIdClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
-            var userRoleClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.FindFirstValue(ClaimTypes.Role);
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
-                throw new UnauthorizedAccessException("Invalid token");
+                throw new UnauthorizedAccessException();
 
-            int loggedInUserId = int.Parse(userIdClaim);
+            var loggedInUserId = int.Parse(userIdClaim);
 
             if (userRoleClaim == "Candidate" && loggedInUserId != userId)
-                throw new AppException("You are unauthorized candidate", 403);
+                throw new AppException(
+                    "You don’t have permission to view this candidate.",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
 
             var candidate = await _candidateRepository.GetCandidateDetailsByUserId(userId);
 
-            
             if (candidate == null)
-                throw new KeyNotFoundException("Candidate not found");
+                throw new AppException(
+                    "Candidate not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
 
             return Ok(candidate);
         }
+
 
         [HttpGet("jobOpening/{userId}")]
         [Authorize(Roles = "Recruiter,Interviewer,Admin,Reviewer,Candidate")]
         public async Task<IActionResult> GetCnadidateJobOpeningDetailsByUserId(int userId)
         {
-            var userIdClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
-            var userRoleClaim = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRoleClaim = User.FindFirstValue(ClaimTypes.Role);
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
-                throw new UnauthorizedAccessException("Invalid token");
+                throw new UnauthorizedAccessException();
 
-            int loggedInUserId = int.Parse(userIdClaim);
+            var loggedInUserId = int.Parse(userIdClaim);
 
             if (userRoleClaim == "Candidate" && loggedInUserId != userId)
-                throw new AppException("You are not authorized", 403);
+                throw new AppException(
+                    "You don’t have permission to view these job openings.",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
 
             var jobOpenings =
                 await _candidateRepository.GetCnadidateJobOpeningDetailsByUserId(userId);
 
-            if (jobOpenings == null)
-                throw new KeyNotFoundException("Job openings not found");
-
             return Ok(jobOpenings);
         }
 
-        [HttpPut("update/{UserId}")]
+
+        [HttpPut("update/{userId}")]
         [Authorize(Roles = "Candidate")]
-        public async Task<IActionResult> UpdateCandidateDetails(int UserId ,UpdateCandidateDto dto )
+        public async Task<IActionResult> UpdateCandidateDetails(int userId, UpdateCandidateDto dto)
         {
             var validationResult = await _updateCandidateValidator.ValidateAsync(dto);
-
             if (!validationResult.IsValid)
             {
-                return BadRequest(new
-                {
-                    errors = validationResult.Errors
-                });
+                throw new AppException(
+                    "Please fill all required fields correctly.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest,
+                    validationResult.Errors
+                );
             }
-            //check for valid candidate
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdClaim))
-            {
                 throw new UnauthorizedAccessException();
-            }
 
-            int loggedInUserId = int.Parse(userIdClaim);
-            if (loggedInUserId != UserId)
+            var loggedInUserId = int.Parse(userIdClaim);
+            if (loggedInUserId != userId)
             {
-                throw new AppException("You are not authorized", 403);
+                throw new AppException(
+                    "You don’t have permission to update this candidate.",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
             }
-           
-            var candidate = await _candidateRepository.GetCandidateWithUserAsync(UserId);
 
+            var candidate = await _candidateRepository.GetCandidateWithUserAsync(userId);
             if (candidate == null)
-                throw new KeyNotFoundException("Candidate not found");
+            {
+                throw new AppException(
+                    "Candidate not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+            }
 
             await _candidateRepository.UpdateCandidateAsync(candidate, dto);
+
             return Ok(new
             {
                 message = "Candidate updated successfully.",
                 candidateId = candidate.Id
             });
         }
+
     }
 }

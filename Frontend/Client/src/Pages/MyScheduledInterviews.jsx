@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getMyScheduledInterviews } from "../Services/JobCandidateService";
 import { useNavigate } from "react-router-dom";
+import { handleGlobalError } from "../Services/errorHandler";
 const MyScheduledInterviews = ({ jobOpeningId }) => {
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,22 +16,8 @@ const MyScheduledInterviews = ({ jobOpeningId }) => {
       const data = await getMyScheduledInterviews(jobOpeningId);
       setInterviews(data);
     } catch (error) {
-      if (!error.status) {
-        setError("Network error. Please try again.");
-        return;
-      }
-      const { status, data } = error;
-      if (status === 400 && data.errors) {
-        if (Array.isArray(data.errors)) {
-          data.errors.forEach((msg) => alert(msg));
-        } else {
-          Object.values(data.errors)
-            .flat()
-            .forEach(() => alert("fields are required"));
-        }
-        return;
-      }
-      setError(data.Message || "Something went wrong");
+      handleGlobalError(error)
+      setError(error?.data?.Message || "not able to fetch scheduled interview !")
       return;
     } finally {
       setLoading(false);

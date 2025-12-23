@@ -1,6 +1,7 @@
 import { useEffect, useState  } from "react";
 import { useNavigate , useParams } from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
+import { toast } from "react-toastify";
 
 
 const InterviewerProfileProtector = ({ children }) => {
@@ -13,7 +14,7 @@ const InterviewerProfileProtector = ({ children }) => {
     if (authUser && ((authUser.role == "Interviewer" && authUser.id == parseInt(UserId)) || authUser.role == "Recruiter" || authUser.role == "Admin") ) {
       setChecking(false);
     } else {
-    alert("Access denied. Only Organizational user can access.");
+    toast.warning("Access denied. Only Organizational user can access.");
       navigate("/login");
     }
   }, []);

@@ -41,7 +41,7 @@ namespace WebApis.Service.ValidationService.AuthUserVallidator
                 result.Errors.Add("Invalid department.");
 
             // Skills (simple list validation)
-            if (dto.Skills != null && !dto.Skills.Any())
+            if (dto.Skills == null && !dto.Skills.Any())
                 result.Errors.Add("Skills list cannot be empty.");
 
             // Skills item-level validation

@@ -7,48 +7,32 @@ namespace WebApis.Dtos.JobOpeningDto
 {
     public class JobOpeningUpdateDto
     {
-      
-        
-            // --- Basic Fields ---
-
-            [Required]
             public string Title { get; set; }
 
-            [Required]
             public string Description { get; set; }
 
             public string? SalaryRange { get; set; }
 
-            [Required]
             public JobLocation Location { get; set; }
 
-            [Required]
             public Department Department { get; set; }
 
-            [Required]
             public JobType JobType { get; set; }
 
-            [Required]
             public EducationLevel Education { get; set; }
 
-            [Required]
             public JobStatus Status { get; set; }
 
-        [Required]
         public Domain Domain { get; set; }
         public int minDomainExperience { get; set; } = 0;  // e.g. "2–5 years"
 
-        // --- JSON List Fields ---
         public List<string>? Responsibilities { get; set; }
 
-            public List<string>? Requirement { get; set; }
+        public List<string>? Requirement { get; set; }
 
-            public List<string>? Benefits { get; set; }
+        public List<string>? Benefits { get; set; }
 
-            // --- Deadline ---
-            [Required]
-            public DateTime DeadLine { get; set; }
-        
+        public DateTime DeadLine { get; set; }
     }
 }
 

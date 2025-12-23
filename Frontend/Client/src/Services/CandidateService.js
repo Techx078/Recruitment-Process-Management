@@ -11,11 +11,9 @@ export const getCandidateDetails = async (userId, token) => {
     });
     return res.data;
   } catch (error) {
-     if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 // Services/CandidateJobService.js
@@ -28,11 +26,9 @@ export const getCandidateJobOpenings = async (userId, token) => {
     });
     return res.data;
   } catch (error) {
-     if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -53,11 +49,8 @@ export const updateCandidateService = async (userId, candidateData, token) => {
     return response.data;
 
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };

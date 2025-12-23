@@ -10,6 +10,7 @@ namespace WebApis.Repository
         //add dbcontext 
         private readonly AppDbContext _dbContext;
         private DbSet<T> _dbSet;
+
         public CommonRepository( AppDbContext dbContext )
         {
             _dbContext = dbContext;
@@ -150,6 +151,15 @@ namespace WebApis.Repository
         {
             return await _dbSet.AnyAsync(filter);
         }
+        public async Task RemoveRangeAsync(IEnumerable<T> entities)
+        {
+           _dbSet.RemoveRange(entities);
+           await _dbContext.SaveChangesAsync();
+        }
 
+        public async Task SaveChangesAsync()
+        {
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { getCandidateDetails } from "../../Services/CandidateService";
 import { getCandidateJobOpenings } from "../../Services/CandidateService";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
+import { handleGlobalError } from "../../Services/errorHandler";
 export default function CandidateProfile({}) {
   let { UserId } = useParams();
   let [candidate, setCandidate] = useState(null);
@@ -11,6 +12,7 @@ export default function CandidateProfile({}) {
   let [notFound , SetNotFound] = useState(false);
   const navigate = useNavigate();
   const { authUser } = useAuthUserContext();
+  
   useEffect(() => {
     let token = localStorage.getItem("token");
     let fetchCandidate = async () => {
@@ -18,7 +20,7 @@ export default function CandidateProfile({}) {
         let data = await getCandidateDetails(UserId,token);
         setCandidate(data);
       }catch(e){
-        alert("detail not found !");
+        handleGlobalError(e);
         SetNotFound(true);
       }
     };
@@ -27,7 +29,7 @@ export default function CandidateProfile({}) {
         let jobs = await getCandidateJobOpenings(UserId,token);
         setJobApplications(jobs);
       }catch(e){
-        alert("detail not found of job opening")
+        handleGlobalError(e);
       }
     };
     fetchCandidate();

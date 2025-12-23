@@ -14,6 +14,8 @@ import {
   JOB_LOCATION_OPTIONS,
   DOMAIN_OPTIONS,
 } from "../../Assets/Arrays_for_options/Array";
+import { handleGlobalError } from "../../Services/errorHandler";
+import { toast } from "react-toastify";
 
 export default function JobOpeningForm({}) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -38,24 +40,29 @@ export default function JobOpeningForm({}) {
     reviewerIds: [],
     interviewerIds: [],
     documents: [],
-    jobSkills: []
+    jobSkills: [],
   });
 
   const [skills, setSkills] = useState([]);
   const [reviewers, setReviewers] = useState([]);
   const [interviewers, setInterviewers] = useState([]);
   const [documents, setDocuments] = useState([]);
-
+  const [error, setError] = useState(null);
   useEffect(() => {
     loadData();
   }, []);
 
   async function loadData() {
+    try{
     let token = localStorage.getItem("token");
     setSkills(await getAllSkills(token));
     setReviewers(await getAllReviewers(token));
     setInterviewers(await getAllInterviewers(token));
     setDocuments(await getAllDocuments(token));
+    }catch(e){
+      handleGlobalError(e);
+      setError("Server Error !")
+    }
   }
 
   // Handle input changes
@@ -193,21 +200,27 @@ export default function JobOpeningForm({}) {
     }
   };
 
-  const handleSubmit =async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
       console.log(jobData);
-      
-      const res=await createJobOpening(jobData, token);
-      alert("Job Opening Created Successfully!");
+
+      const res = await createJobOpening(jobData, token);
+      toast.success("Job Opening Created Successfully!");
       Navigate("/job-openings");
     } catch (error) {
-      console.error("Error creating job opening:", error);
-      alert("Failed to create job opening. Please try again.");
+      handleGlobalError(error);
     }
   };
 
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 border rounded-lg shadow-md">
       <h2 className="text-2xl font-bold">Create Job Opening</h2>

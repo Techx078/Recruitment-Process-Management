@@ -9,9 +9,11 @@ using WebApis.Dtos;
 using WebApis.Repository;
 using WebApis.Repository.UserRepository;
 using WebApis.Service;
+using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
 using WebApis.Service.ValidationService;
 using WebApis.Service.ValidationService.AuthUserVallidator;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 
 namespace WebApis.Controllers.UserController.AuthController
 {
@@ -28,11 +30,8 @@ namespace WebApis.Controllers.UserController.AuthController
         private readonly ICommonRepository<Recruiter> _recruiterRepository;
         private readonly ICommonRepository<Reviewer> _reviewerRepository;
         private readonly ICommonRepository<Interviewer> _interviewerRepository;
-        private readonly ICommonRepository<Skill> _skillRepository;
         private readonly ICommonValidator<RegisterCandidateDto> _registerCandidateValidator;
         private readonly IUserRepository _UserRepository;
-        private readonly ICommonRepository<Education> _educationRepository;
-        private readonly ICommonRepository<UserSkill> _userSkillRepository;
         private readonly ICommonValidator<RegisterOtherUserDto> _registerOtherUserValidator;
         public AuthController(
             JwtService jwt,
@@ -43,10 +42,7 @@ namespace WebApis.Controllers.UserController.AuthController
             ICommonRepository<Recruiter> recruiterRepository,
             ICommonRepository<Reviewer> reviewerRepository,
             ICommonRepository<Interviewer> interviewerRepository,
-            ICommonRepository<Skill> skillRepository,
             IUserRepository UserRepository,
-            ICommonRepository<Education> educationRepository,
-            ICommonRepository<UserSkill> userSkillRepository,
             ICommonValidator<RegisterOtherUserDto> registerOtherUserValidator
         )
         {
@@ -58,10 +54,7 @@ namespace WebApis.Controllers.UserController.AuthController
             _recruiterRepository = recruiterRepository;
             _interviewerRepository = interviewerRepository;
             _reviewerRepository = reviewerRepository;
-            _skillRepository = skillRepository;
             _UserRepository = UserRepository;
-            _educationRepository = educationRepository;
-            _userSkillRepository = userSkillRepository;
             _registerOtherUserValidator = registerOtherUserValidator;
         }
         [HttpPost("Candidate-bulk-register")]
@@ -76,15 +69,6 @@ namespace WebApis.Controllers.UserController.AuthController
             // Store candidate references for getting IDs after SaveChanges
             var createdCandidates = new List<(Candidate candidate, User user)>();
 
-
-            //get all mails from body
-            var incomingEmails = candidatesDto
-                .Select(x => x.Email.ToLower())
-                .ToList();
-
-            //get all skills from database
-            var existingSkills = await _skillRepository.GetAllAsync();
-
             //main loop
             foreach (var dto in candidatesDto)
             {
@@ -95,7 +79,7 @@ namespace WebApis.Controllers.UserController.AuthController
                     resultSkipped.Add(new { dto.Email, reason = "validation errorr" });
                     continue;
                 }
-                if (await _UserRepository.EmailExistsAsync(dto.Email.ToLower()))
+                if (await _userRepository.ExistsAsync( u => u.Email == dto.Email.ToLower()))
                 {
                     resultSkipped.Add(new { dto.Email, reason = "email already exits" });
                     continue;
@@ -130,51 +114,11 @@ namespace WebApis.Controllers.UserController.AuthController
                 await _candidateRepository.AddAsync(candidate);
 
                 //create education
-                if (dto.Educations?.Any() == true)
-                {
-                    var educationEntities = dto.Educations.Select(e => new Education
-                    {
-                        Candidate = candidate,   
-                        Degree = e.Degree,
-                        University = e.University,
-                        College = e.College,
-                        PassingYear = e.PassingYear,
-                        Percentage = e.Percentage
-                    });
-                    await _educationRepository.AddRangeAsync(educationEntities);
-                }
-
-
+                await _UserRepository.AddEducationsAsync(candidate, dto.Educations);
+                
                 //add skill for candidate
-                if (dto.Skills?.Any() == true)
-                {
-                    var userSkills = new List<UserSkill>();
-
-                    foreach (var skillDto in dto.Skills)
-                    {
-                        var skillName = skillDto.Name.Trim().ToLower();
-                        var skill = await _skillRepository.GetByFilterAsync(s => s.Name.ToLower() == skillName.ToLower());
-
-                        if (skill == null)
-                        {
-                            skill = new Skill { Name = skillDto.Name };
-                            await _skillRepository.AddAsync(skill);
-                        }
-
-                        userSkills.Add(new UserSkill
-                        {
-                            UserId = user.Id,
-                            SkillId = skill.SkillId,
-                            YearsOfExperience = skillDto.Experience,
-                            ProficiencyLevel = "beginner",
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        });
-                    }
-
-                    await _userSkillRepository.AddRangeAsync(userSkills);
-                }
-
+                await _UserRepository.AddSkillsAsync(user, dto.Skills);
+              
                 createdCandidates.Add((candidate, user));
 
             }
@@ -197,7 +141,6 @@ namespace WebApis.Controllers.UserController.AuthController
             });
         }
 
-
         //Implementation remaining that cadidate should attached to job opening when created by recruiter
         [HttpPost("register-candidate")]
         [Authorize(Roles = "Recruiter")]
@@ -207,14 +150,21 @@ namespace WebApis.Controllers.UserController.AuthController
 
             if (!validationResult.IsValid)
             {
-                return BadRequest(new
-                {
-                    errors = validationResult.Errors
-                });
+                throw new AppException(
+                    "Please fill all required fields correctly.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest,
+                    validationResult.Errors
+                );
             }
-            if (await _UserRepository.EmailExistsAsync(dto.Email)) {
-                throw new AppException("Email already registered.", 400);
+            if (await _userRepository.ExistsAsync( u => u.Email == dto.Email)) {
+                throw new AppException(
+                     "Email already registered !",
+                     ErrorCodes.Duplicate,
+                     StatusCodes.Status409Conflict
+                );
             }
+
             var user = new User
             {
                 FullName = dto.FullName,
@@ -239,50 +189,10 @@ namespace WebApis.Controllers.UserController.AuthController
             };
             await _candidateRepository.AddAsync(candidate);
 
-            if (dto.Educations?.Any() == true)
-            {
-                var educations = dto.Educations.Select(e => new Education
-                {
-                    CandidateId = candidate.Id,
-                    Degree = e.Degree,
-                    University = e.University,
-                    College = e.College,
-                    PassingYear = e.PassingYear,
-                    Percentage = e.Percentage
-                });
+            await _UserRepository.AddEducationsAsync(candidate, dto.Educations);
 
-                await _educationRepository.AddRangeAsync(educations);
-            }
-
-            if (dto.Skills?.Any() == true)
-            {
-                var userSkills = new List<UserSkill>();
-
-                foreach (var skillDto in dto.Skills)
-                {
-                    var skillName = skillDto.Name.Trim().ToLower();
-                    var skill = await _skillRepository.GetByFilterAsync(s => s.Name.ToLower() == skillName.ToLower());
-
-                    if (skill == null)
-                    {
-                        skill = new Skill { Name = skillDto.Name };
-                        await _skillRepository.AddAsync(skill);
-                    }
-
-                    userSkills.Add(new UserSkill
-                    {
-                        UserId = user.Id,
-                        SkillId = skill.SkillId,
-                        YearsOfExperience = skillDto.Experience,
-                        ProficiencyLevel = "beginner",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    });
-                }
-
-                await _userSkillRepository.AddRangeAsync(userSkills);
-            }
-
+            await _UserRepository.AddSkillsAsync(user,dto.Skills);
+           
             return Ok(new
             {
                 id = candidate.Id,
@@ -296,17 +206,23 @@ namespace WebApis.Controllers.UserController.AuthController
         public async Task<IActionResult> UploadResume(IFormFile file)
         {
             if (file == null)
-                return BadRequest("No file received.");
-            
-            try
-            {
-                var url = await _cloudinaryService.UploadResumeAsync(file);
+              throw new AppException(
+                "File is Required !",
+                ErrorCodes.ValidationError,
+                StatusCodes.Status400BadRequest
+              );      
+                
+               var url = await _cloudinaryService.UploadResumeAsync(file);
+                if (url == null)
+                {
+                    throw new AppException(
+                    "faied to upload resume !",
+                    ErrorCodes.ServerError,
+                    StatusCodes.Status500InternalServerError
+                  );
+                }
+
                 return Ok(new { resumeUrl = url });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
         }
 
         [HttpPost("register-Users")]//register recruiter reviewer and interviewer by admin
@@ -317,22 +233,31 @@ namespace WebApis.Controllers.UserController.AuthController
             var allowedRoles = new[] { "Recruiter", "Reviewer", "Interviewer" };
             if (!allowedRoles.Contains(dto.RoleName.ToString()))
             {
-                Console.WriteLine("Invalid role attempted: " + dto.RoleName);
-                return BadRequest(new { message = "Invalid role", });
+                throw new AppException(
+                 "Role should be Recruiter, Reviewer or Interviewer ",
+                 ErrorCodes.ValidationError,
+                 StatusCodes.Status400BadRequest
+                );
             }
 
             var validationResult = await _registerOtherUserValidator.ValidateAsync(dto);
             if (!validationResult.IsValid)
             {
-                return BadRequest(new
-                {
-                    errors = validationResult.Errors
-                });
+                throw new AppException(
+                    "Please fill all required fields correctly.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest,
+                    validationResult.Errors
+                );
             }
             //  Check email duplication
-            if (await _UserRepository.EmailExistsAsync(dto.Email.ToLower()))
-                throw new AppException("Email already registered.", 400);
-            
+            if (await _userRepository.ExistsAsync( u => u.Email == dto.Email.ToLower()))
+                throw new AppException(
+                    "Email already registered !",
+                    ErrorCodes.Duplicate,
+                    StatusCodes.Status409Conflict
+               );
+
             // Create base user
             var user = new User
             {
@@ -383,35 +308,8 @@ namespace WebApis.Controllers.UserController.AuthController
                     break;
             }
 
-            if (dto.Skills?.Any() == true)
-            {
-                var userSkills = new List<UserSkill>();
-
-                foreach (var skillDto in dto.Skills)
-                {
-                    var skillName = skillDto.Name.Trim().ToLower();
-                    var skill = await _skillRepository.GetByFilterAsync(s => s.Name.ToLower() == skillName.ToLower());
-
-                    if (skill == null)
-                    {
-                        skill = new Skill { Name = skillDto.Name };
-                        await _skillRepository.AddAsync(skill);
-                    }
-
-                    userSkills.Add(new UserSkill
-                    {
-                        UserId = user.Id,
-                        SkillId = skill.SkillId,
-                        YearsOfExperience = skillDto.Experience,
-                        ProficiencyLevel = "beginner",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    });
-                }
-
-                await _userSkillRepository.AddRangeAsync(userSkills);
-            }
-
+            await _UserRepository.AddSkillsAsync(user, dto.Skills);
+            
             return Ok(new
             {
                 message = $"{dto.RoleName} created successfully.",
@@ -424,11 +322,15 @@ namespace WebApis.Controllers.UserController.AuthController
         {
             var user = await _userRepository.GetByFilterAsync(u => u.Email == req.Email.ToLower());
             if (user == null)
-                return Unauthorized(new { message = "Invalid email or password." });
+                throw new AppException(
+                 "Invalid email or password.",
+                 ErrorCodes.Unauthorized,
+                 StatusCodes.Status401Unauthorized
+             );
 
             bool verified = BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash);
             if (!verified)
-                return Unauthorized(new { message = "Invalid email or password." });
+                throw new UnauthorizedAccessException();
 
             var token = _jwt.GenerateToken(user);
 
@@ -454,7 +356,11 @@ namespace WebApis.Controllers.UserController.AuthController
         {
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null)
-                return Unauthorized(new { message = "Invalid token." });
+                throw new AppException(
+                "Invalid tokem",
+                ErrorCodes.NotFound,
+                StatusCodes.Status404NotFound
+                );
 
             int userId = int.Parse(userIdClaim);
 
@@ -472,8 +378,12 @@ namespace WebApis.Controllers.UserController.AuthController
                      );
 
             if (user == null)
-                return NotFound(new { message = "User not found." });
-
+                throw new AppException(
+                    "Record not found.",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+           
             return Ok(user);
         }
     }

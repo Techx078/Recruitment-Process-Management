@@ -45,5 +45,9 @@ namespace WebApis.Repository
 
         public Task<bool> ExistsAsync(
             Expression<Func<T, bool>> filter);
+
+        public Task RemoveRangeAsync(IEnumerable<T> entities);
+
+        public Task SaveChangesAsync();
     }
 }

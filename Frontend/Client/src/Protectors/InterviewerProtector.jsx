@@ -4,6 +4,7 @@ import { useAuthUserContext } from "../Context/AuthUserContext";
 import { getJobOpeningById } from "../Services/JobOpeningService.js";
 import { getJobCandidateById } from "../Services/JobCandidateService.js";
 import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 const InterviewerAssignedProtector = ({ children }) => {
   const navigate = useNavigate();
   const { jobCandidateId } = useParams();
@@ -15,7 +16,7 @@ const InterviewerAssignedProtector = ({ children }) => {
   useEffect(() => {
     const checkAccess = async () => {
       if (!authUser || authUser.role !== "Interviewer") {
-        alert("Access denied. Only Interviewer can access.");
+        toast.warning("Access denied. Only Interviewer can access.");
         navigate("/login");
         return;
       }

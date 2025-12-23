@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
+import { toast } from "react-toastify";
 
 const CandidateProtector = ({ children }) => {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ const CandidateProtector = ({ children }) => {
     if ( authUser && (authUser.role == "Candidate" && authUser.id == parseInt(UserId))) {
       setChecking(false);
     } else {
-      alert("Access denied. Only Candidates can access.");
+      toast.warning("Access denied. Only Candidates can access.");
       navigate("/login");
     }
   }, []);

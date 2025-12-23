@@ -1,5 +1,6 @@
 import axios from "axios";
-const API_BASE_URL = "http://localhost:5233/api/Auth"
+
+const API_BASE_URL = "http://localhost:5233/api/Auth";
 
 export const registerCandidate = async (candidateData, token) => {
   try {
@@ -9,18 +10,15 @@ export const registerCandidate = async (candidateData, token) => {
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, 
+          Authorization: `Bearer ${token}`,
         },
       }
     );
     return response.data;
   } catch (error) {
-    // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+   if (error.response) throw error.response;
+
+  throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -32,18 +30,15 @@ export const registerOtherUser = async (userData, token) => {
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, 
+          Authorization: `Bearer ${token}`,
         },
       }
     );
     return response.data;
   } catch (error) {
-     // Throw error to be handled in frontend catch
-    if (error.response) {
-      throw error.response; // include status and data
-    } else {
-      throw error; // network or other error
-    }
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
@@ -51,42 +46,37 @@ export const loginUser = async (email, password) => {
   try {
     const response = await axios.post(
       `${API_BASE_URL}/login`,
-      {
-        email,
-        password,
-      },
+      { email, password },
       {
         headers: {
           "Content-Type": "application/json",
         },
       }
     );
-
     return response.data;
-
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message ||
-      error.response?.data ||
-      "Invalid credentials or server error"
-    );
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
 
-export const CandidateBulkRegisterService = async(data , token)=>{
-  try{
-    const response = await axios.post(`
-      ${API_BASE_URL}/Candidate-bulk-register`,
+export const CandidateBulkRegisterService = async (data, token) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/Candidate-bulk-register`,
       data,
       {
-      headers:{
-        "Content-Type":"application/json",
-         Authorization: `Bearer ${token}`,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       }
-    }
-    )
+    );
     return response.data;
-  }catch(e){
-    throw new e;
+  } catch (error) {
+    if (error.response) throw error.response;
+
+    throw { status: 0, message: "Something went wrong. Please try again." };
   }
-}
+};

@@ -5,6 +5,8 @@ import {
   getJobOpeningById,
   updateJobReviewers,
 } from "../../Services/JobOpeningService";
+import { toast } from "react-toastify";
+import { handleGlobalError } from "../../Services/errorHandler";
 
 const EditJobReviewers = () => {
   const { id } = useParams();
@@ -12,17 +14,22 @@ const EditJobReviewers = () => {
 
   const [reviewers, setReviewers] = useState([]);
   const [selected, setSelected] = useState([]);
-
+  const [error, setError] = useState(null);
+    
   useEffect(() => {
     const load = async () => {
+      try{
       const token = localStorage.getItem("token");
 
       const allReviewers = await getAllReviewers(token);
       setReviewers(allReviewers);
 
       const job = await getJobOpeningById(id, token);
-      console.log(job);
       setSelected(job.reviewers.map((r) => r.id));
+      }catch(e){
+        handleGlobalError(e)
+        setError("server error !")
+      }
     };
 
     load();
@@ -35,12 +42,22 @@ const EditJobReviewers = () => {
   };
 
   const save = async () => {
+    try{
     const token = localStorage.getItem("token");
     await updateJobReviewers(id, selected, token);
-    alert("Reviewers updated!");
+    toast.success("Reviewers updated!");
     navigate(`/job-openings/${id}`);
+    }catch(e){
+      handleGlobalError(e);
+    }
   };
-
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
     <div className="p-6 max-w-xl mx-auto bg-white shadow rounded">
       <h2 className="text-xl font-bold mb-4">Update Reviewers</h2>

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
 import { getHrPool } from "../Services/JobCandidateService";
 import MyScheduledInterviews from "./MyScheduledInterviews";
+import { handleGlobalError } from "../Services/errorHandler";
 const HrPool = () => {
   const { jobOpeningId } = useParams();
   const navigate = useNavigate();
@@ -19,7 +20,8 @@ const HrPool = () => {
         const data = await getHrPool(jobOpeningId);
         setCandidates(data);
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to load HR pool");
+        handleGlobalError(err);
+        setError(error?.data?.Message || "Failed to load HR pool");
       } finally {
         setLoading(false);
       }

@@ -5,6 +5,8 @@ import {
   getJobOpeningById,
   updateJobDocument,
 } from "../../Services/JobOpeningService";
+import { toast } from "react-toastify";
+import { handleGlobalError } from "../../Services/errorHandler";
 
 const EditJobDocument = () => {
   const { id } = useParams();
@@ -12,59 +14,72 @@ const EditJobDocument = () => {
 
   const [documents, setDocuments] = useState([]);
   const [selected, setSelected] = useState([]);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     const load = async () => {
-      const token = localStorage.getItem("token");
+      try {
+        const token = localStorage.getItem("token");
 
-      const allDocuments = await getAllDocuments(token);
-      setDocuments(allDocuments);
+        const allDocuments = await getAllDocuments(token);
+        setDocuments(allDocuments);
 
-      const job = await getJobOpeningById(id, token);
-      console.log(job);
+        const job = await getJobOpeningById(id, token);
+        console.log(job);
 
-      const selected = job.documents.map((d) => ({
-        documentId: d.id,
-        isMandatory: d.isMandatory,
-      }));
-      setSelected(selected);
+        const selected = job.documents.map((d) => ({
+          documentId: d.id,
+          isMandatory: d.isMandatory,
+        }));
+        setSelected(selected);
+      } catch (e) {
+        handleGlobalError(e);
+        setError("server Error !");
+      }
     };
 
     load();
   }, [id]);
-const toggleDocument = (documentId, isChecked) => {
-  setSelected((prev) => {
-    if (isChecked) {
-      if (prev.some((d) => d.documentId === documentId)) {
-        return prev;
+  const toggleDocument = (documentId, isChecked) => {
+    setSelected((prev) => {
+      if (isChecked) {
+        if (prev.some((d) => d.documentId === documentId)) {
+          return prev;
+        }
+        return [...prev, { documentId, isMandatory: false }];
+      } else {
+        return prev.filter((d) => d.documentId !== documentId);
       }
-      return [
-        ...prev,
-        { documentId, isMandatory: false }
-      ];
-    } 
-    else {
-      return prev.filter((d) => d.documentId !== documentId);
-    }
-  });
-};
-const toggleMandatoryDocument = (documentId) => {
-  setSelected((prev) =>
-    prev.map((doc) =>
-      doc.documentId === documentId
-        ? { ...doc, isMandatory: !doc.isMandatory }
-        : doc
-    )
-  );
-};
-
-  const save = async () => {
-    const token = localStorage.getItem("token");
-    console.log(selected);
-    await updateJobDocument(id, selected, token);
-    alert("Document updated!");
-    navigate(`/job-openings/${id}`);
+    });
+  };
+  const toggleMandatoryDocument = (documentId) => {
+    setSelected((prev) =>
+      prev.map((doc) =>
+        doc.documentId === documentId
+          ? { ...doc, isMandatory: !doc.isMandatory }
+          : doc
+      )
+    );
   };
 
+  const save = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      console.log(selected);
+      await updateJobDocument(id, selected, token);
+      toast.success("Document updated!");
+      navigate(`/job-openings/${id}`);
+    } catch (e) {
+      handleGlobalError(e);
+    }
+  };
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto mt-10 bg-gray-100 border border-gray-300 p-4 rounded text-gray-700">
+        {error}
+      </div>
+    );
+  }
   return (
     <div className="p-6 max-w-xl mx-auto bg-white shadow rounded">
       <h2 className="text-xl font-bold mb-4">Update Documents</h2>
@@ -76,8 +91,7 @@ const toggleMandatoryDocument = (documentId) => {
           {documents.map((d) => {
             const selectedDoc = selected.find((doc) => doc.documentId === d.id);
             const isSelected = selectedDoc !== undefined;
-            const isMandatory = selectedDoc?.isMandatory|| false;
-            
+            const isMandatory = selectedDoc?.isMandatory || false;
 
             return (
               <div key={d.id}>

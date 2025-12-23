@@ -46,7 +46,7 @@ const InterviewFeedback = () => {
         navigate(-1);
       }, 1500);
     } catch (err) {
-     setError(err.data)
+     setError(err?.data?.Message)
     } finally {
       setLoading(false);
     }

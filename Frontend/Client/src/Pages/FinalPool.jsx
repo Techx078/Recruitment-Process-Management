@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getFinalPool , selectCandidate } from "../Services/JobCandidateService";
+import { handleGlobalError } from "../Services/errorHandler";
 
 const FinalPool = () => {
   const { jobOpeningId } = useParams();
@@ -17,7 +18,8 @@ const FinalPool = () => {
         const data = await getFinalPool(jobOpeningId);
         setCandidates(data);
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to load final pool");
+        handleGlobalError(err);
+        setError(err?.data?.Message || "Failed to load final pool");
       } finally {
         setLoading(false);
       }

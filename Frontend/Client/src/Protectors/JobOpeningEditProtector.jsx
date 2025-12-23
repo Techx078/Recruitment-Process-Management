@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuthUserContext } from "../Context/AuthUserContext";
 import { getJobOpeningById } from "../Services/JobOpeningService";
+import { toast } from "react-toastify";
 
 const JobOpeningEditProtector = ({ children }) => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const JobOpeningEditProtector = ({ children }) => {
     const checkAccess = async () => {
       try {
         if (!authUser) {
+          toast.warning("access denied !")
           navigate("/login");
           return;
         }
@@ -48,11 +50,11 @@ const JobOpeningEditProtector = ({ children }) => {
           setChecking(false);
           return;
         }
-
+        toast.warning("access denied !")
         // Everyone else → denied
         navigate("/login");
       } catch (error) {
-        console.error(error);
+        toast.warning("access denied !")
         navigate("/login");
       }
     };
