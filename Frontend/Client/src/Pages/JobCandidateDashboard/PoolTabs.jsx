@@ -4,6 +4,7 @@ export default function PoolTabs({ activePool, setActivePool }) {
     { key: "review", label: "Review Pool" },
     { key: "hr", label: "HR Pool" },
     { key: "final", label: "Final Pool" },
+    {key : "Sentoffer",label:"Sent Offer Pool"}
   ];
 
   return (

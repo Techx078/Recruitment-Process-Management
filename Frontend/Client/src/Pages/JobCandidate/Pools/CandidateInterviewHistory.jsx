@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getCandidateInterviewHistory } from "../Services/JobCandidateService";
-import { handleGlobalError } from "../Services/errorHandler";
+import { getCandidateInterviewHistory } from "../../../Services/JobCandidateService";
+import { handleGlobalError } from "../../../Services/errorHandler";
 export default function CandidateInterviewHistory() {
   const { jobCandidateId } = useParams();
   const navigate = useNavigate();
@@ -14,8 +14,6 @@ export default function CandidateInterviewHistory() {
     const fetchHistory = async () => {
       try {
         const data = await getCandidateInterviewHistory(jobCandidateId);
-        console.log(data);
-        
         setInterviewHistory(data);
       } catch (err) {
         handleGlobalError(err);

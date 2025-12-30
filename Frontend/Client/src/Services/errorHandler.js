@@ -1,10 +1,11 @@
 import { toast } from "react-toastify";
 
 export const handleGlobalError = (error) => {
+  
   const { status } = error;
-  let errors = error.data.Errors;
+  let errors = error?.data?.Errors;
   let message = error?.data?.Message;
-  let traceId = error.data.TraceId;
+  let traceId = error?.data?.TraceId;
 
   const showErrorsSequentially = (errors, delay = 1500) => {
     errors.forEach((err, index) => {
@@ -30,9 +31,8 @@ export const handleGlobalError = (error) => {
 
   switch (status) {
     case 401:
-      toast.error("Session expired. Please login again.");
+      toast.error(message);
       localStorage.clear();
-      window.location.href = "/login";
       break;
 
     case 403:

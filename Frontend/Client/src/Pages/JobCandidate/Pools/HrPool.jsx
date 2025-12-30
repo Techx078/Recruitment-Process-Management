@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuthUserContext } from "../Context/AuthUserContext";
-import { getHrPool } from "../Services/JobCandidateService";
+import { useAuthUserContext } from "../../../Context/AuthUserContext";
+import { getHrPool } from "../../../Services/JobCandidateService";
 import MyScheduledInterviews from "./MyScheduledInterviews";
-import { handleGlobalError } from "../Services/errorHandler";
+import { handleGlobalError } from "../../../Services/errorHandler";
 const HrPool = () => {
   const { jobOpeningId } = useParams();
   const navigate = useNavigate();

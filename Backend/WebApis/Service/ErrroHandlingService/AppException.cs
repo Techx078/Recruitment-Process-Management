@@ -2,6 +2,7 @@
 {
     public class AppException : Exception
     {
+        public String Message { get; set; }
         public int StatusCode { get; }
         public string ErrorCode { get; }
         public object? Errors { get; }
@@ -13,6 +14,7 @@
             object? errors = null
         ) : base(message)
         {
+            Message = message;
             StatusCode = statusCode;
             ErrorCode = errorCode;
             Errors = errors;

@@ -188,6 +188,12 @@ export default function RecruiterProfile() {
                     >
                       Update Document
                     </button>
+                    <button
+                      className="px-3 py-2 bg-black text-white text-xs sm:text-sm rounded-lg hover:bg-gray-800"
+                      onClick={() => navigate(`/Dashboard/${job.jobOpeningId}`)}
+                    >
+                      Dashboard
+                    </button>
                   </div>
                 </div>
               ))

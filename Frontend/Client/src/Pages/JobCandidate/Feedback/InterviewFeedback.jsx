@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { submitInterviewFeedback } from "../Services/JobCandidateService";
+import { submitInterviewFeedback } from "../../../Services/JobCandidateService";
 
 const InterviewFeedback = () => {
   const { jobCandidateId } = useParams();

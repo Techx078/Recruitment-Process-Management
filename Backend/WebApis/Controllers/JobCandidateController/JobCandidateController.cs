@@ -175,7 +175,7 @@ namespace WebApis.Controllers.JobCandidateController
             return Ok(jobCandidate);
         }
 
-        [HttpGet("pending-review/{jobOpeningId}")]
+        [HttpGet("pool/review/{jobOpeningId}")]
         [Authorize(Roles = "Recruiter,Reviewer,Admin")]
         public async Task<IActionResult> GetPendingReviews(int jobOpeningId)
         {
@@ -251,7 +251,7 @@ namespace WebApis.Controllers.JobCandidateController
             return Ok(pendingReviewCandidates);
         }
 
-        [HttpPut("review-status/{jobCandidateId}")]
+        [HttpPut("review/{jobCandidateId}")]
         [Authorize(Roles = "Reviewer")]
         public async Task<IActionResult> UpdateReviewStatus(int jobCandidateId, [FromBody] ReviewDecisionDto dto)
         {
@@ -402,7 +402,7 @@ namespace WebApis.Controllers.JobCandidateController
             return Ok(candidates);
         }
 
-        [HttpGet("my-scheduled/{jobOpeningId}")]
+        [HttpGet("pool/my-scheduled/{jobOpeningId}")]
         [Authorize(Roles = "Recruiter,Admin,Interviewer")]
         public async Task<IActionResult> GetMyScheduledInterviews(int jobOpeningId)
         {
@@ -448,7 +448,7 @@ namespace WebApis.Controllers.JobCandidateController
             return Ok(interviews);
         }
 
-        [HttpPost("schedule/{jobCandidateId}")]
+        [HttpPut("schedule/{jobCandidateId}")]
         [Authorize(Roles = "Interviewer")]
         public async Task<IActionResult> ScheduleInterview(int jobCandidateId, [FromBody] ScheduleInterviewDto dto)
         {
@@ -487,7 +487,7 @@ namespace WebApis.Controllers.JobCandidateController
                 r => r.UserId == loggedInUserId,
                 r => r.Id
             );
-            if (interviewerId == null)
+            if (interviewerId == 0)
                 throw new AppException("Interviewer profile not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             var interview = new JobInterview
@@ -512,7 +512,7 @@ namespace WebApis.Controllers.JobCandidateController
             return Ok(new { message = "Interview scheduled successfully" });
         }
 
-        [HttpPost("feedback/{jobCandidateId}")]
+        [HttpPut("Interview-feedback/{jobCandidateId}")]
         [Authorize(Roles = "Interviewer")]
         public async Task<IActionResult> SubmitInterviewFeedback(int jobCandidateId, [FromBody] InterviewFeedbackDto dto)
         {
@@ -545,7 +545,7 @@ namespace WebApis.Controllers.JobCandidateController
             if (jobCandidate.Status != "ScheduledInterview")
                 throw new AppException("Candidate is not in scheduled interview state", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
 
-            var interview = jobCandidate.JobInterviews.FirstOrDefault(i => !i.IsCompleted && i.InterviewerId == interviewer.Id)
+            var interview = jobCandidate?.JobInterviews?.FirstOrDefault(i => !i.IsCompleted && i.InterviewerId == interviewer.Id)
                             ?? throw new AppException("No active interview found for this interviewer", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
             if (interview.InterviewType == "HR" && dto.NextStep == "Technical")
@@ -608,28 +608,39 @@ namespace WebApis.Controllers.JobCandidateController
 
             if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userRoleClaim))
                 throw new UnauthorizedAccessException("Invalid token");
-
+            int loggedInUserId = int.Parse(userIdClaim);
             if (userRoleClaim == "Interviewer")
             {
-                int loggedInUserId = int.Parse(userIdClaim);
-
-                var hr = await _interviewerRepository.GetByFilterAsync(
+                var hrId = await _interviewerRepository.GetByFilterAsync(
                     i => i.UserId == loggedInUserId && i.Department == "HR",
                     i => i.Id
                 );
 
-                if (hr == null)
+                if (hrId == 0)
                     throw new AppException("HR profile not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
                 var isHrAssigned = await _jobOpeningRepository.ExistsAsync(
                     j => j.Id == jobOpeningId &&
-                         j.JobInterviewers.Any(i => i.InterviewerId == hr && i.Interviewer.Department == "HR")
+                         j.JobInterviewers.Any(i => i.InterviewerId == hrId && i.Interviewer.Department == "HR")
                 );
 
                 if (!isHrAssigned)
                     throw new AppException("You are not assigned to this job opening", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
             }
+            if (userRoleClaim == "Recruiter")
+            {
+                var isRecruiterJobOpening = await _jobOpeningRepository.ExistsAsync(
+                    j => j.Id == jobOpeningId &&
+                         j.CreatedBy.UserId == loggedInUserId
+                );
 
+                if (!isRecruiterJobOpening)
+                    throw new AppException(
+                        "You are not authorized to access this technical pool.",
+                        ErrorCodes.Forbidden,
+                        StatusCodes.Status403Forbidden
+                    );
+            }
             var candidates = await _jobCandidateRepositoryCommon.GetAllByFilterAsync(
                 c => c.JobOpeningId == jobOpeningId &&
                      c.Status == "WaitForInterView" &&
@@ -651,7 +662,7 @@ namespace WebApis.Controllers.JobCandidateController
         }
 
         [HttpGet("history/{jobCandidateId}")]
-        [Authorize(Roles = "Recruiter,Interviewer,Reviewer,Admin")]
+        [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> GetInterviewHistory(int jobCandidateId)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -675,8 +686,7 @@ namespace WebApis.Controllers.JobCandidateController
             bool hasAccess = userRoleClaim switch
             {
                 "Recruiter" => jobCandidate.JobOpening.CreatedBy.UserId == userId,
-                "Reviewer" => jobCandidate.JobOpening.JobReviewers.Any(r => r.Reviewer.UserId == userId),
-                "Interviewer" => jobCandidate.JobOpening.JobInterviewers.Any(i => i.Interviewer.UserId == userId),
+                "Admin" => true,
                 _ => false
             };
 
@@ -752,7 +762,7 @@ namespace WebApis.Controllers.JobCandidateController
             return Ok(timeline);
         }
 
-        [HttpGet("job-openings/{jobOpeningId}/final-pool")]
+        [HttpGet("pool/shortlist/{jobOpeningId}")]
         [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> GetFinalPool(int jobOpeningId)
         {
@@ -798,7 +808,7 @@ namespace WebApis.Controllers.JobCandidateController
             return Ok(candidates);
         }
 
-        [HttpPost("select/{jobCandidateId}")]
+        [HttpPut("select/{jobCandidateId}")]
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> SelectCandidate(int jobCandidateId)
         {
@@ -830,5 +840,247 @@ namespace WebApis.Controllers.JobCandidateController
                 message = "Candidate selected successfully"
             });
         }
+
+        [HttpPut("send-offer/{jobCandidateId}")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> SendOffer(
+            int jobCandidateId,
+            [FromBody] SendOfferDto dto)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                throw new UnauthorizedAccessException();
+
+            int userId = int.Parse(userIdClaim);
+
+            var jobCandidate = await _jobCandidateRepositoryCommon
+                .GetWithIncludeAsync(
+                    c => c.Id == jobCandidateId,
+                    c => c,
+                    "JobOpening.CreatedBy"
+                );
+
+            if (jobCandidate == null)
+                throw new AppException(
+                    "Job candidate not found",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
+            if (jobCandidate.Status != "Selected")
+                throw new AppException(
+                    "Offer can be sent only to selected candidates",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            if (jobCandidate.JobOpening.CreatedBy.UserId != userId)
+                throw new AppException(
+                    "You are not authorized to send offer for this candidate",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
+
+            if (dto.OfferExpiryDate <= DateTime.UtcNow)
+                throw new AppException(
+                    "Offer expiry must be in the future",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            jobCandidate.OfferExpiryDate = dto.OfferExpiryDate;
+            jobCandidate.Status = "OfferSent";
+            jobCandidate.UpdatedAt = DateTime.UtcNow;
+
+            await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+            return Ok(new
+            {
+                message = "Offer sent successfully"
+            });
+        }
+
+
+        [HttpPut("respond-offer/{jobCandidateId}")]
+        [Authorize(Roles = "Candidate")]
+        public async Task<IActionResult> OfferResponse(
+             int jobCandidateId,
+             [FromBody] OfferResponseDto dto)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                throw new UnauthorizedAccessException();
+
+            int userId = int.Parse(userIdClaim);
+
+            var jobCandidate = await _jobCandidateRepositoryCommon
+                .GetWithIncludeAsync(
+                    c => c.Id == jobCandidateId,
+                    c => c,
+                    "Candidate.User"
+                );
+
+            if (jobCandidate == null)
+                throw new AppException(
+                    "Job candidate not found",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
+            if (jobCandidate.Candidate.UserId != userId)
+                throw new AppException(
+                    "You are not authorized to respond to this offer",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
+
+            if (jobCandidate.Status != "OfferSent")
+                throw new AppException(
+                    "No active offer found",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            if (jobCandidate.OfferExpiryDate < DateTime.UtcNow)
+                throw new AppException(
+                    "Offer has expired",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            if (dto.IsAccepted)
+            {
+                jobCandidate.Status = "OfferAccepted";
+            }
+            else
+            {
+                jobCandidate.Status = "OfferRejectedByCandidate";
+                jobCandidate.OfferRejectionReason = dto.RejectionReason;
+            }
+
+            jobCandidate.UpdatedAt = DateTime.UtcNow;
+
+            await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+            return Ok(new
+            {
+                message = dto.IsAccepted
+                    ? "Offer accepted successfully"
+                    : "Offer rejected successfully"
+            });
+        }
+
+        [HttpGet("pool/offerSend/{jobOpeningId}")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> GetOfferedCandidates(int jobOpeningId)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var jobOpening = await _jobOpeningRepository.GetWithIncludeAsync(
+                j => j.Id == jobOpeningId,
+                j => j,
+                "CreatedBy",
+                "JobCandidates.Candidate.User"
+            );
+
+            if (jobOpening == null)
+                return NotFound("Job opening not found");
+
+            // Ensure recruiter owns the job opening
+            if (jobOpening.CreatedBy.UserId != userId)
+                return Forbid();
+
+            var offeredCandidates = jobOpening.JobCandidates
+                .Where(c => c.Status == "OfferSent")
+                .Select(c => new OfferPoolDto
+                {
+                    JobCandidateId = c.Id,
+                    jobOpeningId = c.JobOpeningId,
+                    candidateId = c.CandidateId,
+                    UserId = c.Candidate.UserId,
+                    CandidateName = c.Candidate.User.FullName,
+                    Email = c.Candidate.User.Email,
+                    Status = c.Status,
+                    OfferExpiryDate = c.OfferExpiryDate,
+                })
+                .ToList();
+
+            return Ok(offeredCandidates);
+        }
+
+
+        [HttpPut("reject-by-system/{jobCandidateId}")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> RejectOfferBySystem(
+            int jobCandidateId,
+            [FromBody] RejectOfferBySystemDto dto)
+            {
+                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+                var jobCandidate = await _jobCandidateRepositoryCommon.GetWithIncludeAsync(
+                    c => c.Id == jobCandidateId,
+                    c => c,
+                    "JobOpening.CreatedBy"
+                );
+
+                if (jobCandidate == null)
+                    return NotFound("Job candidate not found");
+
+                if (jobCandidate.JobOpening.CreatedBy.UserId != userId)
+                    return Forbid("You are not authorized for this job opening");
+
+                if (jobCandidate.Status != "OfferSent")
+                    return BadRequest("Only active offers can be rejected");
+
+                jobCandidate.Status = "OfferRejectedBySystem";
+                jobCandidate.OfferRejectionReason = dto.Reason;
+                jobCandidate.UpdatedAt = DateTime.UtcNow;
+
+                await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+                return Ok(new
+                {
+                    message = "Offer rejected by system successfully"
+                });
+            }
+
+        [HttpPut("{jobCandidateId}/extend-expiry")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> ExtendOfferExpiry(
+           int jobCandidateId,
+           [FromBody] ExtendOfferDto dto)
+        {
+            if (dto.NewExpiryDate <= DateTime.UtcNow)
+                return BadRequest("Expiry date must be in the future");
+
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var jobCandidate = await _jobCandidateRepositoryCommon.GetWithIncludeAsync(
+                c => c.Id == jobCandidateId,
+                c => c,
+                "JobOpening.CreatedBy"
+            );
+
+            if (jobCandidate == null)
+                return NotFound("Job candidate not found");
+
+            if (jobCandidate.JobOpening.CreatedBy.UserId != userId)
+                return Forbid("You are not authorized for this job opening");
+
+            if (jobCandidate.Status != "OfferSent")
+                return BadRequest("Offer expiry can only be extended for active offers");
+
+            jobCandidate.OfferExpiryDate = dto.NewExpiryDate;
+            jobCandidate.UpdatedAt = DateTime.UtcNow;
+
+            await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+            return Ok(new
+            {
+                message = "Offer expiry date extended successfully",
+                newExpiryDate = dto.NewExpiryDate
+            });
+        }
+
     }
 }

@@ -330,7 +330,11 @@ namespace WebApis.Controllers.UserController.AuthController
 
             bool verified = BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash);
             if (!verified)
-                throw new UnauthorizedAccessException();
+                throw new AppException(
+                 "Invalid email or password.",
+                 ErrorCodes.Unauthorized,
+                 StatusCodes.Status401Unauthorized
+                );
 
             var token = _jwt.GenerateToken(user);
 

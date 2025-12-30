@@ -7,18 +7,18 @@ export const sendOtp = async (email) => {
   try {
     await axios.post(
       `${API_BASE}/forgot-password`,
-       email , 
+      { email },
       {
         headers: { "Content-Type": "application/json" },
       }
     );
     return true;
   } catch (error) {
-     if (error.response) throw error.response;
-
+    if (error.response) throw error.response;
     throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
+
 
 
 export const resetPassword = async (payload) => {

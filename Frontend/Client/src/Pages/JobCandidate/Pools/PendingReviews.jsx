@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getPendingReviewCandidate } from "../Services/JobCandidateService.js";
-import { useAuthUserContext } from "../Context/AuthUserContext.jsx";
-import { getJobOpeningById } from "../Services/JobOpeningService.js";
-import { handleGlobalError } from "../Services/errorHandler.js";
+import { getPendingReviewCandidate } from "../../../Services/JobCandidateService.js";
+import { useAuthUserContext } from "../../../Context/AuthUserContext.jsx";
+import { getJobOpeningById } from "../../../Services/JobOpeningService.js";
+import { handleGlobalError } from "../../../Services/errorHandler.js";
 
 const PendingReviews = () => {
   const { jobOpeningId } = useParams();

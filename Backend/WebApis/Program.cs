@@ -15,9 +15,9 @@ using WebApis.Repository.JobCandidateRepository;
 using WebApis.Repository.JobOpeningRepository;
 using WebApis.Repository.UserRepository;
 using WebApis.Service;
+using WebApis.Service.AuthorizationService;
 using WebApis.Service.EmailService;
 using WebApis.Service.ErrorHandlingService;
-using WebApis.Service.ErrroHandlingService;
 using WebApis.Service.ValidationService;
 using WebApis.Service.ValidationService.AuthUserVallidator;
 using WebApis.Service.ValidationService.CandidateValidator;
@@ -42,6 +42,11 @@ namespace WebApis
             builder.Services.AddScoped<ICommonValidator<JobOpeningUpdateDto>, JobOpeningUpdateValidator>();
             // Add services to the container.
             builder.Services.AddControllers()
+                .ConfigureApiBehaviorOptions(options =>
+                {
+                    // This won't fix the bug, but might help you see the error details
+                    options.SuppressInferBindingSourcesForParameters = true;
+                })
                 .AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -56,6 +61,7 @@ namespace WebApis
 
             builder.Services.AddScoped<JwtService>();
             builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<ICommonValidator<JobOpeningDto>, JobOpeningValidator>();
             builder.Services.AddScoped<ICommonValidator<UpdateCandidateDto>,UpdateCandidateValidator>();
             builder.Services.AddScoped<ICommonValidator<RegisterCandidateDto>, RegisterCandidateValidator>();

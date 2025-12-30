@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MailKit;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Data.Common;
 using WebApis.Data;
@@ -33,17 +34,18 @@ namespace WebApis.Controllers.UserController.AuthController
             _resetPassvalidator = resetPassvalidator;
         }
 
-        public async Task ForgotPasswordAsync(string email)
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPasswordAsync([FromBody] ForgotPasswordDto dto)
         {
-            if (string.IsNullOrWhiteSpace(email))
-                return; 
+            if (string.IsNullOrWhiteSpace(dto.Email))
+                return Ok(new { Message = "otp sent to given email" });
 
-            var user = await _userRepository.GetByFilterAsync(u => u.Email == email);
+            var user = await _userRepository.GetByFilterAsync(u => u.Email == dto.Email);
 
             if (user == null)
-                return; 
+                return Ok(new { Message = "otp sent to given email" });
 
-            var otp = new Random().Next(100000, 999999).ToString();
+            var otp = Random.Shared.Next(100000, 999999).ToString();
 
             await _passwordResetRepository.AddAsync(new PasswordReset
             {
@@ -57,10 +59,13 @@ namespace WebApis.Controllers.UserController.AuthController
                 "Your Password Reset OTP",
                 $"Your OTP is: {otp}. It will expire in 5 minutes."
             );
+
+            return Ok(new { Message = "otp sent to given email" });
         }
 
 
-        public async Task ResetPasswordAsync(ResetPasswordDto dto)
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPasswordAsync([FromBody]ResetPasswordDto dto)
         {
             var validationResult = await _resetPassvalidator.ValidateAsync(dto);
 
@@ -112,6 +117,8 @@ namespace WebApis.Controllers.UserController.AuthController
             await _userRepository.UpdateAsync(user);
 
             await _passwordResetRepository.DeleteAsync(entry);
+
+            return Ok(new { message = "Password reset successfully." });
         }
 
     }

@@ -32,18 +32,23 @@ import RecruiterProfileProtector from "./Protectors/RecruiterProfileProtector.js
 import CandidateProfileProtector from "./Protectors/CandidateProfileProtector.jsx";
 import CandidateProtector from "./Protectors/CandidateProtector.jsx";
 import JobOpeningEditProtector from "./Protectors/JobOpeningEditProtector.jsx";
-import PendingReviews from "./Pages/PendingReviews.jsx";
-import ReviewCandidate from "./Pages/ReviewCandidate.jsx";
+import PendingReviews from "./Pages/JobCandidate/Pools/PendingReviews.jsx";
+import ReviewCandidate from "./Pages/JobCandidate/Feedback/ReviewCandidate.jsx";
 import ReviewerLevelProtector from "./Protectors/ReviewerLevelProtector.jsx";
-import TechnicalInterviewPool from "./Pages/TechnicalInterviewPool.jsx";
+import TechnicalInterviewPool from "./Pages/JobCandidate/Pools/TechnicalInterviewPool.jsx";
 import InterviewerLevelProtector from "./Protectors/InterviewerLevelProtector.jsx";
-import ScheduleInterview from "./Pages/ScheduleInterview.jsx";
-import InterviewFeedback from "./Pages/InterviewFeedback.jsx";
+import ScheduleInterview from "./Pages/JobCandidate/Feedback/ScheduleInterview.jsx";
+import InterviewFeedback from "./Pages/JobCandidate/Feedback/InterviewFeedback.jsx";
 import InterviewerAssignedProtector from "./Protectors/InterviewerProtector.jsx";
-import HrPool from "./Pages/HrPool.jsx";
-import FinalPool from "./Pages/FinalPool.jsx";
-import CandidateInterviewHistory from "./Pages/CandidateInterviewHistory.jsx";
+import HrPool from "./Pages/JobCandidate/Pools/HrPool.jsx";
+import FinalPool from "./Pages//JobCandidate/Pools/FinalPool.jsx";
+import CandidateInterviewHistory from "./Pages/JobCandidate/Pools/CandidateInterviewHistory.jsx";
 import JobCandidateDashboard from "./Pages/JobCandidateDashboard/JobCandidateDashboard.jsx";
+import HrLevelProtector from "./Protectors/HrLevelProtector.jsx";
+import RecruiterLevelProtector from "./Protectors/RecruiterLevelProtector.jsx";
+import SendOfferPage from "./Pages/JobCandidate/Feedback/SendOfferPage.jsx";
+import SentOfferPoolPage from "./Pages/JobCandidate/Pools/SentOfferPoolPage.jsx";
+
 function App() {
   return (
     <AuthUserContextProvider>
@@ -223,15 +228,54 @@ function App() {
                 </InterviewerAssignedProtector>
               }
             />
-            <Route path="/pool/hr/:jobOpeningId" element={<HrPool />} />
-            <Route path="/final-pool/:jobOpeningId" element={<FinalPool />} />
+            <Route
+              path="/pool/hr/:jobOpeningId"
+              element={
+                <HrLevelProtector>
+                  <HrPool />
+                </HrLevelProtector>
+              }
+            />
+            <Route
+              path="/final-pool/:jobOpeningId"
+              element={
+                <RecruiterLevelProtector>
+                  <FinalPool />
+                </RecruiterLevelProtector>
+              }
+            />
             <Route
               path="/History/:jobCandidateId"
-              element={<CandidateInterviewHistory />}
+              element={
+                <RecruiterLevelProtector>
+                  <CandidateInterviewHistory />
+                </RecruiterLevelProtector>
+              }
             />
             <Route
               path="/Dashboard/:jobOpeningId"
-              element={<JobCandidateDashboard />}
+              element={
+                <RecruiterLevelProtector>
+                  <JobCandidateDashboard />
+                </RecruiterLevelProtector>
+              }
+            />
+
+            <Route
+              path="/send-offer/:jobCandidateId/"
+              element={
+                <RecruiterLevelProtector>
+                  <SendOfferPage />
+                </RecruiterLevelProtector>
+              }
+            />
+            <Route
+              path="/offerPool/:jobOpeningId"
+              element={
+                <RecruiterLevelProtector>
+                  <SentOfferPoolPage />
+                </RecruiterLevelProtector>
+              }
             />
           </Routes>
         </main>

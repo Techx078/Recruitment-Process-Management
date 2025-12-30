@@ -5,30 +5,33 @@ import { getCandidateDetails } from "../../Services/CandidateService";
 import { getCandidateJobOpenings } from "../../Services/CandidateService";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { handleGlobalError } from "../../Services/errorHandler";
+import { toast } from "react-toastify";
+import { respondToOffer } from "../../Services/JobCandidateService";
 export default function CandidateProfile({}) {
   let { UserId } = useParams();
   let [candidate, setCandidate] = useState(null);
   let [jobApplications, setJobApplications] = useState([]);
-  let [notFound , SetNotFound] = useState(false);
+  let [notFound, SetNotFound] = useState(false);
   const navigate = useNavigate();
   const { authUser } = useAuthUserContext();
-  
+
   useEffect(() => {
     let token = localStorage.getItem("token");
     let fetchCandidate = async () => {
-      try{
-        let data = await getCandidateDetails(UserId,token);
+      try {
+        let data = await getCandidateDetails(UserId, token);
         setCandidate(data);
-      }catch(e){
+      } catch (e) {
         handleGlobalError(e);
         SetNotFound(true);
       }
     };
+
     let fetchJobApplications = async () => {
-      try{
-        let jobs = await getCandidateJobOpenings(UserId,token);
+      try {
+        let jobs = await getCandidateJobOpenings(UserId, token);
         setJobApplications(jobs);
-      }catch(e){
+      } catch (e) {
         handleGlobalError(e);
       }
     };
@@ -36,12 +39,43 @@ export default function CandidateProfile({}) {
     fetchJobApplications();
   }, [UserId]);
 
+  const acceptOffer = async (jobCandidateId) => {
+    try {
+      const isConfirmed = confirm(
+        "Are you sure you want to accept this offer?"
+      );
+      if (!isConfirmed) return;
+      await respondToOffer(jobCandidateId, true);
+      toast.success("you are accepted offer successfully !");
+    } catch (e) {
+      handleGlobalError(e);
+    }
+  };
+  const rejectOffer = async (jobCandidateId) => {
+    try {
+      const isConfirmed = confirm(
+        "Are you sure you want to reject this offer?"
+      );
+      if (!isConfirmed) return;
+
+      const reason = prompt("Enter rejection reason:");
+      if (!reason || !reason.trim()) return;
+
+      console.log("Rejecting offer:", jobCandidateId);
+      console.log("Reason:", reason);
+      await respondToOffer(jobCandidateId, false, reason);
+      toast.success("you rejected offer successfully !");
+    } catch (e) {
+      handleGlobalError(e);
+    }
+  };
+
   if (!candidate) {
     return <div>Loading...</div>;
   }
-   if( notFound ){
-  return <div>Not found...</div>;
-}
+  if (notFound) {
+    return <div>Not found...</div>;
+  }
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -122,8 +156,8 @@ export default function CandidateProfile({}) {
               </div>
             )}
             {authUser &&
-              authUser.roleName === "Candidate" &&
-              authUser.id === candidate.userId && (
+              authUser.role === "Candidate" &&
+              authUser.id == candidate.userId && (
                 <div>
                   <button
                     className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-blue-700"
@@ -190,32 +224,78 @@ export default function CandidateProfile({}) {
           <h2 className="text-2xl font-semibold mb-4">Job Applications</h2>
 
           {jobApplications?.length === 0 ? (
-            <p className="text-gray-500">No job applications yet.</p>
+            <div className="flex items-center justify-center py-16">
+              <p className="text-gray-500 text-lg">No job applications yet.</p>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {jobApplications.map((job) => (
                 <div
                   key={job.id}
-                  className="border rounded-xl p-4 shadow-sm bg-white"
+                  className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-xl font-semibold">{job.jobTitle}</h3>
-                      <p className="text-gray-600">Round: {job.roundNumber}</p>
-                      <p className="text-gray-600">
-                        Job Status: {job.jobStatus}
-                      </p>
-                      <p className="text-gray-600">My Status: {job.status}</p>
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-semibold text-gray-800">
+                        {job.jobTitle}
+                      </h3>
+
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                        <span>Round: {job.roundNumber}</span>
+                        <span>Job Status: {job.jobStatus}</span>
+                      </div>
+
+                      <div className="mt-2">
+                        <span
+                          className={`inline-block px-3 py-1 text-sm font-medium rounded-full
+                  ${
+                    job.status === "OfferSent"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : job.status === "Accepted"
+                      ? "bg-green-100 text-green-800"
+                      : job.status === "OfferRejectedByCandidate"
+                      ? "bg-red-100 text-red-800"
+                      : job.status === "OfferRejectedBySystem"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                        >
+                          My Status: {job.status}
+                        </span>
+                      </div>
+                      {authUser &&
+                        authUser.role === "Candidate" &&
+                        authUser.id == candidate.userId &&
+                        job.status === "OfferSent" && (
+                          <div className="flex gap-3 mt-4">
+                            <button
+                              className="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-black transition"
+                              onClick={() => acceptOffer(job.id)}
+                            >
+                              Accept
+                            </button>
+
+                            <button
+                              className="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-black transition"
+                              onClick={() => rejectOffer(job.id)}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
                     </div>
 
-                    <button
-                      className="px-4 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-                      onClick={() =>
-                        navigate(`/job-openings/${job.jobOpeningId}`)
-                      }
-                    >
-                      View Job
-                    </button>
+                    {/* Right Section */}
+                    <div className="flex items-center">
+                      <button
+                        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
+                        onClick={() =>
+                          navigate(`/job-openings/${job.jobOpeningId}`)
+                        }
+                      >
+                        View Job
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

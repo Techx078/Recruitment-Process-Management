@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WebApis.Data;
 
@@ -11,9 +12,11 @@ using WebApis.Data;
 namespace WebApis.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251225120105_add_Document_varification_field")]
+    partial class add_Document_varification_field
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -174,12 +177,6 @@ namespace WebApis.Migrations
 
                     b.Property<int>("JobOpeningId")
                         .HasColumnType("int");
-
-                    b.Property<DateTime>("OfferExpiryDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("OfferRejectionReason")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ReviewerComment")
                         .HasColumnType("nvarchar(max)");

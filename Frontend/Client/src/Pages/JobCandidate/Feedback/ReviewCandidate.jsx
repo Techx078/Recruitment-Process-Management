@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { updateReviewStatus } from "../Services/JobCandidateService.js";
-import { useAuthUserContext } from "../Context/AuthUserContext.jsx";
-import { getJobOpeningById } from "../Services/JobOpeningService.js";
-import { getJobCandidateById } from "../Services/JobCandidateService.js";
-import { handleGlobalError } from "../Services/errorHandler.js";
+import { updateReviewStatus } from "../../../Services/JobCandidateService.js";
+import { useAuthUserContext } from "../../../Context/AuthUserContext.jsx";
+import { getJobOpeningById } from "../../../Services/JobOpeningService.js";
+import { getJobCandidateById } from "../../../Services/JobCandidateService.js";
+import { handleGlobalError } from "../../../Services/errorHandler.js";
 
 const ReviewCandidate = () => {
   const { jobCandidateId } = useParams();

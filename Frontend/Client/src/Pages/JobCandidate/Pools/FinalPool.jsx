@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getFinalPool , selectCandidate } from "../Services/JobCandidateService";
-import { handleGlobalError } from "../Services/errorHandler";
+import { getFinalPool , selectCandidate } from "../../../Services/JobCandidateService";
+import { handleGlobalError } from "../../../Services/errorHandler";
 
 const FinalPool = () => {
   const { jobOpeningId } = useParams();
@@ -54,7 +54,16 @@ const handleSelect = async (jobCandidateId) => {
     );
   }
 };
+const handleSendOffer = async (jobCandidateId)=>{
+   if (!window.confirm("Are you sure you want to select this candidate?"))
+    return;
 
+  try {
+    navigate(`/send-offer/${jobCandidateId}`)
+  } catch (err) {
+    handleGlobalError(err)
+  }
+}
 
   if (loading) {
     return (
@@ -73,19 +82,17 @@ const handleSelect = async (jobCandidateId) => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto mt-10 bg-white border border-gray-300 rounded">
-      <div className="p-4 border-b border-gray-300 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-800">
+    
+    <div className="max-w-6xl mx-auto mt-10 ">
+      <h2 className="text-lg font-semibold text-gray-800">
           Final Pool Candidates
         </h2>
-      </div>
-
       {candidates.length === 0 ? (
         <div className="p-4 text-gray-600">
-          No shortlisted candidates found.
+          No candidates found.
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto bg-white border border-gray-300 rounded-lg shadow-sm">
         <table className="w-full border-collapse">
           <thead className="bg-gray-100 border-b border-gray-300">
             <tr className="text-left text-gray-700">
@@ -142,6 +149,14 @@ const handleSelect = async (jobCandidateId) => {
                       className="px-3 py-1 text-sm border border-gray-600 rounded text-gray-800 hover:bg-gray-300"
                     >
                       Select
+                    </button>
+                  )}
+                  {c.status === "Selected" && (
+                    <button
+                      onClick={() => handleSendOffer(c.jobCandidateId)}
+                      className="px-3 py-1 text-sm border border-gray-600 rounded text-gray-800 hover:bg-gray-300"
+                    >
+                      Send-Offer Letter
                     </button>
                   )}
                 </td>

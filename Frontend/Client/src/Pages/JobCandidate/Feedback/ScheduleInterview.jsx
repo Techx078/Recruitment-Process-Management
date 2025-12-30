@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {scheduleInterview} from "../Services/JobCandidateService.js";
-import { handleGlobalError } from "../Services/errorHandler.js";
+import {scheduleInterview} from "../../../Services/JobCandidateService.js";
+import { handleGlobalError } from "../../../Services/errorHandler.js";
+
 const ScheduleInterview = () => {
   const { jobCandidateId } = useParams();
   const navigate = useNavigate();

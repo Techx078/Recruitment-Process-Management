@@ -1,16 +1,17 @@
 import { useState } from "react";
-import TechnicalInterviewPool from "../TechnicalInterviewPool";
-import PendingReviews from "../PendingReviews";
-import HrPool from "../HrPool";
-import FinalPool from "../FinalPool";
+import TechnicalInterviewPool from "../JobCandidate/Pools/TechnicalInterviewPool";
+import PendingReviews from "../JobCandidate/Pools/PendingReviews";
+import HrPool from "../JobCandidate/Pools/HrPool";
+import FinalPool from "../JobCandidate/Pools/FinalPool";
 import PoolTabs from "./PoolTabs"
-
+import SentOfferPoolPage from "../JobCandidate/Pools/SentOfferPoolPage"
 export default function JobCandidateDashboard() {
   const POOLS = {
   TECHNICAL: "technical",
   REVIEW: "review",
   HR: "hr",
   FINAL: "final",
+  OFFER:"Sentoffer"
 };
   const [activePool, setActivePool] = useState(POOLS.TECHNICAL);
  
@@ -25,6 +26,8 @@ export default function JobCandidateDashboard() {
         return <HrPool />;
       case POOLS.FINAL:
         return <FinalPool />;
+      case POOLS.OFFER:
+        return <SentOfferPoolPage />;
       default:
         return null;
     }

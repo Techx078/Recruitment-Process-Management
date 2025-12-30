@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getTechnicalInterviewPool } from "../Services/JobCandidateService";
-import MyScheduledInterviews from "./MyScheduledInterviews";
-import { useAuthUserContext } from "../Context/AuthUserContext";
-import { getJobOpeningById } from "../Services/JobOpeningService.js";
-import { handleGlobalError } from "../Services/errorHandler.js";
+import { getTechnicalInterviewPool } from "../../../Services/JobCandidateService.js";
+import MyScheduledInterviews from "./MyScheduledInterviews.jsx";
+import { useAuthUserContext } from "../../../Context/AuthUserContext.jsx";
+import { getJobOpeningById } from "../../../Services/JobOpeningService.js";
+import { handleGlobalError } from "../../../Services/errorHandler.js";
 const TechnicalInterviewPool = () => {
   const { jobOpeningId } = useParams();
   const navigate = useNavigate();
@@ -68,18 +68,18 @@ const TechnicalInterviewPool = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto mt-10 px-4">
-      <h2 className="text-2xl font-semibold text-black mb-6">
+    <div className="max-w-6xl mx-auto mt-10">
+      <h2 className="text-lg font-semibold text-gray-800">
         Technical Interview Pool
       </h2>
 
       {candidates.length === 0 ? (
-        <div className="bg-white border border-gray-300 rounded-lg p-6 text-gray-600">
+        <div className="p-4 text-gray-600">
           No candidates available for technical interview.
         </div>
       ) : (
         <div className="overflow-x-auto bg-white border border-gray-300 rounded-lg shadow-sm">
-          <table className="min-w-full border-collapse">
+        <table className="w-full border-collapse">
             <thead className="bg-gray-100 border-b border-gray-300">
               <tr>
                 <th className="px-4 py-3  text-sm font-medium text-black">

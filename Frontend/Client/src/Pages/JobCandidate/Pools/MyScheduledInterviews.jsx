@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { getMyScheduledInterviews } from "../Services/JobCandidateService";
+import { getMyScheduledInterviews } from "../../../Services/JobCandidateService";
 import { useNavigate } from "react-router-dom";
-import { handleGlobalError } from "../Services/errorHandler";
+import { handleGlobalError } from "../../../Services/errorHandler";
 const MyScheduledInterviews = ({ jobOpeningId }) => {
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
