@@ -1,196 +1,129 @@
-﻿# 🗃️ Database Schema – Recruitment Process Management System
+# Database Schema Documentation
 
-This document describes the complete **database schema** used in the Recruitment Process Management System.  
-It includes all entities, their attributes, relationships, and functional roles in the system.
+This document outlines the database entities, their purpose within the recruitment workflow, and their relationships.
 
----
+## Core Identity & Roles
 
-## 🧩 Overview
+### User
+**Purpose:** The base entity for authentication and authorization. It stores common information for all actors in the system (Recruiters, Candidates, Interviewers, Reviewers).
+* **Workflow Role:** Used for login validation (`Email`, `PasswordHash`) and determining system access level via `RoleName`.
+* **Relationships:**
+    * **1-to-1:** Linked to `Candidate`, `Recruiter`, `Reviewer`, and `Interviewer` tables.
+    * **1-to-Many:** Linked to `UserSkills` (tracks general skills associated with a user).
 
-The database follows a **fully normalized relational structure**, designed to:
+### Recruiter
+**Purpose:** Represents the process owner who creates jobs and manages the hiring pipeline.
+* **Workflow Role:** Creates `JobOpening` entries and manages the final selection/offer process.
+* **Relationships:**
+    * **Foreign Key:** `UserId` (links to User).
+    * **1-to-Many:** `JobOpenings` (jobs created by this recruiter).
 
-- Support multiple user roles (Admin, Recruiter, Reviewer, Interviewer, Candidate)
-- Track job openings, candidate applications, interviews, and feedback
-- Manage document verification and onboarding
-- Ensure data consistency, scalability, and flexibility for future automation
+### Candidate
+**Purpose:** Represents the job seeker. Stores professional profile links and resume paths.
+* **Workflow Role:** Registers via Excel import or manual entry. Applied to jobs via the `JobCandidate` table.
+* **Relationships:**
+    * **Foreign Key:** `UserId` (links to User).
+    * **1-to-Many:** `Educations` (academic history).
+    * **1-to-Many:** `JobCandidates` (applications to specific jobs).
 
----
+### Reviewer
+**Purpose:** Staff members responsible for the initial screening of applications.
+* **Workflow Role:** Assigned to specific jobs to review incoming resumes and provide initial comments.
+* **Relationships:**
+    * **Foreign Key:** `UserId` (links to User).
+    * **Many-to-Many:** Linked to `JobOpening` via the `JobReviewer` table.
 
-## 📋 Entity List
-
-| Entity | Description |
-|--------|-------------|
-| **Users** | Stores all system users (Recruiters, Candidates, Reviewers, Interviewers, HRs, Admins). |
-| **Skills** | Contains a master list of skills used across jobs and candidates. |
-| **UserSkills** | Junction table linking users to their skills. |
-| **JobOpenings** | Represents an open position created by a recruiter. |
-| **JobSkills** | Links required skills to a specific job opening. |
-| **JobDocuments** | Lists document requirements for a job opening. |
-| **JobCandidates** | Connects candidates to specific job openings and tracks their progress. |
-| **JobInterviews** | Tracks interviews, marks, feedback, and round progression. |
-| **DocumentsMaster** | Master list of available document types (e.g., Resume, ID Proof). |
-| **CandidateDocuments** | Stores uploaded documents per candidate per job. |
-| **Employees** | Stores information of hired candidates who joined successfully. |
-
----
-
-## 🧱 Table Definitions
-
-### 1. **Users**
-| Column | Type | Description |
-|--------|------|-------------|
-| UserId | INT (PK) | Unique ID for each user. |
-| Name | VARCHAR(100) | Full name of the user. |
-| Email | VARCHAR(100) | Unique email address for login. |
-| PasswordHash | VARCHAR(255) | Encrypted password. |
-| Role | ENUM('Admin','Recruiter','Reviewer','Interviewer','Candidate','HR') | Defines user type. |
-| ContactNumber | VARCHAR(15) | Optional contact info. |
-| CreatedAt | DATETIME | Record creation timestamp. |
-| IsActive | BIT | Indicates if user is active. |
+### Interviewer
+**Purpose:** Technical or HR staff responsible for conducting interviews.
+* **Workflow Role:** Assigned to jobs to conduct rounds, provide marks, and submit feedback.
+* **Relationships:**
+    * **Foreign Key:** `UserId` (links to User).
+    * **Many-to-Many:** Linked to `JobOpening` via the `JobInterviewer` table.
+    * **1-to-Many:** `JobInterviews` (specific interview sessions conducted).
 
 ---
 
-### 2. **Skills**
-| Column | Type | Description |
-|--------|------|-------------|
-| SkillId | INT (PK) | Unique ID of the skill. |
-| SkillName | VARCHAR(100) | Name of the skill (e.g., Java, SQL, .NET). |
+## Job Management
+
+### JobOpening
+**Purpose:** The central entity defining a specific vacancy.
+* **Workflow Role:** Contains all metadata (Requirements, Salary, Domain) and governs the configuration of the hiring team (Reviewers/Interviewers) and required documents.
+* **Relationships:**
+    * **Foreign Key:** `CreatedById` (links to Recruiter).
+    * **1-to-Many:** `JobCandidates` (pool of applicants).
+    * **1-to-Many:** `JobSkills` (required skills for this job).
+    * **1-to-Many:** `JobDocuments` (documents required for this job).
+    * **1-to-Many:** `JobReviewers` (review team).
+    * **1-to-Many:** `JobInterviewers` (interview panel).
+
+### JobSkill
+**Purpose:** Associates a specific skill with a job opening.
+* **Workflow Role:** Defines if a skill is mandatory (`IsRequired`) and the minimum years of experience needed.
+* **Relationships:**
+    * **Foreign Keys:** Links `JobOpening` and `Skill`.
+
+### JobReviewer & JobInterviewer
+**Purpose:** Junction tables to assign Reviewers and Interviewers to specific Job Openings.
+* **Workflow Role:** Allows dynamic team assignment per job rather than global assignment.
+* **Relationships:**
+    * **Foreign Keys:** Links `JobOpening` to `Reviewer` or `Interviewer`.
 
 ---
 
-### 3. **UserSkills**
-| Column | Type | Description |
-|--------|------|-------------|
-| UserSkillId | INT (PK) | Unique record ID. |
-| UserId | INT (FK → Users.UserId) | Reference to user. |
-| SkillId | INT (FK → Skills.SkillId) | Reference to skill. |
-| YearsOfExperience | DECIMAL(3,1) | Optional skill experience in years. |
+## Application Workflow (The Core Process)
+
+### JobCandidate
+**Purpose:** Represents a unique application. This is the primary state machine for the candidate's progress.
+* **Workflow Role:**
+    * Tracks status (`Status` e.g., "Applied", "Shortlisted").
+    * Controls flow via boolean flags: `IsNextTechnicalRound`, `IsNextHrRound`.
+    * Manages offer lifecycle: `OfferExpiryDate`, `OfferRejectionReason`.
+    * Manages onboarding: `IsDocumentVerified`, `DocumentUnVerificationReason`.
+* **Relationships:**
+    * **Foreign Keys:** Links `JobOpening` and `Candidate`.
+    * **1-to-Many:** `JobInterviews` (history of rounds for this application).
+    * **1-to-Many:** `JobCandidateDocument` (documents uploaded for this application).
+    * **Foreign Key:** `ReviewerId` (the specific reviewer who screened this application).
+
+### JobInterview
+**Purpose:** Records the details of a specific interview round.
+* **Workflow Role:** Stores scheduling data (`MeetingLink`, `ScheduledAt`) and outcome data (`Marks`, `Feedback`, `IsPassed`).
+* **Relationships:**
+    * **Foreign Keys:** Links `JobCandidate` (the application) and `Interviewer` (the conductor).
 
 ---
 
-### 4. **JobOpenings**
-| Column | Type | Description |
-|--------|------|-------------|
-| JobId | INT (PK) | Unique ID for each job. |
-| Title | VARCHAR(150) | Job title. |
-| Description | TEXT | Detailed job description. |
-| Requirements | TEXT | Technical and non-technical requirements. |
-| Salary | VARCHAR(100) | Salary range or package. |
-| Benefits | TEXT | Job benefits or perks. |
-| CreatedBy | INT (FK → Users.UserId) | Recruiter who created the job. |
-| Status | ENUM('Open','On Hold','Closed') | Current job status. |
-| Deadline | DATE | Application closing date. |
-| CreatedAt | DATETIME | Job creation timestamp. |
+## Documents & Metadata
 
----
+### Document
+**Purpose:** A master list of document types (e.g., "Passport", "Degree Certificate", "Tax ID").
+* **Workflow Role:** Used to define what *types* of documents exist in the system.
+* **Relationships:**
+    * **1-to-Many:** `JobDocuments` (definitions used in specific jobs).
 
-### 5. **JobSkills**
-| Column | Type | Description |
-|--------|------|-------------|
-| JobSkillId | INT (PK) | Unique record ID. |
-| JobId | INT (FK → JobOpenings.JobId) | Related job. |
-| SkillId | INT (FK → Skills.SkillId) | Required skill. |
+### JobDocument
+**Purpose:** Specifies that a `JobOpening` requires a specific `Document` type.
+* **Workflow Role:** Configures the compliance requirements for a job.
+* **Relationships:**
+    * **Foreign Keys:** Links `JobOpening` and `Document`.
 
----
+### JobCandidateDocument
+**Purpose:** The actual file upload record.
+* **Workflow Role:** Links the requirement (`JobDocument`) to the applicant (`JobCandidate`). Stores the URL to the uploaded file.
+* **Relationships:**
+    * **Foreign Keys:** Links `JobCandidate` and `JobDocument`.
 
-### 6. **DocumentsMaster**
-| Column | Type | Description |
-|--------|------|-------------|
-| DocumentTypeId | INT (PK) | Unique document ID. |
-| DocumentName | VARCHAR(100) | Example: Resume, Aadhaar, Experience Letter. |
+### Skill & UserSkill
+**Purpose:** `Skill` is the master dictionary of skills. `UserSkill` maps a user to a skill with proficiency levels.
+* **Workflow Role:** Used for profile building and matching candidates to `JobSkill` requirements.
+* **Relationships:**
+    * `UserSkill` links `User` and `Skill`.
 
----
+### Education
+**Purpose:** Stores academic history for a candidate.
+* **Relationships:**
+    * **Foreign Key:** `CandidateId`.
 
-### 7. **JobDocuments**
-| Column | Type | Description |
-|--------|------|-------------|
-| JobDocumentId | INT (PK) | Unique record ID. |
-| JobId | INT (FK → JobOpenings.JobId) | Related job. |
-| DocumentTypeId | INT (FK → DocumentsMaster.DocumentTypeId) | Required document. |
-
----
-
-### 8. **JobCandidates**
-| Column | Type | Description |
-|--------|------|-------------|
-| JobCandidateId | INT (PK) | Unique record ID. |
-| JobId | INT (FK → JobOpenings.JobId) | Related job. |
-| CandidateId | INT (FK → Users.UserId) | Candidate linked to job. |
-| CVPath | VARCHAR(255) | Path to uploaded CV (if available). |
-| ReviewerComment | TEXT | Reviewer’s feedback. |
-| Status | ENUM('Applied','Under Review','Shortlisted','Interview Scheduled','Interviewed','HR Round','Selected','Rejected','Verified','Joined') | Candidate progress stage. |
-| AssignedReviewerId | INT (FK → Users.UserId, nullable) | Reviewer assigned to candidate. |
-| UpdatedAt | DATETIME | Last status update. |
-
----
-
-### 9. **JobInterviews**
-| Column | Type | Description |
-|--------|------|-------------|
-| InterviewId | INT (PK) | Unique interview record ID. |
-| JobCandidateId | INT (FK → JobCandidates.JobCandidateId) | Candidate being interviewed. |
-| InterviewerId | INT (FK → Users.UserId) | Interviewer conducting the interview. |
-| RoundNumber | INT | Round count (e.g., 1, 2, 3). |
-| Feedback | TEXT | Interviewer’s comments. |
-| Marks | DECIMAL(5,2) | Score given by interviewer. |
-| RecommendNextRound | BIT | True if next technical round required. |
-| RecommendHRRound | BIT | True if candidate moves to HR. |
-| IsRejected | BIT | True if candidate is rejected. |
-| InterviewDate | DATETIME | Date/time of interview. |
-| MeetingLink | VARCHAR(255) | URL for interview meeting. |
-
----
-
-### 10. **CandidateDocuments**
-| Column | Type | Description |
-|--------|------|-------------|
-| CandidateDocumentId | INT (PK) | Unique record ID. |
-| JobCandidateId | INT (FK → JobCandidates.JobCandidateId) | Candidate-job relation. |
-| DocumentTypeId | INT (FK → DocumentsMaster.DocumentTypeId) | Type of document uploaded. |
-| DocumentPath | VARCHAR(255) | File storage path. |
-| IsVerified | BIT | Verification flag (set by HR). |
-| VerifiedBy | INT (FK → Users.UserId, nullable) | HR who verified. |
-| VerifiedAt | DATETIME | Timestamp of verification. |
-
----
-
-### 11. **Employees**
-| Column | Type | Description |
-|--------|------|-------------|
-| EmployeeId | INT (PK) | Unique employee ID. |
-| UserId | INT (FK → Users.UserId) | Linked user record. |
-| JobId | INT (FK → JobOpenings.JobId) | Position they joined for. |
-| JoiningDate | DATE | Date of joining. |
-| OfferLetterPath | VARCHAR(255) | Path to generated offer letter. |
-| CreatedAt | DATETIME | Record creation time. |
-
----
-
-## 🔗 Relationships Summary
-
-- **Users** → one-to-many → **JobOpenings**  
-- **Users** → many-to-many → **Skills** (via UserSkills)  
-- **JobOpenings** → many-to-many → **Skills** (via JobSkills)  
-- **JobOpenings** → one-to-many → **JobCandidates**  
-- **JobCandidates** → one-to-many → **JobInterviews**  
-- **JobCandidates** → one-to-many → **CandidateDocuments**  
-- **JobOpenings** → one-to-many → **JobDocuments**  
-- **DocumentsMaster** → one-to-many → **JobDocuments**, **CandidateDocuments**
-
----
-
-## 📘 Notes
-
-- Recruiters, Reviewers, Interviewers, and HRs are all **user roles** under the same `Users` table.  
-- `JobCandidates.Status` defines each candidate’s lifecycle.  
-- `JobInterviews` isolates multi-round interview data, allowing flexible round tracking.  
-- `CandidateDocuments` supports verification workflows for HRs.  
-- All timestamps (`CreatedAt`, `UpdatedAt`) ensure tracking for auditing.
-
----
-
-## 📄 ER Diagram
-
-Refer to `/docs/ER_Diagram.jpeg` for a visual representation of this schema.
-
----
+### PasswordReset
+**Purpose:** Temporary storage for OTPs during the password recovery process.
+* **Workflow Role:** Independent utility table for security.
