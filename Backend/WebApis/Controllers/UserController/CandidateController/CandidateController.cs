@@ -81,7 +81,7 @@ namespace WebApis.Controllers.UserController.CandidateController
 
         [HttpPut("update/{userId}")]
         [Authorize(Roles = "Candidate")]
-        public async Task<IActionResult> UpdateCandidateDetails(int userId, UpdateCandidateDto dto)
+        public async Task<IActionResult> UpdateCandidateDetails(int userId, [FromBody]UpdateCandidateDto dto)
         {
             var validationResult = await _updateCandidateValidator.ValidateAsync(dto);
             if (!validationResult.IsValid)

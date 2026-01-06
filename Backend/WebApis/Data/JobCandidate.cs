@@ -11,7 +11,7 @@
         public Candidate Candidate { get; set; }
 
         public string CvPath { get; set; }
-        public string Status { get; set; } // e.g. "Applied", "Reviewed", "ScheduledInterview", "WaitForInterview", "Rejected","Shortlisted" "Selected" , "offerSent" "pending", "Accepted" "RejectedByCandidate"
+        public string Status { get; set; } // e.g. "Applied", "Reviewed", "ScheduledInterview", "WaitForInterview", "Rejected","Shortlisted" "Selected" , "offerSent" "pending", "OfferAccepted" "RejectedByCandidate" , "DocumentUploaded","DocumentsVerified","DocumentRejected"
         public string? ReviewerComment { get; set; }
 
         public int RoundNumber { get; set; } = 0;
@@ -23,13 +23,20 @@
         public bool IsNextTechnicalRound { get; set; }
         public bool IsNextHrRound { get; set; }
 
-        public bool IsDocumentVerified { get; set ; }
+        //document flow
+        public bool IsDocumentUploaded { get; set; }
 
+        public bool IsDocumentVerified { get; set ; }
+        public string? DocumentUnVerificationReason { get; set; }
+
+        //offer flow
         public DateTime OfferExpiryDate {  get; set; }
 
         public String? OfferRejectionReason { get; set; } = string.Empty;
 
         // Navigation property to JobInterviews
-        public ICollection<JobInterview>? JobInterviews { get; set; }
+        public ICollection<JobInterview>? JobInterviews { get; set; } = new List<JobInterview>();
+        public ICollection<JobCandidateDocus> JobCandidateDoc { get; set; }
+            = new List<JobCandidateDocus>();
     }
 }

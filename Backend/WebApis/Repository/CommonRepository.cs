@@ -73,7 +73,7 @@ namespace WebApis.Repository
             Expression<Func<T, TResult>> selector,
             params string[] includes)
         {
-            IQueryable<T> query = _dbSet.AsNoTracking();
+            IQueryable<T> query = _dbSet;
 
             foreach (var include in includes)
             {

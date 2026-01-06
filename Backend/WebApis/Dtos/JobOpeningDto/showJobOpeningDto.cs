@@ -17,7 +17,7 @@
         public string Status { get; set; }
         public DateTime? DeadLine { get; set; }
         public DateTime CreatedAt { get; set; }
-
+        public string Responsibilities { get; set; }
         public RecruiterDto? Recruiter { get; set; }
         public List<ReviewerDto> Reviewers { get; set; } = new();
         public List<InterviewerDto> Interviewers { get; set; } = new();
@@ -45,6 +45,7 @@
 
     public class DocumentDto
     {
+        public int JobDocumentId { get; set; }
         public int Id { get; set; }
         public string Name { get; set; }
         public string? Description { get; set; }

@@ -29,7 +29,7 @@ namespace WebApis.Data
 
         public DbSet<Education> Educations { get; set; }
 
-
+        public DbSet<JobCandidateDocus> jobCandidateDocs { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<JobCandidate>()
@@ -157,6 +157,21 @@ namespace WebApis.Data
                 .WithMany(i => i.JobInterviews)
                 .HasForeignKey(ji => ji.InterviewerId)
                 .OnDelete(DeleteBehavior.Restrict); // keep interviewer's history
+
+            modelBuilder.Entity<JobCandidateDocus>()
+                  .HasOne(jcd => jcd.JobCandidate)
+                  .WithMany(c => c.JobCandidateDoc) 
+                  .HasForeignKey(jcd => jcd.JobCandidateId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<JobCandidateDocus>()
+                .HasOne(jcd => jcd.JobDocument)
+                .WithMany(d => d.JobCandidateDoc) 
+                .HasForeignKey(jcd => jcd.JobDocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+
+            base.OnModelCreating(modelBuilder);
 
 
         }

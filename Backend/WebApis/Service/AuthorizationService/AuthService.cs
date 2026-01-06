@@ -11,13 +11,33 @@ namespace WebApis.Service.AuthorizationService
     {
         private readonly ICommonRepository<JobOpening> _jobOpeningRepository;
         private readonly ICommonRepository<Interviewer> _interviewerRepository;
+        private readonly ICommonRepository<Candidate> _candidateRepository;
 
         public AuthService(
             ICommonRepository<JobOpening> jobOpeningRepository,
-            ICommonRepository<Interviewer> interviewerRepository)
+            ICommonRepository<Interviewer> interviewerRepository,
+            ICommonRepository<Candidate> candidateRepository)
         {
             _jobOpeningRepository = jobOpeningRepository;
             _interviewerRepository = interviewerRepository;
+            _candidateRepository = candidateRepository;
+        }
+
+        public async Task ValidateCandidateAsync(int candidateId, ClaimsPrincipal user)
+        {
+            var userIdClaim = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            int loggedInUserId = int.Parse(userIdClaim);
+
+            bool candidateExits = await _candidateRepository.ExistsAsync(
+                    c => c.UserId == loggedInUserId
+                );
+
+            if (candidateExits == false)
+                throw new AppException("you don't have access to this service !", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
+
         }
 
         public async Task ValidateHrLevelAccessAsync(int jobOpeningId, ClaimsPrincipal user)

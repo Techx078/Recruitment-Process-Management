@@ -154,7 +154,7 @@ namespace WebApis.Controllers
                  Requirement = j.Requirement,
                  SalaryRange = j.SalaryRange,
                  Benefits = j.Benefits,
-                 Education = j.Education,
+                 Education = j.Education,   
                  Location = j.Location,
                  Department = j.Department,
                  JobType = j.JobType,
@@ -236,7 +236,7 @@ namespace WebApis.Controllers
                  Status = j.Status,
                  DeadLine = j.DeadLine,
                  CreatedAt = j.CreatedAt,
-
+                Responsibilities =  j.Responsibilities,
                  Recruiter = j.CreatedBy == null ? null : new RecruiterDto
                  {
                      Id = j.CreatedBy.Id,
@@ -257,6 +257,7 @@ namespace WebApis.Controllers
 
                  Documents = j.JobDocuments.Select(d => new DocumentDto
                  {
+                     JobDocumentId = d.Id,
                      Id = d.Document.id,
                      Name = d.Document.Name,
                      Description = d.Document.Description,

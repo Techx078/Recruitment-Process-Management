@@ -14,5 +14,7 @@
         public string CvPath { get; set; }
         public string Status { get; set; }              
         public int RoundNumber { get; set; }
+
+        public string? DocumentUnVerificationReason {  get; set; } = string.Empty;
     }
 }

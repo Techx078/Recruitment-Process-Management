@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata;
 using System.Security.Claims;
 using WebApis.Data;
 using WebApis.Dtos;
 using WebApis.Dtos.JobCandidateDtos;
 using WebApis.Repository;
 using WebApis.Repository.JobCandidateRepository;
+using WebApis.Service;
 using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
 using WebApis.Service.ValidationService;
@@ -23,6 +25,10 @@ namespace WebApis.Controllers.JobCandidateController
         private readonly ICommonRepository<Reviewer> _reviewerRepository;
         private readonly ICommonRepository<Interviewer> _interviewerRepository;
         private readonly ICommonRepository<JobInterview> _jobInterviewRepository;
+        private readonly ICommonRepository<JobCandidateDocus> _jobCandidateDocRepository;
+        private readonly CloudinaryService _cloudinaryService;
+        private readonly ICommonRepository<JobDocument> _jobDocumentRepository;
+
         public JobCandidateController(
             IJobCandidateRepository jobCandidateRepository,
             ICommonValidator<JobCandidateCreateDto> jobCandidateCreateValidator,
@@ -30,7 +36,10 @@ namespace WebApis.Controllers.JobCandidateController
             ICommonRepository<JobCandidate> jobCandidateRepositoryCommon,
             ICommonRepository<Reviewer> reviewerRepository,
             ICommonRepository<Interviewer> interviewerRepository,
-            ICommonRepository<JobInterview> jobInterviewRepository
+            ICommonRepository<JobInterview> jobInterviewRepository,
+            ICommonRepository<JobCandidateDocus> jobCandidateDocRepository,
+            CloudinaryService cloudinaryService,
+            ICommonRepository<JobDocument> jobDocumentRepository
         )
         {
             _jobCandidateRepository = jobCandidateRepository;
@@ -40,6 +49,9 @@ namespace WebApis.Controllers.JobCandidateController
             _reviewerRepository = reviewerRepository;
             _interviewerRepository = interviewerRepository;
             _jobInterviewRepository = jobInterviewRepository;
+            _jobCandidateDocRepository = jobCandidateDocRepository;
+            _cloudinaryService = cloudinaryService;
+            _jobDocumentRepository = jobDocumentRepository;
         }
         [HttpPost("create")]
         [Authorize(Roles = "Recruiter")]
@@ -161,7 +173,7 @@ namespace WebApis.Controllers.JobCandidateController
         }
 
         [HttpGet("get/{jobCandidateId}")]
-        [Authorize(Roles = "Recruiter,Reviewer,Admin,Interviewer")]
+        [Authorize(Roles = "Recruiter,Reviewer,Admin,Interviewer,Candidate")]
         public async Task<IActionResult> GetJobCandidateById(int jobCandidateId)
         {
             var jobCandidate = await _jobCandidateRepositoryCommon.GetByFilterAsync(j => j.Id == jobCandidateId);
@@ -974,7 +986,11 @@ namespace WebApis.Controllers.JobCandidateController
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> GetOfferedCandidates(int jobOpeningId)
         {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            int userId = int.Parse(userIdClaim);
 
             var jobOpening = await _jobOpeningRepository.GetWithIncludeAsync(
                 j => j.Id == jobOpeningId,
@@ -984,11 +1000,15 @@ namespace WebApis.Controllers.JobCandidateController
             );
 
             if (jobOpening == null)
-                return NotFound("Job opening not found");
+                throw new KeyNotFoundException("Job opening not found");
 
             // Ensure recruiter owns the job opening
             if (jobOpening.CreatedBy.UserId != userId)
-                return Forbid();
+                throw new AppException(
+                   "You are not authorized to view offered candidates",
+                   ErrorCodes.Forbidden,
+                   StatusCodes.Status403Forbidden
+               );
 
             var offeredCandidates = jobOpening.JobCandidates
                 .Where(c => c.Status == "OfferSent")
@@ -1014,23 +1034,35 @@ namespace WebApis.Controllers.JobCandidateController
         public async Task<IActionResult> RejectOfferBySystem(
             int jobCandidateId,
             [FromBody] RejectOfferBySystemDto dto)
-            {
-                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdClaim))
+                throw new UnauthorizedAccessException("Invalid token");
 
-                var jobCandidate = await _jobCandidateRepositoryCommon.GetWithIncludeAsync(
+            int userId = int.Parse(userIdClaim);
+
+            var jobCandidate = await _jobCandidateRepositoryCommon.GetWithIncludeAsync(
                     c => c.Id == jobCandidateId,
                     c => c,
                     "JobOpening.CreatedBy"
                 );
 
                 if (jobCandidate == null)
-                    return NotFound("Job candidate not found");
+                    throw new KeyNotFoundException("Job candidate not found");
 
                 if (jobCandidate.JobOpening.CreatedBy.UserId != userId)
-                    return Forbid("You are not authorized for this job opening");
+                    throw new AppException(
+                        "You are not authorized for this job opening",
+                        ErrorCodes.Forbidden,
+                        StatusCodes.Status403Forbidden
+                    );
 
                 if (jobCandidate.Status != "OfferSent")
-                    return BadRequest("Only active offers can be rejected");
+                    throw new AppException(
+                        "Only active offers can be rejected",
+                        ErrorCodes.ValidationError,
+                        StatusCodes.Status400BadRequest
+                    );
 
                 jobCandidate.Status = "OfferRejectedBySystem";
                 jobCandidate.OfferRejectionReason = dto.Reason;
@@ -1051,9 +1083,17 @@ namespace WebApis.Controllers.JobCandidateController
            [FromBody] ExtendOfferDto dto)
         {
             if (dto.NewExpiryDate <= DateTime.UtcNow)
-                return BadRequest("Expiry date must be in the future");
+                throw new AppException(
+                    "Expiry date must be in the future",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
 
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            int userId = int.Parse(userIdClaim);
 
             var jobCandidate = await _jobCandidateRepositoryCommon.GetWithIncludeAsync(
                 c => c.Id == jobCandidateId,
@@ -1062,13 +1102,21 @@ namespace WebApis.Controllers.JobCandidateController
             );
 
             if (jobCandidate == null)
-                return NotFound("Job candidate not found");
+                throw new KeyNotFoundException("Job candidate not found");
 
             if (jobCandidate.JobOpening.CreatedBy.UserId != userId)
-                return Forbid("You are not authorized for this job opening");
+                throw new AppException(
+                    "You are not authorized for this job opening",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
 
             if (jobCandidate.Status != "OfferSent")
-                return BadRequest("Offer expiry can only be extended for active offers");
+                throw new AppException(
+                    "Offer expiry can only be extended for active offers",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
 
             jobCandidate.OfferExpiryDate = dto.NewExpiryDate;
             jobCandidate.UpdatedAt = DateTime.UtcNow;
@@ -1082,5 +1130,336 @@ namespace WebApis.Controllers.JobCandidateController
             });
         }
 
+        [HttpPost("{jobCandidateId}/documents/{jobDocumentId}")]
+        [Authorize(Roles = "Candidate")]
+        public async Task<IActionResult> UploadJobCandidateDocument(
+            int jobCandidateId,
+            int jobDocumentId,
+            IFormFile file)
+        {
+            if (file == null)
+                throw new AppException("File is required", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                throw new AppException("Invalid token", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
+
+            int loggedInUserId = int.Parse(userIdClaim);
+
+            var jobCandidate = await _jobCandidateRepositoryCommon
+                .GetWithIncludeAsync(
+                    jc => jc.Id == jobCandidateId,
+                    jc => jc,
+                    "Candidate"
+                );
+
+            if (jobCandidate == null)
+                throw new KeyNotFoundException("Job candidate not found");
+
+            if (jobCandidate.Candidate.UserId != loggedInUserId)
+                throw new AppException("You are not allowed to upload documents for this candidate", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
+
+            var jobDocument = await _jobDocumentRepository.GetWithIncludeAsync(
+                jd => jd.Id == jobDocumentId,
+                jd => jd,
+                "JobOpening"
+            );
+
+            if (jobDocument == null)
+                throw new KeyNotFoundException("Invalid job document");
+
+            if (jobDocument.JobOpeningId != jobCandidate.JobOpeningId)
+                throw new AppException("This document is not required for the applied job", ErrorCodes.ValidationError, StatusCodes.Status400BadRequest);
+
+            var documentUrl = await _cloudinaryService
+                .UploadJobCandidateDocumentAsync(file, jobCandidateId, jobDocumentId);
+
+            var existingDoc = await _jobCandidateDocRepository
+                .GetByFilterAsync(d =>
+                    d.JobCandidateId == jobCandidateId &&
+                    d.JobDocumentId == jobDocumentId
+                );
+
+            if (existingDoc == null)
+            {
+                var newDoc = new JobCandidateDocus
+                {
+                    JobCandidateId = jobCandidateId,
+                    JobDocumentId = jobDocumentId,
+                    DocumentUrl = documentUrl,
+                    UploadedAt = DateTime.UtcNow
+                };
+
+                await _jobCandidateDocRepository.AddAsync(newDoc);
+            }
+            else
+            {
+                existingDoc.DocumentUrl = documentUrl;
+                existingDoc.UploadedAt = DateTime.UtcNow;
+                await _jobCandidateDocRepository.UpdateAsync(existingDoc);
+            }
+
+            return Ok(new
+            {
+                message = "Document uploaded successfully",
+                documentUrl
+            });
+        }
+
+        [HttpPut("{jobCandidateId}/documents/submit")]
+        [Authorize(Roles = "Candidate")]
+        public async Task<IActionResult> SubmitAllDocuments(int jobCandidateId)
+        {
+            var jobCandidate = await _jobCandidateRepositoryCommon.GetWithIncludeAsync(
+                jc => jc.Id == jobCandidateId,
+                jc => jc,
+                "JobOpening.JobDocuments",
+                "JobCandidateDoc.JobDocument",
+                "Candidate"
+            );
+
+            if (jobCandidate == null)
+                throw new AppException(
+                    "Job candidate not found",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("Invalid token");
+
+            int loggedInUserId = int.Parse(userIdClaim);
+
+            if( jobCandidate.Candidate.UserId != loggedInUserId)
+            {
+                throw new AppException(
+                   "you are not able to perform this action",
+                   ErrorCodes.Forbidden,
+                   StatusCodes.Status403Forbidden
+               );
+            }
+            if (jobCandidate.Status != "OfferAccepted")
+                throw new AppException(
+                    "No active offer accepted yet !",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+            var requiredDocumentIds = jobCandidate.JobOpening.JobDocuments.Where( jd => jd.IsMandatory )
+                .Select(jd => jd.DocumentId)
+                .ToHashSet();
+
+            var uploadedDocumentIds = jobCandidate.JobCandidateDoc
+                ?.Where(d => d.DocumentUrl != null)
+                .Select(d => d.JobDocument.DocumentId)
+                .ToHashSet() ?? new HashSet<int>();
+
+            var missingDocuments = requiredDocumentIds.Except(uploadedDocumentIds).ToList();
+
+            if (missingDocuments.Any())
+            {
+                throw new AppException(
+                    $"Missing required documents. Upload remaining documents before submitting.",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest,
+                     uploadedDocumentIds.ToArray()
+                );
+            }
+
+            jobCandidate.IsDocumentUploaded = true;
+            jobCandidate.IsDocumentVerified = false;
+            jobCandidate.DocumentUnVerificationReason = null;
+            jobCandidate.UpdatedAt = DateTime.UtcNow;
+            jobCandidate.Status = "DocumentUploaded";
+
+            await _jobCandidateRepositoryCommon.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "All required documents uploaded successfully. Awaiting HR verification.",
+            });
+        }
+
+        [HttpPut("{jobCandidateId}/documents/verify")]
+        [Authorize(Roles = "Interviewer")]
+        public async Task<IActionResult> VerifyCandidateDocuments(
+            int jobCandidateId,
+            [FromBody] VerifyDocumentsDto dto)
+        {
+            var jobCandidate = await _jobCandidateRepositoryCommon.GetWithIncludeAsync(
+               jc => jc.Id == jobCandidateId,
+               jc => jc,
+               "JobOpening.JobInterviewers.Interviewer"
+           );
+            if (jobCandidate == null)
+                throw new AppException(
+                    "Job candidate not found",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            int loggedInUserId = int.Parse(userIdClaim);
+
+            if (!jobCandidate.JobOpening.JobInterviewers.Any(ji =>
+                ji.Interviewer.UserId == loggedInUserId &&
+                ji.Interviewer.Department == "HR"))
+            {
+                throw new AppException(
+                    "you are not authorized to update job-Opening",
+                    ErrorCodes.Unauthorized,
+                    StatusCodes.Status401Unauthorized
+                );
+            }
+
+            if (!jobCandidate.IsDocumentUploaded)
+                throw new AppException(
+                    "Candidate has not submitted all required documents yet",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            if (dto.IsVerified)
+            {
+                jobCandidate.IsDocumentVerified = true;
+                jobCandidate.DocumentUnVerificationReason = null;
+                jobCandidate.Status = "DocumentsVerified"; 
+                //pending :- pass candidate to employee
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(dto.RejectionReason))
+                    throw new AppException(
+                        "Rejection reason is required when documents are rejected",
+                        ErrorCodes.ValidationError,
+                        StatusCodes.Status400BadRequest
+                    );
+
+                jobCandidate.IsDocumentVerified = false;
+                jobCandidate.IsDocumentUploaded = false; // force re-upload
+                jobCandidate.DocumentUnVerificationReason = dto.RejectionReason;
+                jobCandidate.Status = "DocumentRejected";
+            }
+
+            jobCandidate.UpdatedAt = DateTime.UtcNow;
+
+            await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+            return Ok(new
+            {
+                message = dto.IsVerified
+                    ? "Documents verified successfully"
+                    : "Documents rejected. Candidate must re-upload documents."
+            });
+        }
+
+        [HttpGet("{jobCandidateId}/documents")]
+        [Authorize(Roles = "Interviewer")]
+        public async Task<IActionResult> GetJobCandidateDocuments(int jobCandidateId)
+        {
+            var jobCandidate = await _jobCandidateRepositoryCommon
+                .GetWithIncludeAsync(
+                    jc => jc.Id == jobCandidateId,
+                    jc => jc,
+                    "JobCandidateDoc.JobDocument.Document",
+                    "JobOpening.JobInterviewers.Interviewer"
+                );
+
+            if (jobCandidate == null)
+                throw new AppException(
+                    "Job candidate not found",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("Invalid token");
+
+            int loggedInUserId = int.Parse(userIdClaim);
+
+            if (!jobCandidate.JobOpening.JobInterviewers.Any(ji =>
+                ji.Interviewer.UserId == loggedInUserId &&
+                ji.Interviewer.Department == "HR"))
+            {
+                throw new AppException(
+                    "you are not authorized to update job-Opening",
+                    ErrorCodes.Unauthorized,
+                    StatusCodes.Status401Unauthorized
+                );
+            }
+
+            var documents = jobCandidate.JobCandidateDoc?
+                .Select(d => new JobCandidateDocumentResponseDto
+                {
+                    JobCandidateDocumentId = d.Id,
+                    DocumentId = d.JobDocumentId,
+                    DocumentName = d.JobDocument.Document.Name,
+                    DocumentDescription = d.JobDocument.Document.Description,
+                    DocumentUrl = d.DocumentUrl,
+                    UploadedAt = d.UploadedAt
+                })
+                .ToList() ?? new List<JobCandidateDocumentResponseDto>();
+
+            return Ok(new
+            {
+                jobCandidateId = jobCandidate.Id,
+                isDocumentUploaded = jobCandidate.IsDocumentUploaded,
+                isDocumentVerified = jobCandidate.IsDocumentVerified,
+                rejectionReason = jobCandidate.DocumentUnVerificationReason,
+                documents
+            });
+        }
+
+        [HttpGet("pool/documentUploaded/{jobOpeningId}")]
+        [Authorize(Roles = "Interviewer")]
+        public async Task<IActionResult> GetDocumentUploaded(int jobOpeningId)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var hrId = await _interviewerRepository.GetByFilterAsync(
+                   i => i.UserId == userId && i.Department == "HR",
+                   i => i.Id
+               );
+
+            if (hrId == 0)
+                throw new AppException("HR profile not found", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
+
+            var isHrAssigned = await _jobOpeningRepository.ExistsAsync(
+                j => j.Id == jobOpeningId &&
+                     j.JobInterviewers.Any(i => i.InterviewerId == hrId && i.Interviewer.Department == "HR")
+            );
+
+            if (!isHrAssigned)
+                throw new AppException("You are not assigned to this job opening", ErrorCodes.Forbidden, StatusCodes.Status403Forbidden);
+
+            var jobOpening = await _jobOpeningRepository.GetWithIncludeAsync(
+             j => j.Id == jobOpeningId,
+             j => j,
+             "JobCandidates.Candidate.User"
+            );
+
+            if (jobOpening == null)
+                return NotFound("Job opening not found");
+
+            var candidates = jobOpening.JobCandidates
+                .Where(c => c.Status == "DocumentUploaded")
+                .Select(c => new OfferPoolDto
+                {
+                    JobCandidateId = c.Id,
+                    jobOpeningId = c.JobOpeningId,
+                    candidateId = c.CandidateId,
+                    UserId = c.Candidate.UserId,
+                    CandidateName = c.Candidate.User.FullName,
+                    Email = c.Candidate.User.Email,
+                    Status = c.Status,
+                })
+                .ToList();
+
+            return Ok(candidates);
+        }
     }
 }

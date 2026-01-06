@@ -48,6 +48,11 @@ import HrLevelProtector from "./Protectors/HrLevelProtector.jsx";
 import RecruiterLevelProtector from "./Protectors/RecruiterLevelProtector.jsx";
 import SendOfferPage from "./Pages/JobCandidate/Feedback/SendOfferPage.jsx";
 import SentOfferPoolPage from "./Pages/JobCandidate/Pools/SentOfferPoolPage.jsx";
+import DocumentUpload from "./Pages/JobCandidate/Feedback/DocumentUpload.jsx";
+import VerifyCandidateDocuments from "./Pages/JobCandidate/Feedback/VerifyCandidateDocuments.jsx";
+import DocumentUploadedPool from "./Pages/JobCandidate/Pools/DocumentUploadedPool.jsx";
+import HrAssinedProtector from "./Protectors/hrAssinedProtector.jsx";
+import JobCandidateProtector from "./Protectors/JobCandidateProtector.jsx";
 
 function App() {
   return (
@@ -275,6 +280,30 @@ function App() {
                 <RecruiterLevelProtector>
                   <SentOfferPoolPage />
                 </RecruiterLevelProtector>
+              }
+            />
+            <Route
+              path="/uploadDocuments/:jobOpeningId/:jobCandidateId"
+              element={
+                <JobCandidateProtector>
+                  <DocumentUpload />
+                </JobCandidateProtector>
+              }
+            />
+            <Route
+              path="/verify-documents/:jobCandidateId"
+              element={
+                <HrAssinedProtector>
+                  <VerifyCandidateDocuments />
+                </HrAssinedProtector>
+              }
+            />
+            <Route
+              path="/pool/document-upload/:jobOpeningId"
+              element={
+                <HrAssinedProtector>
+                  <DocumentUploadedPool />
+                </HrAssinedProtector>
               }
             />
           </Routes>

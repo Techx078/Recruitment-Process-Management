@@ -24,6 +24,13 @@ namespace WebApis.Controllers.JobCandidateController
             await _authService.ValidateHrLevelAccessAsync(jobOpeningId, User);
             return Ok(new { authorized = true });
         }
+        [HttpGet("candidate/{candidateId}")]
+        [Authorize(Roles = "Candidate")]
+        public async Task<IActionResult> ValidateCandidate(int candidateId)
+        {
+            await _authService.ValidateCandidateAsync(candidateId, User);
+            return Ok(new { authorized = true });
+        }
     }
 
 }

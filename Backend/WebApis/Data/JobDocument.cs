@@ -8,5 +8,7 @@
         public bool IsMandatory { get; set; } = true;
         public Document Document { get; set; }
         public JobOpening JobOpening { get; set; }
+
+        public ICollection<JobCandidateDocus> JobCandidateDoc { get; set; } = new List<JobCandidateDocus>();
     }
 }

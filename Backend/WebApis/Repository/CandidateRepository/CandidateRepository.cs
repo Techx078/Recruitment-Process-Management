@@ -76,6 +76,7 @@ namespace WebApis.Repository.CandidateRepository
                        CvPath = jc.CvPath,
                        Status = jc.Status,
                        RoundNumber = jc.RoundNumber,
+                       DocumentUnVerificationReason = jc.DocumentUnVerificationReason
                    }).ToList()
                )
                .FirstOrDefaultAsync();

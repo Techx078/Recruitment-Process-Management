@@ -343,3 +343,121 @@ export const respondToOffer = async (
     };
   }
 };
+
+export const uploadJobCandidateDocument = (
+  jobCandidateId,
+  jobDocumentId,
+  file
+) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = axios.post(
+      `${API_BASE_URL}/${jobCandidateId}/documents/${jobDocumentId}`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response;
+  } catch (error) {
+    if (error.response) throw error.response;
+
+    throw {
+      status: 0,
+      message: "Something went wrong. Please try again.",
+    };
+  }
+};
+
+export const submitAllDocuments = (jobCandidateId) => {
+  try {
+    const respond = axios.put(
+      `${API_BASE_URL}/${jobCandidateId}/documents/submit`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+  } catch (error) {
+    if (error.response) throw error.response;
+
+    throw {
+      status: 0,
+      message: "Something went wrong. Please try again.",
+    };
+  }
+};
+
+export const getCandidateDocuments = async (jobCandidateId) => {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/${jobCandidateId}/documents`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    return res.data;
+  } catch (error) {
+    if (error.response) throw error.response;
+
+    throw {
+      status: 0,
+      message: "Something went wrong. Please try again.",
+    };
+  }
+};
+
+export const verifyCandidateDocuments = async (
+  jobCandidateId,
+  isVerified,
+  rejectionReason = null
+) => {
+  try {
+    const res = await axios.put(
+      `${API_BASE_URL}/${jobCandidateId}/documents/verify`,
+      {
+        isVerified,
+        rejectionReason,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    return res.data;
+  } catch (error) {
+    if (error.response) throw error.response;
+
+    throw {
+      status: 0,
+      message: "Something went wrong. Please try again.",
+    };
+  }
+};
+
+export const getDocumentUploadedPool = async (jobOpeningId) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/pool/documentUploaded/${jobOpeningId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      throw error.response;
+    }
+    throw error;
+  }
+};

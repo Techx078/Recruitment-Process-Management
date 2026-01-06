@@ -74,7 +74,7 @@ export default function CandidateProfile({}) {
     return <div>Loading...</div>;
   }
   if (notFound) {
-    return <div>Not found...</div>;
+      return <div>Not found...</div>;
   }
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
@@ -281,6 +281,46 @@ export default function CandidateProfile({}) {
                             >
                               Reject
                             </button>
+                          </div>
+                        )}
+                      {authUser &&
+                        authUser.role === "Candidate" &&
+                        authUser.id == candidate.userId &&
+                        job.status === "OfferAccepted" && (
+                          <div className="flex gap-3 mt-4">
+                            <button
+                              className="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-black transition"
+                              onClick={() =>
+                                navigate(
+                                  `uploadDocuments/${job.jobOpeningId}/${job.id}`
+                                )
+                              }
+                            >
+                              Upload-Documents
+                            </button>
+                          </div>
+                        )}
+
+                      {authUser &&
+                        authUser.role === "Candidate" &&
+                        authUser.id === candidate.userId &&
+                        job.status === "DocumentRejected" && (
+                          <div className="mt-4 space-y-3">
+                            <button
+                              className="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-black transition"
+                              onClick={() =>
+                                navigate(
+                                  `/uploadDocuments/${job.jobOpeningId}/${job.id}`
+                                )
+                              }
+                            >
+                              Re-Upload Documents
+                            </button>
+                            <div className="border border-gray-300 bg-gray-50 rounded-lg p-4">
+                              <p className="text-sm text-gray-700">
+                                {job.documentUnVerificationReason}
+                              </p>
+                            </div>
                           </div>
                         )}
                     </div>

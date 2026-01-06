@@ -5,5 +5,7 @@ namespace WebApis.Service.AuthorizationService
     public interface IAuthService
     {
         Task ValidateHrLevelAccessAsync(int jobOpeningId, ClaimsPrincipal user);
+
+        Task ValidateCandidateAsync( int candidateId, ClaimsPrincipal user);
     }
 }

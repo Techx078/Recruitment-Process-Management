@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WebApis.Data;
 
@@ -11,9 +12,11 @@ using WebApis.Data;
 namespace WebApis.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260101124651_add_jobDocumenwithCnadidate")]
+    partial class add_jobDocumenwithCnadidate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -215,7 +218,7 @@ namespace WebApis.Migrations
                     b.ToTable("JobCandidate");
                 });
 
-            modelBuilder.Entity("WebApis.Data.JobCandidateDocus", b =>
+            modelBuilder.Entity("WebApis.Data.JobCandidateDoc", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -238,11 +241,12 @@ namespace WebApis.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("JobCandidateId");
-
                     b.HasIndex("JobDocumentId");
 
-                    b.ToTable("jobCandidateDocs");
+                    b.HasIndex("JobCandidateId", "JobDocumentId")
+                        .IsUnique();
+
+                    b.ToTable("JobCandidateDocuments", (string)null);
                 });
 
             modelBuilder.Entity("WebApis.Data.JobDocument", b =>
@@ -733,18 +737,18 @@ namespace WebApis.Migrations
                     b.Navigation("Reviewer");
                 });
 
-            modelBuilder.Entity("WebApis.Data.JobCandidateDocus", b =>
+            modelBuilder.Entity("WebApis.Data.JobCandidateDoc", b =>
                 {
                     b.HasOne("WebApis.Data.JobCandidate", "JobCandidate")
-                        .WithMany("JobCandidateDoc")
+                        .WithMany("JobCandidateDocuments")
                         .HasForeignKey("JobCandidateId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("WebApis.Data.JobDocument", "JobDocument")
-                        .WithMany("JobCandidateDoc")
+                        .WithMany("JobCandidateDocument")
                         .HasForeignKey("JobDocumentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("JobCandidate");
@@ -920,14 +924,14 @@ namespace WebApis.Migrations
 
             modelBuilder.Entity("WebApis.Data.JobCandidate", b =>
                 {
-                    b.Navigation("JobCandidateDoc");
+                    b.Navigation("JobCandidateDocuments");
 
                     b.Navigation("JobInterviews");
                 });
 
             modelBuilder.Entity("WebApis.Data.JobDocument", b =>
                 {
-                    b.Navigation("JobCandidateDoc");
+                    b.Navigation("JobCandidateDocument");
                 });
 
             modelBuilder.Entity("WebApis.Data.JobOpening", b =>
