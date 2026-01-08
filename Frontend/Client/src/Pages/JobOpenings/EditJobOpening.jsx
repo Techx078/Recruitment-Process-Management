@@ -35,7 +35,7 @@ const EditJobOpening = () => {
     const loadData = async () => {
       try {
         const token = localStorage.getItem("token");
-        const job = await getJobOpeningById(id, token);
+          const job = await getJobOpeningById(id, token);
 
         setFormData({
           title: job.title,

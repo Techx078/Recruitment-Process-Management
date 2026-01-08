@@ -6,6 +6,7 @@ import {
   updateJobInterviewers,
 } from "../../Services/JobOpeningService";
 import { handleGlobalError } from "../../Services/errorHandler";
+import { toast } from "react-toastify";
 
 const EditJobInterviewers = () => {
   const { id } = useParams();
@@ -50,7 +51,7 @@ const EditJobInterviewers = () => {
     try {
       const token = localStorage.getItem("token");
       await updateJobInterviewers(id, selected, token);
-      alert("Interviewers updated!");
+      toast.success("Interviewers updated!");
       navigate(`/job-openings/${id}`);
     } catch (error) {
       handleGlobalError(error);

@@ -54,7 +54,7 @@ const SentOfferPoolPage = () => {
       {candidates.length === 0 ? (
         <div className="p-4 text-gray-600">No candidates with sent offers.</div>
       ) : (
-        <table className="w-full border-collapse">
+        <table className="w-full bg-white rounded-lg shadow-sm">
           <thead className="bg-gray-100 border-b border-gray-300">
             <tr SentofferclassName=" text-gray-700">
               <th className="p-3">Name</th>
@@ -74,9 +74,9 @@ const SentOfferPoolPage = () => {
                   key={c.jobCandidateId}
                   className="border-b border-gray-200 hover:bg-gray-50"
                 >
-                  <td className="p-3 text-gray-800">{c.candidateName}</td>
+                  <td className="p-3 text-black-800">{c.candidateName}</td>
 
-                  <td className="p-3 text-gray-700">{c.email}</td>
+                  <td className="p-3 text-black-700">{c.email}</td>
 
                   <td className="p-3 text-gray-700">
                     {expired ? (

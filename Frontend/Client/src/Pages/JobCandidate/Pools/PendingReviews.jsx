@@ -75,11 +75,11 @@ const PendingReviews = () => {
       </h3>
 
       {candidates.length === 0 ? (
-        <div className="bg-white border border-gray-300 rounded-lg p-6 text-center text-gray-600">
+        <div className="bg-white border border-gray-300  p-6 text-center text-gray-600">
           No pending candidates for pending review found.
         </div>
       ) : (
-        <div className="overflow-x-auto bg-white border border-gray-300 rounded-lg shadow-sm">
+        <div className="w-full bg-white rounded-lg shadow-sm">
           <table className="min-w-full border-collapse">
             <thead className="bg-gray-100 border-b border-gray-300">
               <tr>

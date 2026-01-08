@@ -4,9 +4,10 @@ import { toast } from "react-toastify";
 import { useAuthUserContext } from "../Context/AuthUserContext";
 import { handleGlobalError } from "../Services/errorHandler";
 import { validateHrLevelAccess } from "../Services/protectorServices";
+import { getJobCandidateById } from "../Services/JobCandidateService";
 
 const HrAssinedProtector = ({ children }) => {
-  const { jobOpeningId } = useParams();
+  let { jobOpeningId , jobCandidateId } = useParams();
   const navigate = useNavigate();
   const { authUser } = useAuthUserContext();
 
@@ -21,6 +22,11 @@ const HrAssinedProtector = ({ children }) => {
       }
       else if( authUser.role == "Interviewer" ){
       try {
+        let jobCandidate;
+        if( jobCandidateId ){
+          jobCandidate = await getJobCandidateById(jobCandidateId);
+          jobOpeningId = jobCandidate.jobOpeningId;
+        }
          await validateHrLevelAccess(
           jobOpeningId,
           localStorage.getItem("token")

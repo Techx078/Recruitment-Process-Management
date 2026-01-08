@@ -11,8 +11,6 @@ const ReviewerProfileProtector = ({ children }) => {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    console.log(authUser.id);
-    
     if (authUser && ((authUser.role == "Reviewer" && authUser.id == parseInt(UserId)) || authUser.role == "Recruiter" || authUser.role == "Admin") ) {
       setChecking(false);
     } else {

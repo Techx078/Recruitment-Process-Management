@@ -543,7 +543,7 @@ export default function CandidateRegister() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-all"
+                className="w-full bg-gray-600 hover:bg-gray-700  text-white py-2 rounded-lg transition-all"
               >
                 {loading ? "Registering..." : "Register"}
               </button>

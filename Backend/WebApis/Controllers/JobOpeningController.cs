@@ -31,6 +31,7 @@ namespace WebApis.Controllers
         private readonly ICommonRepository<Reviewer> _reviewerRepository;
         private readonly ICommonRepository<Interviewer> _interviewerRepository;
         private readonly ICommonRepository<Document> _documentRepository;
+        private readonly ICommonRepository<JobCandidateDocus> _jobCandidateDocusRepository;
 
         public JobOpeningController(
             ICommonRepository<Document> documentRepository,
@@ -45,7 +46,8 @@ namespace WebApis.Controllers
             ICommonRepository<Skill> skillRepository,
             ICommonValidator<JobOpeningDto> jobOpeningDtoValidator,
             IJobOpeningRepository JobOpeningRepository,
-            ICommonValidator<JobOpeningUpdateDto> jobOpeningUpdateValidator
+            ICommonValidator<JobOpeningUpdateDto> jobOpeningUpdateValidator,
+            ICommonRepository<JobCandidateDocus> jobCandidateDocusRepository
         )
         {
             _documentRepository = documentRepository;
@@ -61,6 +63,7 @@ namespace WebApis.Controllers
             _JobOpeningRepository = JobOpeningRepository;
             _jobOpeningUpdateDtoValidator = jobOpeningUpdateValidator;
             _reviewerRepository = reviewerRepository;
+            _jobCandidateDocusRepository = jobCandidateDocusRepository;
         }
 
         //create job listing with linked reviewers, interviewers, and documents
@@ -397,15 +400,33 @@ namespace WebApis.Controllers
                     ErrorCodes.ValidationError,
                     StatusCodes.Status400BadRequest);
 
-            // Replace old reviewers
-            await _jobReviewerRepository.RemoveRangeAsync(job.JobReviewers);
-            job.JobReviewers = reviewerIds.Select(rid => new JobReviewer
-            {
-                ReviewerId = rid,
-                JobOpeningId = job.Id
-            }).ToList();
+            var existingReviewerIds = job.JobReviewers
+                .Select(jr => jr.ReviewerId)
+                .ToHashSet();
 
-            await _jobOpeningRepository.SaveChangesAsync();
+            var incomingReviewerIds = reviewerIds.ToHashSet();
+
+            var reviewersToAdd = incomingReviewerIds
+                .Except(existingReviewerIds)
+                .ToList();
+
+            var reviewersToRemove = job.JobReviewers
+                .Where(jr => !incomingReviewerIds.Contains(jr.ReviewerId))
+                .ToList();
+            if (reviewersToRemove.Any())
+            {
+                await _jobReviewerRepository.RemoveRangeAsync(reviewersToRemove);
+            }
+            if (reviewersToAdd.Any())
+            {
+                var newJobReviewers = reviewersToAdd.Select(rid => new JobReviewer
+                {
+                    ReviewerId = rid,
+                    JobOpeningId = job.Id
+                }).ToList();
+
+                await _jobReviewerRepository.AddRangeAsync(newJobReviewers);
+            }
 
             return Ok(new { message = "Reviewers updated successfully." });
         }
@@ -456,12 +477,36 @@ namespace WebApis.Controllers
                    ErrorCodes.ValidationError,
                    StatusCodes.Status400BadRequest);
 
-            await _jobInterviewerRepository.RemoveRangeAsync(job.JobInterviewers);
-            job.JobInterviewers = interviewerIds.Select(iid => new JobInterviewer
+            var existingInterviewerIds = job.JobInterviewers
+                .Select(ji => ji.InterviewerId)
+                .ToHashSet();
+
+            var incomingInterviewerIds = interviewerIds.ToHashSet();
+
+            var interviewerToRemove = job.JobInterviewers
+               .Where(jr => !incomingInterviewerIds.Contains(jr.InterviewerId))
+               .ToList();
+          
+            var interviewerIdsToAdd = incomingInterviewerIds
+                .Except(existingInterviewerIds)
+                .ToHashSet();
+
+            if (interviewerToRemove.Any())
             {
-                InterviewerId = iid,
-                JobOpeningId = job.Id
-            }).ToList();
+                await _jobInterviewerRepository.RemoveRangeAsync(interviewerToRemove);
+            }
+
+            // Add only new interviewers
+            if (interviewerIdsToAdd.Any())
+            {
+                var interviewersToAdd = interviewerIdsToAdd.Select(iid => new JobInterviewer
+                {
+                    InterviewerId = iid,
+                    JobOpeningId = job.Id
+                }).ToList();
+
+                await _jobInterviewerRepository.AddRangeAsync(interviewersToAdd);
+            }
 
             await _jobOpeningRepository.SaveChangesAsync();
           
@@ -476,7 +521,7 @@ namespace WebApis.Controllers
             var job = await _jobOpeningRepository.GetWithIncludeAsync(
                 j => j.Id == id,
                 j => j,
-                "JobDocuments");
+                "JobDocuments.JobCandidateDoc");
             if (job == null)
                 throw new AppException("Job not found.", ErrorCodes.NotFound, StatusCodes.Status404NotFound);
 
@@ -502,15 +547,51 @@ namespace WebApis.Controllers
             if (existingDocs.Count != documentIds.Count)
                 throw new AppException("Some document IDs do not exist.",
                     ErrorCodes.ValidationError,
-                    StatusCodes.Status400BadRequest);   
+                    StatusCodes.Status400BadRequest);
 
-            await _jobDocumentRepository.RemoveRangeAsync(job.JobDocuments);
-            job.JobDocuments = documents.Select(doc => new JobDocument
+            var existingDocumentIds = job.JobDocuments.Select(jd => jd.DocumentId).ToHashSet();
+
+            var incomingDocumentIds = documents.Select(jd => jd.DocumentId).ToHashSet();
+
+            var documentsToAdd = incomingDocumentIds
+                .Except(existingDocumentIds)
+                .ToList();
+
+            var documentsToRemove = job.JobDocuments
+                .Where(jd => !incomingDocumentIds.Contains(jd.DocumentId))
+                .ToList();
+
+            //remove document that not present in incoming
+            if (documentsToRemove.Any())
             {
-                JobOpeningId = job.Id,
-                DocumentId = doc.DocumentId,
-                IsMandatory = doc.IsMandatory
-            }).ToList();
+                await _jobDocumentRepository.RemoveRangeAsync(documentsToRemove);
+            }
+
+            //add new document 
+            if (documentsToAdd.Any())
+            {
+                var newJobDocuments = documentsToAdd.Select(did =>
+                {
+                    var incomingDoc = documents.First(d => d.DocumentId == did);
+
+                    return new JobDocument
+                    {
+                        DocumentId = did,
+                        IsMandatory = incomingDoc.IsMandatory,
+                        JobOpeningId = job.Id
+                    };
+                }).ToList();
+
+                await _jobDocumentRepository.AddRangeAsync(newJobDocuments);
+            }
+
+            //change exsting one
+            foreach (var existingDoc in job.JobDocuments
+             .Where(jd => incomingDocumentIds.Contains(jd.DocumentId)))
+            {
+                var incomingDoc = documents.First(d => d.DocumentId == existingDoc.DocumentId);
+                existingDoc.IsMandatory = incomingDoc.IsMandatory;
+            }
 
             await _jobOpeningRepository.SaveChangesAsync();
 

@@ -5,13 +5,15 @@ import HrPool from "../JobCandidate/Pools/HrPool";
 import FinalPool from "../JobCandidate/Pools/FinalPool";
 import PoolTabs from "./PoolTabs"
 import SentOfferPoolPage from "../JobCandidate/Pools/SentOfferPoolPage"
+import PostOfferPool from "../JobCandidate/Pools/PostOfferPool";
 export default function JobCandidateDashboard() {
   const POOLS = {
   TECHNICAL: "technical",
   REVIEW: "review",
   HR: "hr",
   FINAL: "final",
-  OFFER:"Sentoffer"
+  OFFER:"Sentoffer",
+  POSTOFFER:"Postoffer"
 };
   const [activePool, setActivePool] = useState(POOLS.TECHNICAL);
  
@@ -28,6 +30,8 @@ export default function JobCandidateDashboard() {
         return <FinalPool />;
       case POOLS.OFFER:
         return <SentOfferPoolPage />;
+      case POOLS.POSTOFFER :
+        return <PostOfferPool />
       default:
         return null;
     }

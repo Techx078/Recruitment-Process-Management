@@ -78,7 +78,7 @@ const TechnicalInterviewPool = () => {
           No candidates available for technical interview.
         </div>
       ) : (
-        <div className="overflow-x-auto bg-white border border-gray-300 rounded-lg shadow-sm">
+        <div className="w-full bg-white rounded-lg shadow-sm">
         <table className="w-full border-collapse">
             <thead className="bg-gray-100 border-b border-gray-300">
               <tr>

@@ -1,7 +1,7 @@
 //implemet show job details
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getJobOpeningById } from "../../Services/JobOpeningService";
+import { getJobOpeningById } from "../../Services/JobOpeningService.js";
 import { useAuthUserContext } from "../../Context/AuthUserContext.jsx";
 import { handleGlobalError } from "../../Services/errorHandler.js";
 

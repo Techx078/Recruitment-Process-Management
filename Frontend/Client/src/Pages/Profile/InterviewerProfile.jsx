@@ -8,6 +8,7 @@ export default function InterviewerProfile({}) {
   let { UserId } = useParams();
   let [interviewer, setInterviewer] = useState(null);
   let [notFound, SetNotFound] = useState(false);
+  let { authUser } = useAuthUserContext();
   let navigate = useNavigate();
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function InterviewerProfile({}) {
       navigate(`/job-openings/${jobOpeningId}/technical-pool`);
     }
   };
-  
+
   if (!interviewer) {
     return <div>Loading...</div>;
   }
@@ -82,38 +83,38 @@ export default function InterviewerProfile({}) {
             {interviewer.assignedJobOpenings.length === 0 ? (
               <p className="text-gray-500">No assigned job openings.</p>
             ) : (
-              interviewer.assignedJobOpenings.map((job) => (
+              interviewer?.assignedJobOpenings.map((job) => (
                 <div
                   key={job.jobOpeningId}
                   className="border rounded-xl p-4 shadow-sm bg-white"
                 >
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                     <div>
-                      <h3 className="text-xl font-semibold">{job.title}</h3>
+                      <h3 className="text-xl font-semibold">{job?.title}</h3>
                       <p className="text-gray-600">
-                        Department: {job.department}
+                        Department: {job?.department}
                       </p>
-                      <p className="text-gray-600">Domain: {job.domain}</p>
+                      <p className="text-gray-600">Domain: {job?.domain}</p>
                       <p className="text-gray-600">
-                        Experience: {job.minDomainExperience}
+                        Experience: {job?.minDomainExperience}
                       </p>
                       <p className="text-gray-600">
-                        Created: {new Date(job.createdAt).toLocaleDateString()}
+                        Created: {new Date(job?.createdAt).toLocaleDateString()}
                       </p>
                     </div>
 
                     <div className="flex flex-col items-start md:items-end gap-2">
                       <span className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-sm font-medium">
-                        {job.status}
+                        {job?.status}
                       </span>
                       <p className="text-gray-700 text-sm">
-                        Candidates: {job.candidateCount}
+                        Candidates: {job?.candidateCount}
                       </p>
                       <p className="text-gray-700 text-sm">
-                        Interviewers: {job.interviewerCount}
+                        Interviewers: {job?.interviewerCount}
                       </p>
                       <p className="text-gray-700 text-sm">
-                        Type: {job.jobType}
+                        Type: {job?.jobType}
                       </p>
 
                       {/* Show Button */}
@@ -125,18 +126,33 @@ export default function InterviewerProfile({}) {
                       >
                         Show
                       </button>
-
-                      <button
-                        className="px-4 py-1 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700"
-                        onClick={() => {
-                          navigateToPendingInterview(
-                            interviewer.department,
-                            job.jobOpeningId
-                          );
-                        }}
-                      >
-                        Pending-Interview
-                      </button>
+                      {authUser && authUser.role === "Interviewer" && (
+                        <button
+                          className="px-4 py-1 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700"
+                          onClick={() => {
+                            navigateToPendingInterview(
+                              interviewer.department,
+                              job.jobOpeningId
+                            );
+                          }}
+                        >
+                          Pending-Interview
+                        </button>
+                      )}
+                      {authUser &&
+                        authUser.role === "Interviewer" &&
+                        interviewer.department == "HR" && (
+                          <button
+                            className="px-4 py-1 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700"
+                            onClick={() =>
+                              navigate(
+                                `/pool/document-upload/${job.jobOpeningId}`
+                              )
+                            }
+                          >
+                            verify-documents
+                          </button>
+                        )}
                     </div>
                   </div>
                 </div>

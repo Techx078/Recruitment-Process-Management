@@ -53,6 +53,7 @@ import VerifyCandidateDocuments from "./Pages/JobCandidate/Feedback/VerifyCandid
 import DocumentUploadedPool from "./Pages/JobCandidate/Pools/DocumentUploadedPool.jsx";
 import HrAssinedProtector from "./Protectors/hrAssinedProtector.jsx";
 import JobCandidateProtector from "./Protectors/JobCandidateProtector.jsx";
+import PostOfferPool from "./Pages/JobCandidate/Pools/PostOfferPool.jsx";
 
 function App() {
   return (
@@ -306,11 +307,19 @@ function App() {
                 </HrAssinedProtector>
               }
             />
+             <Route
+              path="/postOffer/:jobOpeningId"
+              element={
+                <RecruiterLevelProtector>
+                  <PostOfferPool />
+                </RecruiterLevelProtector>
+              }
+            />
           </Routes>
         </main>
 
         {/* Footer */}
-        <Footer />
+        {/* <Footer /> */}
       </div>
     </AuthUserContextProvider>
   );

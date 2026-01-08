@@ -106,6 +106,13 @@ export default function DocumentUpload() {
                 >
                   View uploaded document
                 </a>
+                 <input
+                  type="file"
+                  onChange={(e) =>
+                    handleFileChange(doc?.jobDocumentId, e.target.files[0])
+                  }
+                  className="text-sm border"
+                />
                 <button
                   onClick={() => handleUpload(doc?.jobDocumentId)}
                   className="px-3 py-1 border border-gray-400 rounded text-sm"
@@ -128,7 +135,7 @@ export default function DocumentUpload() {
                   onClick={() => handleUpload(doc?.jobDocumentId)}
                   className="px-3 py-1 bg-black text-white rounded text-sm"
                 >
-                  Upload
+                 {loading ? <p>Uploading...</p> : "Upload"}
                 </button>
               </div>
             )}

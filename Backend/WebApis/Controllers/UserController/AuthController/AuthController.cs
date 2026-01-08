@@ -76,7 +76,7 @@ namespace WebApis.Controllers.UserController.AuthController
 
                 if (!validationResult.IsValid)
                 {
-                    resultSkipped.Add(new { dto.Email, reason = "validation errorr" });
+                    resultSkipped.Add(new { dto.Email, reason = "validation errorr" , errors = validationResult.Errors });
                     continue;
                 }
                 if (await _userRepository.ExistsAsync( u => u.Email == dto.Email.ToLower()))

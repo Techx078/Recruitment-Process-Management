@@ -47,6 +47,8 @@ export default function CandidateProfile({}) {
       if (!isConfirmed) return;
       await respondToOffer(jobCandidateId, true);
       toast.success("you are accepted offer successfully !");
+      let jobs = await getCandidateJobOpenings(UserId, token);
+      setJobApplications(jobs);
     } catch (e) {
       handleGlobalError(e);
     }
@@ -65,6 +67,8 @@ export default function CandidateProfile({}) {
       console.log("Reason:", reason);
       await respondToOffer(jobCandidateId, false, reason);
       toast.success("you rejected offer successfully !");
+      let jobs = await getCandidateJobOpenings(UserId, token);
+      setJobApplications(jobs);
     } catch (e) {
       handleGlobalError(e);
     }
@@ -74,7 +78,7 @@ export default function CandidateProfile({}) {
     return <div>Loading...</div>;
   }
   if (notFound) {
-      return <div>Not found...</div>;
+    return <div>Not found...</div>;
   }
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
@@ -292,7 +296,7 @@ export default function CandidateProfile({}) {
                               className="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-black transition"
                               onClick={() =>
                                 navigate(
-                                  `uploadDocuments/${job.jobOpeningId}/${job.id}`
+                                  `/uploadDocuments/${job.jobOpeningId}/${job.id}`
                                 )
                               }
                             >

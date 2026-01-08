@@ -1028,7 +1028,6 @@ namespace WebApis.Controllers.JobCandidateController
             return Ok(offeredCandidates);
         }
 
-
         [HttpPut("reject-by-system/{jobCandidateId}")]
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> RejectOfferBySystem(
@@ -1239,7 +1238,7 @@ namespace WebApis.Controllers.JobCandidateController
                    StatusCodes.Status403Forbidden
                );
             }
-            if (jobCandidate.Status != "OfferAccepted")
+            if (jobCandidate.Status == "OfferAccepted" && jobCandidate.Status == "DocumentRejected")
                 throw new AppException(
                     "No active offer accepted yet !",
                     ErrorCodes.ValidationError,
@@ -1461,5 +1460,52 @@ namespace WebApis.Controllers.JobCandidateController
 
             return Ok(candidates);
         }
+
+        [HttpGet("pool/PostOffer/{jobOpeningId}")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> GetPostOffer(int jobOpeningId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdClaim))
+                throw new UnauthorizedAccessException("Invalid token");
+
+            int userId = int.Parse(userIdClaim);
+
+            var jobOpening = await _jobOpeningRepository.GetWithIncludeAsync(
+                j => j.Id == jobOpeningId,
+                j => j,
+                "CreatedBy",
+                "JobCandidates.Candidate.User"
+            );
+
+            if (jobOpening == null)
+                throw new KeyNotFoundException("Job opening not found");
+
+            // Ensure recruiter owns the job opening
+            if (jobOpening.CreatedBy.UserId != userId)
+                throw new AppException(
+                   "You are not authorized to view offered candidates",
+                   ErrorCodes.Forbidden,
+                   StatusCodes.Status403Forbidden
+               );
+
+            var offeredCandidates = jobOpening.JobCandidates
+                .Where(c => c.Status == "OfferAccepted" || c.Status == "DocumentUploaded" || c.Status == "DocumentsVerified" || c.Status == "DocumentRejected"
+                || c.Status == "OfferRejectedByCandidate" || c.Status == "OfferRejectedBySystem")
+                .Select(c => new OfferPoolDto
+                {
+                    JobCandidateId = c.Id,
+                    jobOpeningId = c.JobOpeningId,
+                    candidateId = c.CandidateId,
+                    UserId = c.Candidate.UserId,
+                    CandidateName = c.Candidate.User.FullName,
+                    Email = c.Candidate.User.Email,
+                    Status = c.Status
+                })
+                .ToList();
+
+            return Ok(offeredCandidates);
+        }
+
     }
 }

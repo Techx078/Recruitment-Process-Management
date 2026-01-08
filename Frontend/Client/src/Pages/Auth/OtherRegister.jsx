@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { registerOtherUser } from "../../Services/authService";
 import { useAuthUserContext } from "../../Context/AuthUserContext";
 import { handleGlobalError } from "../../Services/errorHandler";
+import { toast } from "react-toastify";
 
 export default function OtherRegister() {
   const { authUser } = useAuthUserContext();
@@ -91,7 +92,7 @@ export default function OtherRegister() {
         navigateTo("/login");
       }
       const response = await registerOtherUser(UserData, token);
-      alert("registered successfully!");
+      toast.success("registered successfully!");
 
       // Reset form
       setFormData({
@@ -292,7 +293,7 @@ export default function OtherRegister() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-all"
+              className="w-full bg-gray-600 hover:bg-gray-700  text-white py-2 rounded-lg 0 transition-all"
             >
               {loading ? "Registering..." : "Register"}
             </button>

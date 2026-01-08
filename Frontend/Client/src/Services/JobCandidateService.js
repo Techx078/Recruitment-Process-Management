@@ -461,3 +461,23 @@ export const getDocumentUploadedPool = async (jobOpeningId) => {
     throw error;
   }
 };
+
+export const getPostOfferPool = async (jobOpeningId) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/pool/PostOffer/${jobOpeningId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      throw error.response;
+    }
+    throw error;
+  }
+};
