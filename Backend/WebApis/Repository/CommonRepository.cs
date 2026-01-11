@@ -86,6 +86,24 @@ namespace WebApis.Repository
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<List<TResult>?> GetWithAllIncludeAsync<TResult>(
+          Expression<Func<T, bool>> filter,
+          Expression<Func<T, TResult>> selector,
+          params string[] includes)
+        {
+            IQueryable<T> query = _dbSet;
+
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return await query
+                .Where(filter)
+                .Select(selector)
+                .ToListAsync();
+        }
+
         public async Task<T?> GetByorderAsync(
            Expression<Func<T, bool>> filter,
            Expression<Func<T, object>>? orderBy = null,

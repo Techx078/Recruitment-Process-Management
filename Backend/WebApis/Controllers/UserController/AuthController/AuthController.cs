@@ -6,9 +6,11 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using WebApis.Data;
 using WebApis.Dtos;
+using WebApis.Dtos.MailDtos;
 using WebApis.Repository;
 using WebApis.Repository.UserRepository;
 using WebApis.Service;
+using WebApis.Service.EmailService;
 using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
 using WebApis.Service.ValidationService;
@@ -33,6 +35,7 @@ namespace WebApis.Controllers.UserController.AuthController
         private readonly ICommonValidator<RegisterCandidateDto> _registerCandidateValidator;
         private readonly IUserRepository _UserRepository;
         private readonly ICommonValidator<RegisterOtherUserDto> _registerOtherUserValidator;
+        private readonly IAppEmailService _appEmailService;
         public AuthController(
             JwtService jwt,
             CloudinaryService cloudinaryService,
@@ -43,7 +46,8 @@ namespace WebApis.Controllers.UserController.AuthController
             ICommonRepository<Reviewer> reviewerRepository,
             ICommonRepository<Interviewer> interviewerRepository,
             IUserRepository UserRepository,
-            ICommonValidator<RegisterOtherUserDto> registerOtherUserValidator
+            ICommonValidator<RegisterOtherUserDto> registerOtherUserValidator,
+            IAppEmailService appEmailService
         )
         {
             _jwt = jwt;
@@ -56,6 +60,7 @@ namespace WebApis.Controllers.UserController.AuthController
             _reviewerRepository = reviewerRepository;
             _UserRepository = UserRepository;
             _registerOtherUserValidator = registerOtherUserValidator;
+            _appEmailService = appEmailService;
         }
         [HttpPost("Candidate-bulk-register")]
         [Authorize(Roles = "Recruiter")]
@@ -65,7 +70,7 @@ namespace WebApis.Controllers.UserController.AuthController
             if (candidatesDto == null || !candidatesDto.Any())
                 return BadRequest(new { message = "Candidate list is empty." });
 
-            var resultSkipped = new List<object>();
+            var failureEmails = new List<BulkCandidateFailureDto>();
             // Store candidate references for getting IDs after SaveChanges
             var createdCandidates = new List<(Candidate candidate, User user)>();
 
@@ -76,12 +81,20 @@ namespace WebApis.Controllers.UserController.AuthController
 
                 if (!validationResult.IsValid)
                 {
-                    resultSkipped.Add(new { dto.Email, reason = "validation errorr" , errors = validationResult.Errors });
+                    failureEmails.Add(new BulkCandidateFailureDto
+                    {
+                        Email = dto.Email,
+                        Reason = "Validation error"
+                    });
                     continue;
                 }
                 if (await _userRepository.ExistsAsync( u => u.Email == dto.Email.ToLower()))
                 {
-                    resultSkipped.Add(new { dto.Email, reason = "email already exits" });
+                    failureEmails.Add(new BulkCandidateFailureDto
+                    {
+                        Email = dto.Email,
+                        Reason = "Email already exists"
+                    });
                     continue;
                 }
 
@@ -123,6 +136,23 @@ namespace WebApis.Controllers.UserController.AuthController
 
             }
 
+            foreach (var item in createdCandidates)
+            {
+                await _appEmailService.SendCandidateRegistrationEmailAsync(
+                    item.user,
+                    candidatesDto.First(x => x.Email == item.user.Email).Password
+                );
+            }
+
+            if (failureEmails.Any())
+            {
+                await _appEmailService.SendBulkCandidateFailureReportAsync(
+                    User.FindFirstValue(ClaimTypes.Email)!,
+                    failureEmails
+                );
+            }
+
+
             var resultCreated = createdCandidates.Select(x => new
             {
                 CandidateId = x.Item1.Id,
@@ -135,9 +165,9 @@ namespace WebApis.Controllers.UserController.AuthController
             {
                 message = "Bulk candidate registration completed.",
                 successCount = resultCreated.Count,
-                skippedCount = resultSkipped.Count,
+                skippedCount = failureEmails.Count,
                 created = resultCreated,
-                skipped = resultSkipped
+                skipped = failureEmails
             });
         }
 
@@ -192,7 +222,12 @@ namespace WebApis.Controllers.UserController.AuthController
             await _UserRepository.AddEducationsAsync(candidate, dto.Educations);
 
             await _UserRepository.AddSkillsAsync(user,dto.Skills);
-           
+
+            await _appEmailService.SendCandidateRegistrationEmailAsync(
+                user,
+                dto.Password
+            );
+
             return Ok(new
             {
                 id = candidate.Id,
@@ -309,7 +344,11 @@ namespace WebApis.Controllers.UserController.AuthController
             }
 
             await _UserRepository.AddSkillsAsync(user, dto.Skills);
-            
+            await _appEmailService.SendInternalUserRegistrationEmailAsync(
+                user,
+                dto.Password
+            );
+
             return Ok(new
             {
                 message = $"{dto.RoleName} created successfully.",

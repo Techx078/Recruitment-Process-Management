@@ -8,6 +8,7 @@ using WebApis.Dtos.JobCandidateDtos;
 using WebApis.Repository;
 using WebApis.Repository.JobCandidateRepository;
 using WebApis.Service;
+using WebApis.Service.EmailService;
 using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
 using WebApis.Service.ValidationService;
@@ -28,6 +29,7 @@ namespace WebApis.Controllers.JobCandidateController
         private readonly ICommonRepository<JobCandidateDocus> _jobCandidateDocRepository;
         private readonly CloudinaryService _cloudinaryService;
         private readonly ICommonRepository<JobDocument> _jobDocumentRepository;
+        private readonly IAppEmailService _appEmailService;
 
         public JobCandidateController(
             IJobCandidateRepository jobCandidateRepository,
@@ -39,7 +41,8 @@ namespace WebApis.Controllers.JobCandidateController
             ICommonRepository<JobInterview> jobInterviewRepository,
             ICommonRepository<JobCandidateDocus> jobCandidateDocRepository,
             CloudinaryService cloudinaryService,
-            ICommonRepository<JobDocument> jobDocumentRepository
+            ICommonRepository<JobDocument> jobDocumentRepository,
+            IAppEmailService appEmailService
         )
         {
             _jobCandidateRepository = jobCandidateRepository;
@@ -52,6 +55,7 @@ namespace WebApis.Controllers.JobCandidateController
             _jobCandidateDocRepository = jobCandidateDocRepository;
             _cloudinaryService = cloudinaryService;
             _jobDocumentRepository = jobDocumentRepository;
+            _appEmailService = appEmailService;
         }
         [HttpPost("create")]
         [Authorize(Roles = "Recruiter")]
@@ -85,10 +89,20 @@ namespace WebApis.Controllers.JobCandidateController
 
             var jobCandidate = await _jobCandidateRepository.CreateJobCandidate(dto);
 
+            // Send email
+            var mailData = await _jobCandidateRepository
+                .GetCandidateJobMailData(jobCandidate.Id);
+
+            await _appEmailService
+                .SendCandidateAddedToJobEmailAsync(mailData);
+
             return CreatedAtAction(nameof(CreateJobCandidate),
                 new { id = jobCandidate.Id },
                 new
                 {
+                    jobCandidate.Id,
+                    jobCandidate.JobOpeningId,
+                    jobCandidate.CandidateId,
                     Message = "JobCandidate created successfully"
                 });
         }
@@ -146,7 +160,14 @@ namespace WebApis.Controllers.JobCandidateController
                         continue;
                     }
 
-                    await _jobCandidateRepository.CreateJobCandidate(jobCandidateDto);
+                    var jobCandidate = await _jobCandidateRepository.CreateJobCandidate(jobCandidateDto);
+                    // Send email
+                    var mailData = await _jobCandidateRepository
+                        .GetCandidateJobMailData(jobCandidate.Id);
+
+                    await _appEmailService
+                        .SendCandidateAddedToJobEmailAsync(mailData);
+
                     successCount++;
                 }
                 catch (Exception ex)
@@ -335,6 +356,13 @@ namespace WebApis.Controllers.JobCandidateController
 
             await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
 
+            //send mail to candidate about result
+            var mailData = await _jobCandidateRepository
+                .GetCandidateReviewMailData(jobCandidate.Id);
+
+            await _appEmailService
+                .SendCandidateReviewResultEmailAsync(mailData);
+
             return Ok(new
             {
                 message = dto.IsApproved
@@ -521,6 +549,13 @@ namespace WebApis.Controllers.JobCandidateController
             jobCandidate.UpdatedAt = DateTime.UtcNow;
             await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
 
+            //send e-mail to candidate about meeting information
+            var mailData = await _jobCandidateRepository
+                .GetCandidateInterviewScheduledMailData(interview.Id);
+
+            await _appEmailService
+                .SendInterviewScheduledEmailAsync(mailData);
+
             return Ok(new { message = "Interview scheduled successfully" });
         }
 
@@ -604,6 +639,12 @@ namespace WebApis.Controllers.JobCandidateController
             }
 
             await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+            var mailData = await _jobCandidateRepository
+                .GetInterviewFeedbackMailData(jobCandidate.Id);
+
+            await _appEmailService
+                .SendInterviewFeedbackResultEmailAsync(mailData);
 
             return Ok(new { message = "Interview feedback submitted successfully" });
         }
@@ -740,7 +781,7 @@ namespace WebApis.Controllers.JobCandidateController
                     {
                         Title = $"{interview.InterviewType} Interview (Round {interview.RoundNumber})",
                         Description = interview.IsCompleted
-                            ? $"Result: {(interview.IsPassed == true ? "Passed" : "Rejected")}"
+                            ? $"Result: {(interview.IsPassed == true ? "Passed" : "Rejected")} marks : {(interview.Marks != 0 ? interview.Marks : 0)} Comment : {(interview.Feedback)}"
                             : "Scheduled",
                         Date = interview.ScheduledAt,
                         EventType = "Interview"
@@ -906,6 +947,11 @@ namespace WebApis.Controllers.JobCandidateController
 
             await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
 
+            var mailData =
+                await _jobCandidateRepository.GetOfferSentMailData(jobCandidate.Id);
+
+            await _appEmailService.SendOfferEmailAsync(mailData);
+
             return Ok(new
             {
                 message = "Offer sent successfully"
@@ -1069,7 +1115,14 @@ namespace WebApis.Controllers.JobCandidateController
 
                 await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
 
-                return Ok(new
+                var mailData =
+                    await _jobCandidateRepository
+                        .GetOfferRejectedBySystemMailData(jobCandidate.Id);
+
+                await _appEmailService
+                    .SendOfferRejectedBySystemEmailAsync(mailData);
+
+            return Ok(new
                 {
                     message = "Offer rejected by system successfully"
                 });
@@ -1121,6 +1174,13 @@ namespace WebApis.Controllers.JobCandidateController
             jobCandidate.UpdatedAt = DateTime.UtcNow;
 
             await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+            var mailData =
+                await _jobCandidateRepository
+                    .GetOfferExpiryExtendedMailData(jobCandidate.Id);
+
+            await _appEmailService
+                .SendOfferExpiryExtendedEmailAsync(mailData);
 
             return Ok(new
             {
@@ -1346,6 +1406,14 @@ namespace WebApis.Controllers.JobCandidateController
             jobCandidate.UpdatedAt = DateTime.UtcNow;
 
             await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+            var mailData =
+                await _jobCandidateRepository
+                    .GetCandidateDocumentVerificationMailData(jobCandidate.Id);
+
+            await _appEmailService
+                .SendCandidateDocumentVerificationEmailAsync(mailData);
+
 
             return Ok(new
             {

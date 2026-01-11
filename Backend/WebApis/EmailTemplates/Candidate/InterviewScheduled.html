@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html>
+<html>
+<body style="font-family: Arial; background:#f5f5f5; padding:20px;">
+    <table width="100%" align="center">
+        <tr>
+            <td align="center">
+                <table width="650" style="background:#ffffff; padding:24px; border-radius:6px;">
+                    <tr>
+                        <td>
+
+                            <h2>Interview Scheduled 🎯</h2>
+
+                            <p>Dear {{CANDIDATE_NAME}},</p>
+
+                            <p>
+                                Your <strong>{{INTERVIEW_TYPE}}</strong> interview for the position
+                                <strong>{{JOB_TITLE}}</strong> has been scheduled.
+                            </p>
+
+                            <table style="margin-top:16px;">
+                                <tr>
+                                    <td><strong>Round:</strong></td>
+                                    <td>{{ROUND_NUMBER}}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date & Time:</strong></td>
+                                    <td>{{INTERVIEW_DATE}}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Interviewer:</strong></td>
+                                    <td>{{INTERVIEWER_NAME}}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Meeting Link:</strong></td>
+                                    <td>
+                                        <a href="{{MEETING_LINK}}" target="_blank">Join Interview</a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin-top:20px;">
+                                Please ensure you join the meeting on time.
+                                We wish you the very best!
+                            </p>
+
+                            <br />
+
+                            <p>
+                                Regards,<br />
+                                <strong>ROIMA Intelligence Hiring Team</strong>
+                            </p>
+
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

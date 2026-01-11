@@ -20,18 +20,21 @@ namespace WebApis.Controllers.UserController.AuthController
         ICommonRepository<PasswordReset> _passwordResetRepository;
         ICommonRepository<User> _userRepository;
         ICommonValidator<ResetPasswordDto> _resetPassvalidator;
+        IAppEmailService _appEmailService;
 
         public ForgotPasswordController(
             IEmailService emailService,
             ICommonRepository<PasswordReset> passwordResetRepository,
             ICommonRepository<User> userRepository,
-            ICommonValidator<ResetPasswordDto> resetPassvalidator
+            ICommonValidator<ResetPasswordDto> resetPassvalidator,
+            IAppEmailService appEmailService
         )
         {
             _emailService = emailService;
             _passwordResetRepository = passwordResetRepository;
             _userRepository = userRepository;
             _resetPassvalidator = resetPassvalidator;
+            _appEmailService = appEmailService;
         }
 
         [HttpPost("forgot-password")]
@@ -54,11 +57,7 @@ namespace WebApis.Controllers.UserController.AuthController
                 ExpiresAt = DateTime.UtcNow.AddMinutes(5)
             });
 
-            await _emailService.SendEmailAsync(
-                user.Email,
-                "Your Password Reset OTP",
-                $"Your OTP is: {otp}. It will expire in 5 minutes."
-            );
+            await _appEmailService.SendPasswordResetOtpAsync(user, otp);
 
             return Ok(new { Message = "otp sent to given email" });
         }

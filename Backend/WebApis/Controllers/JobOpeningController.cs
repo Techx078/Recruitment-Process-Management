@@ -8,6 +8,7 @@ using WebApis.Data;
 using WebApis.Dtos.JobOpeningDto;
 using WebApis.Repository;
 using WebApis.Repository.JobOpeningRepository;
+using WebApis.Service.EmailService;
 using WebApis.Service.ErrorHandlingService;
 using WebApis.Service.ErrroHandlingService;
 using WebApis.Service.ValidationService;
@@ -32,6 +33,7 @@ namespace WebApis.Controllers
         private readonly ICommonRepository<Interviewer> _interviewerRepository;
         private readonly ICommonRepository<Document> _documentRepository;
         private readonly ICommonRepository<JobCandidateDocus> _jobCandidateDocusRepository;
+        private readonly IAppEmailService _appEmailService;
 
         public JobOpeningController(
             ICommonRepository<Document> documentRepository,
@@ -47,7 +49,8 @@ namespace WebApis.Controllers
             ICommonValidator<JobOpeningDto> jobOpeningDtoValidator,
             IJobOpeningRepository JobOpeningRepository,
             ICommonValidator<JobOpeningUpdateDto> jobOpeningUpdateValidator,
-            ICommonRepository<JobCandidateDocus> jobCandidateDocusRepository
+            ICommonRepository<JobCandidateDocus> jobCandidateDocusRepository,
+            IAppEmailService appEmailService
         )
         {
             _documentRepository = documentRepository;
@@ -64,6 +67,7 @@ namespace WebApis.Controllers
             _jobOpeningUpdateDtoValidator = jobOpeningUpdateValidator;
             _reviewerRepository = reviewerRepository;
             _jobCandidateDocusRepository = jobCandidateDocusRepository;
+            _appEmailService = appEmailService;
         }
 
         //create job listing with linked reviewers, interviewers, and documents
@@ -130,13 +134,46 @@ namespace WebApis.Controllers
             await _jobOpeningRepository.AddAsync(job);
 
             await _JobOpeningRepository.AddReviewersAsync(job.Id, dto.ReviewerIds);
+            //Notify assigned reviewers
+            if (dto.ReviewerIds?.Any() == true)
+            {
+                var reviewers = await _reviewerRepository.GetWithAllIncludeAsync(
+                    r => dto.ReviewerIds.Contains(r.Id),
+                    r => r,
+                    "User"
+                );
+
+                foreach (var reviewer in reviewers)
+                {
+                    await _appEmailService.SendReviewerAssignedToJobEmailAsync(
+                        reviewer,
+                        job
+                    );
+                }
+            }
             await _JobOpeningRepository.AddInterviewersAsync(job.Id, dto.InterviewerIds);
+            // Notify assigned interviewers
+            if (dto.InterviewerIds?.Any() == true)
+            {
+                var interviewers = await _interviewerRepository.GetWithAllIncludeAsync(
+                    i => dto.InterviewerIds.Contains(i.Id),
+                    i => i,
+                    "User"
+                );
+
+                foreach (var interviewer in interviewers)
+                {
+                    await _appEmailService.SendInterviewerAssignedToJobEmailAsync(
+                        interviewer,
+                        job
+                    );
+                }
+            }
             await _JobOpeningRepository.AddDocumentsAsync(job.Id, dto.Documents);
             await _JobOpeningRepository.AddJobSkillsAsync(job.Id, dto.JobSkills);
 
             return Ok(new
             {
-
                 message = "Job opening created successfully with all linked entities.",
                 job.Id
             });
@@ -426,6 +463,20 @@ namespace WebApis.Controllers
                 }).ToList();
 
                 await _jobReviewerRepository.AddRangeAsync(newJobReviewers);
+
+                var reviewers = await _reviewerRepository.GetWithAllIncludeAsync(
+                   r => reviewersToAdd.Contains(r.Id),
+                   r => r,
+                   "User"
+               );
+
+                foreach (var reviewer in reviewers)
+                {
+                    await _appEmailService.SendReviewerAssignedToJobEmailAsync(
+                        reviewer,
+                        job
+                    );
+                }
             }
 
             return Ok(new { message = "Reviewers updated successfully." });
@@ -506,6 +557,22 @@ namespace WebApis.Controllers
                 }).ToList();
 
                 await _jobInterviewerRepository.AddRangeAsync(interviewersToAdd);
+
+                // Send email to newly added interviewers
+                var interviewers = await _interviewerRepository.GetWithAllIncludeAsync(
+                    i => interviewerIdsToAdd.Contains(i.Id),
+                    i => i,
+                    "User"
+                );
+
+                foreach (var interviewer in interviewers)
+                {
+                    await _appEmailService.SendInterviewerAssignedToJobEmailAsync(
+                        interviewer,
+                        job
+                    );
+                }
+
             }
 
             await _jobOpeningRepository.SaveChangesAsync();

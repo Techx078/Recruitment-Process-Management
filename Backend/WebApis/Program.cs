@@ -61,6 +61,8 @@ namespace WebApis
 
             builder.Services.AddScoped<JwtService>();
             builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+            builder.Services.AddScoped<IAppEmailService, AppEmailService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<ICommonValidator<JobOpeningDto>, JobOpeningValidator>();
             builder.Services.AddScoped<ICommonValidator<UpdateCandidateDto>,UpdateCandidateValidator>();

@@ -19,6 +19,11 @@ namespace WebApis.Repository
             Expression<Func<T, TResult>> selector,
             params string[] includes);
 
+        public Task<List<TResult>?> GetWithAllIncludeAsync<TResult>(
+        Expression<Func<T, bool>> filter,
+        Expression<Func<T, TResult>> selector,
+        params string[] includes);
+
         //overload order by
         public Task<T?> GetByorderAsync(
            Expression<Func<T, bool>> filter,
