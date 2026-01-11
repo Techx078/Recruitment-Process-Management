@@ -30,6 +30,8 @@ namespace WebApis.Data
         public DbSet<Education> Educations { get; set; }
 
         public DbSet<JobCandidateDocus> jobCandidateDocs { get; set; }
+
+        public DbSet<Employee> Employees { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<JobCandidate>()
@@ -170,6 +172,8 @@ namespace WebApis.Data
                 .HasForeignKey(jcd => jcd.JobDocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
             
+
+
 
             base.OnModelCreating(modelBuilder);
 

@@ -352,5 +352,26 @@ namespace WebApis.Service.EmailService
             );
         }
 
+        public async Task SendEmployeeWelcomeEmailAsync(
+            EmployeeCreatedMailDto mailData)
+        {
+            var body = await _templateService.RenderAsync(
+                "Employee/Welcome.html",
+                new Dictionary<string, string>
+                {
+                    ["EMPLOYEE_NAME"] = mailData.EmployeeName,
+                    ["DEPARTMENT"] = mailData.Department,
+                    ["DESIGNATION"] = mailData.Designation,
+                    ["JOINING_DATE"] = mailData.JoiningDate.ToString("dd MMM yyyy")
+                }
+            );
+
+            await _emailService.SendEmailAsync(
+                mailData.EmployeeEmail,
+                "Welcome to ROIMA Intelligence",
+                body
+            );
+        }
+
     }
 }

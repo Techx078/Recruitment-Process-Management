@@ -178,6 +178,20 @@ namespace WebApis.Repository.JobCandidateRepository
                 .FirstAsync();
         }
 
+        public async Task<EmployeeCreatedMailDto>GetEmployeeCreatedMailData(int jobCandidateId)
+        {
+            return await _db.JobCandidate
+                .Where(c => c.Id == jobCandidateId)
+                .Select(c => new EmployeeCreatedMailDto
+                {
+                    EmployeeName = c.Candidate.User.FullName,
+                    EmployeeEmail = c.Candidate.User.Email,
+                    Department = c.JobOpening.Department,
+                    Designation = c.JobOpening.Domain,
+                    JoiningDate = c.JoiningDate!.Value
+                })
+                .FirstAsync();
+        }
 
     }
 }

@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getPostOfferPool ,sendJoiningDate } from "../../../Services/JobCandidateService";
+import {
+  getPostOfferPool,
+  sendJoiningDate,
+  addCandidateToEmployee
+} from "../../../Services/JobCandidateService";
 import { handleGlobalError } from "../../../Services/errorHandler";
 import { toast } from "react-toastify";
 
@@ -11,7 +15,8 @@ const STATUS_ORDER = [
   "DocumentUploaded",
   "DocumentsVerified",
   "DocumentRejected",
-  "JoiningDateSend"
+  "JoiningDateSend",
+  "Employee"
 ];
 
 const PostOfferPool = () => {
@@ -88,17 +93,32 @@ const PostOfferPool = () => {
                         {c.status}
                       </span>
                     </td>
-                    {c.status === "DocumentsVerified" ? (
+                    {c.status === "DocumentsVerified" && (
                       <td>
                         <button
                           onClick={() => setCandidateId(c.jobCandidateId)}
                           className="px-2 py-1 text-sm border border-gray-400 rounded text-gray-700"
                         >
-                          Send Joining Date{" "}
+                          Send Joining Date
                         </button>
                       </td>
-                    ) : (
-                      <td className="p-3 text-gray-700">-</td>
+                    )}
+                    {c.status === "JoiningDateSend" && (
+                      <td>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await addCandidateToEmployee(c.jobCandidateId);
+                              toast.success("Candidate added to employee list");
+                            } catch (err) {
+                              handleGlobalError(err);
+                            }
+                          }}
+                          className="px-2 py-1 text-sm border border-gray-400 rounded text-gray-700"
+                        >
+                          Add to employee
+                        </button>
+                      </td>
                     )}
                   </tr>
                 ))}
@@ -129,11 +149,14 @@ const PostOfferPool = () => {
 
                     <button
                       onClick={async () => {
-                        try{
-                        await sendJoiningDate(joiningcandidateId, joiningDate);
-                        toast.success("Joining date sent successfully");
-                        setjoiningcandidateId(null);
-                        }catch(err){
+                        try {
+                          await sendJoiningDate(
+                            joiningcandidateId,
+                            joiningDate
+                          );
+                          toast.success("Joining date sent successfully");
+                          setjoiningcandidateId(null);
+                        } catch (err) {
                           handleGlobalError(err);
                         }
                       }}

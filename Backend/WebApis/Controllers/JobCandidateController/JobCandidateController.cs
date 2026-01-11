@@ -30,6 +30,7 @@ namespace WebApis.Controllers.JobCandidateController
         private readonly CloudinaryService _cloudinaryService;
         private readonly ICommonRepository<JobDocument> _jobDocumentRepository;
         private readonly IAppEmailService _appEmailService;
+        private readonly ICommonRepository<Employee> _employeeRepository;
 
         public JobCandidateController(
             IJobCandidateRepository jobCandidateRepository,
@@ -42,7 +43,8 @@ namespace WebApis.Controllers.JobCandidateController
             ICommonRepository<JobCandidateDocus> jobCandidateDocRepository,
             CloudinaryService cloudinaryService,
             ICommonRepository<JobDocument> jobDocumentRepository,
-            IAppEmailService appEmailService
+            IAppEmailService appEmailService,
+            ICommonRepository<Employee> employeeRepository
         )
         {
             _jobCandidateRepository = jobCandidateRepository;
@@ -56,6 +58,7 @@ namespace WebApis.Controllers.JobCandidateController
             _cloudinaryService = cloudinaryService;
             _jobDocumentRepository = jobDocumentRepository;
             _appEmailService = appEmailService;
+            _employeeRepository = employeeRepository;
         }
         [HttpPost("create")]
         [Authorize(Roles = "Recruiter")]
@@ -1029,7 +1032,7 @@ namespace WebApis.Controllers.JobCandidateController
         }
 
         [HttpGet("pool/offerSend/{jobOpeningId}")]
-        [Authorize(Roles = "Recruiter")]
+        [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> GetOfferedCandidates(int jobOpeningId)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -1530,7 +1533,7 @@ namespace WebApis.Controllers.JobCandidateController
         }
 
         [HttpGet("pool/PostOffer/{jobOpeningId}")]
-        [Authorize(Roles = "Recruiter")]
+        [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> GetPostOffer(int jobOpeningId)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -1559,7 +1562,7 @@ namespace WebApis.Controllers.JobCandidateController
 
             var offeredCandidates = jobOpening.JobCandidates
                 .Where(c => c.Status == "OfferAccepted" || c.Status == "DocumentUploaded" || c.Status == "DocumentsVerified" || c.Status == "DocumentRejected"
-                || c.Status == "OfferRejectedByCandidate" || c.Status == "OfferRejectedBySystem" || c.Status == "JoiningDateSend")
+                || c.Status == "OfferRejectedByCandidate" || c.Status == "OfferRejectedBySystem" || c.Status == "JoiningDateSend" || c.Status == "Employee")
                 .Select(c => new OfferPoolDto
                 {
                     JobCandidateId = c.Id,
@@ -1603,7 +1606,7 @@ namespace WebApis.Controllers.JobCandidateController
 
             if (jobCandidate.Status != "DocumentsVerified")
                 throw new AppException(
-                    "Offer can be sent only to selected candidates",
+                    "document should be verified to send joining date",
                     ErrorCodes.ValidationError,
                     StatusCodes.Status400BadRequest
                 );
@@ -1653,6 +1656,77 @@ namespace WebApis.Controllers.JobCandidateController
             return Ok(new
             {
                 message = "JoiningDate sent successfully"
+            });
+        }
+
+        [HttpPost("Create-Employee/{jobCandidateId}")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> CreateEmployee(
+          int jobCandidateId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                throw new UnauthorizedAccessException();
+
+            int userId = int.Parse(userIdClaim);
+
+            var jobCandidate = await _jobCandidateRepositoryCommon
+                .GetWithIncludeAsync(
+                    c => c.Id == jobCandidateId,
+                    c => c,
+                    "JobOpening.CreatedBy",
+                    "Candidate.User",
+                    "Candidate.User"
+                );
+
+            if (jobCandidate == null)
+                throw new AppException(
+                    "Job candidate not found",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
+            if (jobCandidate.Status != "JoiningDateSend")
+                throw new AppException(
+                    "joining date not sent!",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            if (jobCandidate.JobOpening.CreatedBy.UserId != userId)
+                throw new AppException(
+                    "You are not authorized to send offer for this candidate",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
+
+            await _employeeRepository.AddAsync(new Employee
+            {
+                UserId = jobCandidate.Candidate.UserId,
+                Department = jobCandidate.JobOpening.Department,
+                Designation = jobCandidate.JobOpening.Domain,
+                salaryRange = jobCandidate.JobOpening.SalaryRange == null ? "not defined" : jobCandidate.JobOpening.SalaryRange,
+                JobType = jobCandidate.JobOpening.JobType,
+                Location = jobCandidate.JobOpening.Location,
+                EmploymentStatus = "Active",
+                JoiningDate = jobCandidate.JoiningDate,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            jobCandidate.Status = "Employee";
+            await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+            var mailData =
+                await _jobCandidateRepository
+                    .GetEmployeeCreatedMailData(jobCandidate.Id);
+
+            await _appEmailService
+                .SendEmployeeWelcomeEmailAsync(mailData);
+
+            return Ok(new
+            {
+                message = "Employee Created successfully"
             });
         }
 

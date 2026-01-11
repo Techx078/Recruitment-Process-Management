@@ -54,5 +54,9 @@ namespace WebApis.Service.EmailService
 
         Task SendCandidateJoiningDateEmailAsync(
             CandidateJoiningDateMailDto mailData);
+
+        Task SendEmployeeWelcomeEmailAsync(
+            EmployeeCreatedMailDto mailData);
+
     }
 }

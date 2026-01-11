@@ -499,3 +499,21 @@ export const sendJoiningDate = async (jobCandidateId, joiningDate) => {
     throw { status: 0, message: "Something went wrong. Please try again." };
   }
 };
+
+export const addCandidateToEmployee = async (jobCandidateId) => {
+  try {
+    const response = await axios.post(  
+      `${API_BASE_URL}/Create-Employee/${jobCandidateId}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (error.response) throw error.response;
+    throw { status: 0, message: "Something went wrong. Please try again." };
+  } 
+};

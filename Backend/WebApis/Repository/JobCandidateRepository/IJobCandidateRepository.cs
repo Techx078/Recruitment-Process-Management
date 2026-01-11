@@ -28,6 +28,7 @@ namespace WebApis.Repository.JobCandidateRepository
 
         public Task<CandidateJoiningDateMailDto> GetCandidateJoiningDateMailData(int jobCandidateId);
 
+        public Task<EmployeeCreatedMailDto> GetEmployeeCreatedMailData(int jobCandidateId);
 
     }
 }
