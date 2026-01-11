@@ -39,7 +39,7 @@ const PendingReviews = () => {
       );
       setCandidates(response);
     } catch (error) {
-      handleGlobalError(erros)
+      handleGlobalError(error);
       setError("enable to fetch pending reviewer!")
       return;
     } finally {

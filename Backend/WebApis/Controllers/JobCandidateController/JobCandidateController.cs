@@ -277,13 +277,6 @@ namespace WebApis.Controllers.JobCandidateController
                     }
                 );
 
-            if (pendingReviewCandidates == null || !pendingReviewCandidates.Any())
-                throw new AppException(
-                    "No candidates found for this job opening.",
-                    ErrorCodes.NotFound,
-                    StatusCodes.Status404NotFound
-                );
-
             return Ok(pendingReviewCandidates);
         }
 
@@ -1035,30 +1028,33 @@ namespace WebApis.Controllers.JobCandidateController
         [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> GetOfferedCandidates(int jobOpeningId)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userIdClaim))
-                throw new UnauthorizedAccessException("Invalid token");
-
-            int userId = int.Parse(userIdClaim);
-
+            var userRoleClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
             var jobOpening = await _jobOpeningRepository.GetWithIncludeAsync(
-                j => j.Id == jobOpeningId,
-                j => j,
-                "CreatedBy",
-                "JobCandidates.Candidate.User"
-            );
+                  j => j.Id == jobOpeningId,
+                  j => j,
+                  "CreatedBy",
+                  "JobCandidates.Candidate.User"
+              );
 
             if (jobOpening == null)
                 throw new KeyNotFoundException("Job opening not found");
 
-            // Ensure recruiter owns the job opening
-            if (jobOpening.CreatedBy.UserId != userId)
-                throw new AppException(
-                   "You are not authorized to view offered candidates",
-                   ErrorCodes.Forbidden,
-                   StatusCodes.Status403Forbidden
-               );
+            if (userRoleClaim == "Recruiter")
+            {
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrWhiteSpace(userIdClaim))
+                    throw new UnauthorizedAccessException("Invalid token");
 
+                int userId = int.Parse(userIdClaim);
+                
+                // Ensure recruiter owns the job opening
+                if (jobOpening.CreatedBy.UserId != userId)
+                    throw new AppException(
+                       "You are not authorized to view offered candidates",
+                       ErrorCodes.Forbidden,
+                       StatusCodes.Status403Forbidden
+                   );
+            }
             var offeredCandidates = jobOpening.JobCandidates
                 .Where(c => c.Status == "OfferSent")
                 .Select(c => new OfferPoolDto
@@ -1536,30 +1532,32 @@ namespace WebApis.Controllers.JobCandidateController
         [Authorize(Roles = "Recruiter,Admin")]
         public async Task<IActionResult> GetPostOffer(int jobOpeningId)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userIdClaim))
-                throw new UnauthorizedAccessException("Invalid token");
-
-            int userId = int.Parse(userIdClaim);
-
+            var userRoleClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
             var jobOpening = await _jobOpeningRepository.GetWithIncludeAsync(
-                j => j.Id == jobOpeningId,
-                j => j,
-                "CreatedBy",
-                "JobCandidates.Candidate.User"
-            );
+                   j => j.Id == jobOpeningId,
+                   j => j,
+                   "CreatedBy",
+                   "JobCandidates.Candidate.User"
+               );
 
             if (jobOpening == null)
                 throw new KeyNotFoundException("Job opening not found");
+            if (userRoleClaim == "Recruiter")
+            {
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrWhiteSpace(userIdClaim))
+                    throw new UnauthorizedAccessException("Invalid token");
 
-            // Ensure recruiter owns the job opening
-            if (jobOpening.CreatedBy.UserId != userId)
-                throw new AppException(
-                   "You are not authorized to view offered candidates",
-                   ErrorCodes.Forbidden,
-                   StatusCodes.Status403Forbidden
-               );
+                int userId = int.Parse(userIdClaim);
 
+                // Ensure recruiter owns the job opening
+                if (jobOpening.CreatedBy.UserId != userId)
+                    throw new AppException(
+                       "You are not authorized to view offered candidates",
+                       ErrorCodes.Forbidden,
+                       StatusCodes.Status403Forbidden
+                   );
+            }
             var offeredCandidates = jobOpening.JobCandidates
                 .Where(c => c.Status == "OfferAccepted" || c.Status == "DocumentUploaded" || c.Status == "DocumentsVerified" || c.Status == "DocumentRejected"
                 || c.Status == "OfferRejectedByCandidate" || c.Status == "OfferRejectedBySystem" || c.Status == "JoiningDateSend" || c.Status == "Employee")

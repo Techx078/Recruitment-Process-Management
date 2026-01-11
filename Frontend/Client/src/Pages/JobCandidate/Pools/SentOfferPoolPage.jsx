@@ -56,7 +56,7 @@ const SentOfferPoolPage = () => {
       ) : (
         <table className="w-full bg-white rounded-lg shadow-sm">
           <thead className="bg-gray-100 border-b border-gray-300">
-            <tr SentofferclassName=" text-gray-700">
+            <tr className=" text-gray-700">
               <th className="p-3">Name</th>
               <th className="p-3">Email</th>
               <th className="p-3">Offer Expiry</th>

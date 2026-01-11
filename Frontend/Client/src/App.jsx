@@ -54,6 +54,7 @@ import DocumentUploadedPool from "./Pages/JobCandidate/Pools/DocumentUploadedPoo
 import HrAssinedProtector from "./Protectors/hrAssinedProtector.jsx";
 import JobCandidateProtector from "./Protectors/JobCandidateProtector.jsx";
 import PostOfferPool from "./Pages/JobCandidate/Pools/PostOfferPool.jsx";
+import AdminProfile from "./Pages/Profile/AdminProfile.jsx";
 
 function App() {
   return (
@@ -175,6 +176,14 @@ function App() {
                 <CandidateProfileProtector>
                   <CandidateProfile />
                 </CandidateProfileProtector>
+              }
+            />
+            <Route
+              path="/Admin/Profile/:UserId"
+              element={
+                <AdminProtector>
+                  <AdminProfile />
+                </AdminProtector>
               }
             />
             <Route

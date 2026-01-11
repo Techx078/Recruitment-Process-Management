@@ -34,6 +34,76 @@ namespace WebApis.Data
         public DbSet<Employee> Employees { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            //document seed
+            modelBuilder.Entity<Document>().HasData(
+                       new Document
+                       {
+                           id = 1,
+                           Name = "Addhar-card",
+                           Description = "Need both side",
+                           CreateAt = DateTime.UtcNow
+                       },
+                       new Document
+                       {
+                           id = 2,
+                           Name = "Offer Letter",
+                           Description = "Job Offer Document",
+                           CreateAt = DateTime.UtcNow
+                       },
+                       new Document
+                       {
+                           id = 3,
+                           Name = "ID Proof",
+                           Description = "Government Issued ID",
+                           CreateAt = DateTime.UtcNow
+                       }
+                   );
+
+            // Skill Seed
+            modelBuilder.Entity<Skill>().HasData(
+                new Skill
+                {
+                    SkillId = 1,
+                    Name = "C#",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Skill
+                {
+                    SkillId = 2,
+                    Name = "ASP.NET Core",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Skill
+                {
+                    SkillId = 3,
+                    Name = "React",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Skill
+                {
+                    SkillId = 4,
+                    Name = "SQL Server",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+    );
+            modelBuilder.Entity<User>().HasData(
+                    new User
+                    {
+                        Id = 1, 
+                        FullName = "Admin User",
+                        Email = "admin@example.com",
+                        PhoneNumber = "9999999999",
+                        PasswordHash = "$2a$10$F9qsthzYRMDmWGKbSMmZ4.EzG80t9HJDGEsm1JXgbSF2GfXS5JQVu", //password :- Admin123
+                        RoleName = "Admin",
+                        CreatedAt = new DateTime(2025, 01, 01),
+                        Domain = "not-defined",
+                        DomainExperienceYears = 0
+                    }
+                );
             modelBuilder.Entity<JobCandidate>()
                         .HasIndex(j => new { j.JobOpeningId, j.CandidateId })
                         .IsUnique();
