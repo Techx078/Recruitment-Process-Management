@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getPostOfferPool } from "../../../Services/JobCandidateService";
+import { getPostOfferPool ,sendJoiningDate } from "../../../Services/JobCandidateService";
+import { handleGlobalError } from "../../../Services/errorHandler";
+import { toast } from "react-toastify";
 
 const STATUS_ORDER = [
   "OfferAccepted",
@@ -9,6 +11,7 @@ const STATUS_ORDER = [
   "DocumentUploaded",
   "DocumentsVerified",
   "DocumentRejected",
+  "JoiningDateSend"
 ];
 
 const PostOfferPool = () => {
@@ -16,7 +19,8 @@ const PostOfferPool = () => {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  const [joiningcandidateId, setjoiningcandidateId] = useState(null);
+  const [joiningDate, setjoiningDate] = useState(null);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -65,6 +69,7 @@ const PostOfferPool = () => {
                   <th className="p-3">Name</th>
                   <th className="p-3">Email</th>
                   <th className="p-3">Status</th>
+                  <th className="p-3">Actions</th>
                 </tr>
               </thead>
 
@@ -74,9 +79,7 @@ const PostOfferPool = () => {
                     key={c.jobCandidateId}
                     className="border-b border-gray-200 hover:bg-gray-50"
                   >
-                    <td className="p-3 text-gray-800">
-                      {c.candidateName}
-                    </td>
+                    <td className="p-3 text-gray-800">{c.candidateName}</td>
 
                     <td className="p-3 text-gray-700">{c.email}</td>
 
@@ -85,10 +88,63 @@ const PostOfferPool = () => {
                         {c.status}
                       </span>
                     </td>
+                    {c.status === "DocumentsVerified" ? (
+                      <td>
+                        <button
+                          onClick={() => setCandidateId(c.jobCandidateId)}
+                          className="px-2 py-1 text-sm border border-gray-400 rounded text-gray-700"
+                        >
+                          Send Joining Date{" "}
+                        </button>
+                      </td>
+                    ) : (
+                      <td className="p-3 text-gray-700">-</td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
+            {/* send joining date */}
+            {joiningcandidateId && (
+              <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-md w-[400px]">
+                  <h4 className="text-md font-semibold mb-2">
+                    Send Joining Date
+                  </h4>
+                  <input
+                    type="date"
+                    className="w-full border border-gray-300 rounded p-2 mb-4"
+                    onChange={(e) => setjoiningDate(e.target.value)}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => {
+                        setjoiningcandidateId(null);
+                        setjoiningDate("");
+                      }}
+                      className="px-3 py-1 border border-gray-400 rounded"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        try{
+                        await sendJoiningDate(joiningcandidateId, joiningDate);
+                        toast.success("Joining date sent successfully");
+                        setjoiningcandidateId(null);
+                        }catch(err){
+                          handleGlobalError(err);
+                        }
+                      }}
+                      className="px-3 py-1 bg-black text-white rounded"
+                    >
+                      Send Joining Date
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       })}

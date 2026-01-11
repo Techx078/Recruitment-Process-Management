@@ -1559,7 +1559,7 @@ namespace WebApis.Controllers.JobCandidateController
 
             var offeredCandidates = jobOpening.JobCandidates
                 .Where(c => c.Status == "OfferAccepted" || c.Status == "DocumentUploaded" || c.Status == "DocumentsVerified" || c.Status == "DocumentRejected"
-                || c.Status == "OfferRejectedByCandidate" || c.Status == "OfferRejectedBySystem")
+                || c.Status == "OfferRejectedByCandidate" || c.Status == "OfferRejectedBySystem" || c.Status == "JoiningDateSend")
                 .Select(c => new OfferPoolDto
                 {
                     JobCandidateId = c.Id,
@@ -1573,6 +1573,87 @@ namespace WebApis.Controllers.JobCandidateController
                 .ToList();
 
             return Ok(offeredCandidates);
+        }
+
+        [HttpPut("send-Joining-Date/{jobCandidateId}")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> SendJoiningDate(
+          int jobCandidateId,
+          [FromBody] JoiningDateDto dto)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim))
+                throw new UnauthorizedAccessException();
+
+            int userId = int.Parse(userIdClaim);
+
+            var jobCandidate = await _jobCandidateRepositoryCommon
+                .GetWithIncludeAsync(
+                    c => c.Id == jobCandidateId,
+                    c => c,
+                    "JobOpening.CreatedBy"
+                );
+
+            if (jobCandidate == null)
+                throw new AppException(
+                    "Job candidate not found",
+                    ErrorCodes.NotFound,
+                    StatusCodes.Status404NotFound
+                );
+
+            if (jobCandidate.Status != "DocumentsVerified")
+                throw new AppException(
+                    "Offer can be sent only to selected candidates",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            if (jobCandidate.JobOpening.CreatedBy.UserId != userId)
+                throw new AppException(
+                    "You are not authorized to send offer for this candidate",
+                    ErrorCodes.Forbidden,
+                    StatusCodes.Status403Forbidden
+                );
+
+            if (dto == null)
+                throw new AppException(
+                    "Request body is required",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            if (dto.JoiningDate == default)
+                throw new AppException(
+                    "Joining date is required",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            var joiningDateUtc = dto.JoiningDate.ToUniversalTime();
+            var todayUtc = DateTime.UtcNow.Date;
+
+            if (joiningDateUtc.Date < todayUtc)
+                throw new AppException(
+                    "Joining date cannot be in the past",
+                    ErrorCodes.ValidationError,
+                    StatusCodes.Status400BadRequest
+                );
+
+            jobCandidate.JoiningDate = dto.JoiningDate;
+            jobCandidate.Status = "JoiningDateSend";
+            jobCandidate.UpdatedAt = DateTime.UtcNow;
+
+            await _jobCandidateRepositoryCommon.UpdateAsync(jobCandidate);
+
+            var mailData =await _jobCandidateRepository.GetCandidateJoiningDateMailData(jobCandidate.Id);
+
+            await _appEmailService
+                .SendCandidateJoiningDateEmailAsync(mailData);
+
+            return Ok(new
+            {
+                message = "JoiningDate sent successfully"
+            });
         }
 
     }

@@ -481,3 +481,21 @@ export const getPostOfferPool = async (jobOpeningId) => {
     throw error;
   }
 };
+
+export const sendJoiningDate = async (jobCandidateId, joiningDate) => {
+  try {
+    const response = await axios.put(
+      `${API_BASE_URL}/send-Joining-Date/${jobCandidateId}`,
+      { joiningDate },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (error.response) throw error.response;
+    throw { status: 0, message: "Something went wrong. Please try again." };
+  }
+};

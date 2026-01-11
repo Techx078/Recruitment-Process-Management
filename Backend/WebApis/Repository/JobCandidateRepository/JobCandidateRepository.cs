@@ -164,6 +164,19 @@ namespace WebApis.Repository.JobCandidateRepository
                 .FirstAsync();
         }
 
+        public async Task<CandidateJoiningDateMailDto> GetCandidateJoiningDateMailData(int jobCandidateId)
+        {
+            return await _db.JobCandidate
+                .Where(c => c.Id == jobCandidateId)
+                .Select(c => new CandidateJoiningDateMailDto
+                {
+                    CandidateName = c.Candidate.User.FullName,
+                    CandidateEmail = c.Candidate.User.Email,
+                    JobTitle = c.JobOpening.Title,
+                    JoiningDate = c.JoiningDate
+                })
+                .FirstAsync();
+        }
 
 
     }

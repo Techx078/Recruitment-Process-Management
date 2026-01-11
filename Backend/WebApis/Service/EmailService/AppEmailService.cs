@@ -332,7 +332,25 @@ namespace WebApis.Service.EmailService
                 body
             );
         }
+        public async Task SendCandidateJoiningDateEmailAsync(
+            CandidateJoiningDateMailDto mailData)
+        {
+            var body = await _templateService.RenderAsync(
+                "Candidate/JoiningDate.html",
+                new Dictionary<string, string>
+                {
+                    ["CANDIDATE_NAME"] = mailData.CandidateName,
+                    ["JOB_TITLE"] = mailData.JobTitle,
+                    ["JOINING_DATE"] = mailData.JoiningDate?.ToString("dd MMM yyyy")
+                }
+            );
 
+            await _emailService.SendEmailAsync(
+                mailData.CandidateEmail,
+                "Joining Date Confirmation",
+                body
+            );
+        }
 
     }
 }

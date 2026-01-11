@@ -34,6 +34,8 @@
 
         public String? OfferRejectionReason { get; set; } = string.Empty;
 
+        public DateTime? JoiningDate { get; set; } = DateTime.MinValue;
+
         // Navigation property to JobInterviews
         public ICollection<JobInterview>? JobInterviews { get; set; } = new List<JobInterview>();
         public ICollection<JobCandidateDocus> JobCandidateDoc { get; set; }

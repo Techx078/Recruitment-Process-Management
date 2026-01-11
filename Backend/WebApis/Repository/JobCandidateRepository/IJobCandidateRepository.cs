@@ -26,6 +26,7 @@ namespace WebApis.Repository.JobCandidateRepository
 
         public Task<CandidateDocumentVerificationMailDto> GetCandidateDocumentVerificationMailData(int jobCandidateId);
 
+        public Task<CandidateJoiningDateMailDto> GetCandidateJoiningDateMailData(int jobCandidateId);
 
 
     }
