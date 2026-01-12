@@ -20,10 +20,6 @@ export default function JobOpeningContextProvider({ children }) {
     const data = await getAllJobOpenings(token);
     setJobOpenings(() => data);
     } catch (error) { 
-      if (authUser == null) {
-        alert("Login to continue");
-        navigate("/login");
-      }
      handleGlobalError(error)
     }
   }

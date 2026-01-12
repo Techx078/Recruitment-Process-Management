@@ -55,7 +55,7 @@ import HrAssinedProtector from "./Protectors/hrAssinedProtector.jsx";
 import JobCandidateProtector from "./Protectors/JobCandidateProtector.jsx";
 import PostOfferPool from "./Pages/JobCandidate/Pools/PostOfferPool.jsx";
 import AdminProfile from "./Pages/Profile/AdminProfile.jsx";
-
+import AdminProtector from "./Protectors/AdminProtector.jsx";
 function App() {
   return (
     <AuthUserContextProvider>
@@ -71,7 +71,7 @@ function App() {
             hideProgressBar={false}
           />
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<JobOpeningsListWrapper />} />
             <Route path="/login" element={<Login />} />
             <Route
               path="/Candidate-register"

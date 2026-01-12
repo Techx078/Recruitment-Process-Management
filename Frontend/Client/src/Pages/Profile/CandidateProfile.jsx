@@ -20,6 +20,7 @@ export default function CandidateProfile({}) {
     let fetchCandidate = async () => {
       try {
         let data = await getCandidateDetails(UserId, token);
+        console.log(data);
         setCandidate(data);
       } catch (e) {
         handleGlobalError(e);

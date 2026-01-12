@@ -30,9 +30,6 @@ export default function Navbar() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex space-x-4  items-center">
-            <Link to="/" className="text-gray-700 hover:text-indigo-600">
-              Home
-            </Link>
             {authUser ? (
               <>
                 <span className="text-gray-700">Welcome, {authUser.role}</span>
@@ -51,7 +48,7 @@ export default function Navbar() {
                 <button onClick={()=>{
                   setAuthUser(null);
                   localStorage.removeItem("token");
-                  Navigate("/");
+                  Navigate("/login");
                 }}>
                   <i className="fa-solid fa-arrow-right-from-bracket"></i>
                 </button>
@@ -64,7 +61,12 @@ export default function Navbar() {
                 >
                   Login
                 </Link>
-                
+                 <Link
+                  to="/job-openings"
+                  className="text-gray-700 hover:text-indigo-600"
+                >
+                  Job-Openings
+                </Link>
                
               </>
             )}
@@ -97,35 +99,36 @@ export default function Navbar() {
               to="/"
               className="block px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
             >
-              Home
+              jobOpenings
             </Link>
+             <Link
+                  to={`/${authUser.role}/Profile/${authUser.id}`}
+                  className="block px-2 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                >
+                  <i className="fa-solid fa-user"></i>
+                </Link>
+                <button onClick={()=>{
+                  setAuthUser(null);
+                  localStorage.removeItem("token");
+                  Navigate("/login");
+                }}>
+                  <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                </button>
           </>
         ) : (
           <>
-            <Link
-              to="/"
-              className="block px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
-            >
-              Home
-            </Link>
             <Link
               to="/Login"
               className="block px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
             >
               Login
             </Link>
-            <Link
-              to="/Candidate-Register"
-              className="block px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
-            >
-              Candidate-Register
-            </Link>
-            <Link
-              to="/Other-register"
-              className="text-gray-700 hover:text-indigo-600"
-            >
-              Other-Register
-            </Link>
+             <Link
+                  to="/job-openings"
+                  className="text-gray-700 hover:text-indigo-600"
+                >
+                  Job-Openings
+                </Link>
           </>
         )}
       </div>
