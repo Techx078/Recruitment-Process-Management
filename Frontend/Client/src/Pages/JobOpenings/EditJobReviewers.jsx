@@ -12,6 +12,7 @@ const EditJobReviewers = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const [isLoading, setIsLoading] = useState(false);
   const [reviewers, setReviewers] = useState([]);
   const [selected, setSelected] = useState([]);
   const [error, setError] = useState(null);
@@ -43,12 +44,16 @@ const EditJobReviewers = () => {
 
   const save = async () => {
     try{
+      setIsLoading(true);  
     const token = localStorage.getItem("token");
     await updateJobReviewers(id, selected, token);
     toast.success("Reviewers updated!");
+    setIsLoading(false);
     navigate(`/job-openings/${id}`);
     }catch(e){
       handleGlobalError(e);
+    }finally {
+      setIsLoading(false);
     }
   };
   if (error) {
@@ -89,10 +94,11 @@ const EditJobReviewers = () => {
       ))}
 
       <button
+      disabled={isLoading}
         onClick={save}
         className="mt-4  bg-gray-900 text-white px-4 py-2 rounded"
       >
-        Save Changes
+        {isLoading ? "Saving..." : "Save Changes"}
       </button>
 
       <button

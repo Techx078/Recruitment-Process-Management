@@ -1,39 +1,10 @@
-import axios from "axios";
-
-const API_BASE = "http://localhost:5233/api/ForgotPassword"; 
-
+import apiClient from "./apiClient";
+const CONTROLLER = "/ForgotPassword";
 
 export const sendOtp = async (email) => {
-  try {
-    await axios.post(
-      `${API_BASE}/forgot-password`,
-      { email },
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    return true;
-  } catch (error) {
-    if (error.response) throw error.response;
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+  return apiClient.post(`${CONTROLLER}/forgot-password`, { email }); 
 };
 
-
-
 export const resetPassword = async (payload) => {
-  try {
-    await axios.post(
-      `${API_BASE}/reset-password`,
-      payload,
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    return true;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+  return apiClient.post(`${CONTROLLER}/reset-password`, payload);
 };

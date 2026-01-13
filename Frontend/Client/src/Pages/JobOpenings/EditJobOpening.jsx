@@ -66,12 +66,16 @@ const EditJobOpening = () => {
 
   const handleSave = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem("token");
       await updateJobFields(id, formData, token);
       toast.success("Job updated successfully!");
+      setLoading(false);
       navigate(`/job-openings/${id}`);
     } catch (err) {
       handleGlobalError(err)
+    }finally {
+      setLoading(false);
     }
   };
 
@@ -302,10 +306,11 @@ const EditJobOpening = () => {
         {/* ACTION BUTTONS */}
         <div className="flex gap-4 mt-6">
           <button
+            disabled={loading}
             onClick={handleSave}
             className=" bg-black text-white px-5 py-2 rounded hover:bg-black-700"
           >
-            Save Changes
+            {loading ? "Saving..." : "Save Changes"}
           </button>
 
           <button

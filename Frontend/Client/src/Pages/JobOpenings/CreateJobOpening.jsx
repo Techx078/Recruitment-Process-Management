@@ -203,14 +203,16 @@ export default function JobOpeningForm({}) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setIsLoading(true);
       const token = localStorage.getItem("token");
-      console.log(jobData);
-
-      const res = await createJobOpening(jobData, token);
+      await createJobOpening(jobData, token);
       toast.success("Job Opening Created Successfully!");
+      setIsLoading(false);
       Navigate("/job-openings");
     } catch (error) {
       handleGlobalError(error);
+    }finally {
+      setIsLoading(false);
     }
   };
 

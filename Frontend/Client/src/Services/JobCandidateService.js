@@ -1,347 +1,84 @@
-let API_BASE_URL = "http://localhost:5233/api/JobCandidate";
-import axios from "axios";
+import apiClient from "./apiClient";
+const CONTROLLER = "/JobCandidate";
 
-export const CreateJobCandidateService = async (token, JobcandidateData) => {
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/create`,
-      JobcandidateData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const CreateJobCandidateService = (token, JobcandidateData) => {
+return apiClient.post(`${CONTROLLER}/create`, JobcandidateData);
 };
 
-export const CreateJobCandidateBulkService = async (token, Data) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/CreateBulk`, Data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const CreateJobCandidateBulkService = (token, Data) => {
+  return apiClient.post(`${CONTROLLER}/CreateBulk`, Data);
 };
 
-export const getJobCandidateById = async (jobCandidateId) => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/get/${jobCandidateId}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const getJobCandidateById = (jobCandidateId) => {
+  return apiClient.get(`${CONTROLLER}/get/${jobCandidateId}`);
 };
 
-export const getPendingReviewCandidate = async (jobOpeningId, token) => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/pool/review/${jobOpeningId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const getPendingReviewCandidate = (jobOpeningId, token) => {
+  return apiClient.get(`${CONTROLLER}/pool/review/${jobOpeningId}`);
 };
 
-export const updateReviewStatus = async (jobCandidateId, data) => {
-  try {
-    const response = await axios.put(
-      `${API_BASE_URL}/review/${jobCandidateId}`,
-      data,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const updateReviewStatus = (jobCandidateId, data) => {
+  return apiClient.put(`${CONTROLLER}/review/${jobCandidateId}`, data)
 };
 
-export const getTechnicalInterviewPool = async (jobOpeningId) => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/pool/technical/${jobOpeningId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const getTechnicalInterviewPool = (jobOpeningId) => {
+  return apiClient.get(`${CONTROLLER}/pool/technical/${jobOpeningId}`)
 };
 
-export const getMyScheduledInterviews = async (jobOpeningId) => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/pool/my-scheduled/${jobOpeningId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const getMyScheduledInterviews = (jobOpeningId) => {
+  return apiClient.get(`${CONTROLLER}/pool/my-scheduled/${jobOpeningId}`)
 };
 
-export const scheduleInterview = async (jobCandidateId, data) => {
-  try {
-    const response = await axios.put(
-      `${API_BASE_URL}/schedule/${jobCandidateId}`,
-      data,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const scheduleInterview = (jobCandidateId, data) => {
+  return apiClient.put(`${CONTROLLER}/schedule/${jobCandidateId}`, data)
 };
 
-export const submitInterviewFeedback = async (jobCandidateId, data) => {
-  try {
-    const response = await axios.put(
-      `${API_BASE_URL}/Interview-feedback/${jobCandidateId}`,
-      data,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const submitInterviewFeedback = (jobCandidateId, data) => {
+  return apiClient.put(`${CONTROLLER}/Interview-feedback/${jobCandidateId}`, data)
 };
 
-export const getHrPool = async (jobOpeningId) => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/pool/hr/${jobOpeningId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const getHrPool = (jobOpeningId) => {
+  return apiClient.get(`${CONTROLLER}/pool/hr/${jobOpeningId}`)
 };
 
-export const getFinalPool = async (jobOpeningId) => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/pool/shortlist/${jobOpeningId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const getFinalPool = (jobOpeningId) => {
+  return apiClient.get(`${CONTROLLER}/pool/shortlist/${jobOpeningId}`)
 };
 
-export const selectCandidate = async (jobCandidateId) => {
-  try {
-    const response = await axios.put(
-      `${API_BASE_URL}/select/${jobCandidateId}`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const selectCandidate = (jobCandidateId) => {
+  return apiClient.put(`${CONTROLLER}/select/${jobCandidateId}`,{});
 };
 
-export const getCandidateInterviewHistory = async (jobCandidateId) => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/history/${jobCandidateId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const getCandidateInterviewHistory = (jobCandidateId) => {
+  return apiClient.get(`${CONTROLLER}/history/${jobCandidateId}`);
 };
 
-export const sendOffer = async (jobCandidateId, offerExpiryDate) => {
-  try {
-    const response = await axios.put(
-      `${API_BASE_URL}/send-offer/${jobCandidateId}`,
-      { offerExpiryDate },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const sendOffer = (jobCandidateId, offerExpiryDate) => {
+  return apiClient.put(`${CONTROLLER}/send-offer/${jobCandidateId}`, { offerExpiryDate });
 };
-export const getSentOfferPool = async (jobOpeningId) => {
-  try {
-    const res = await axios.get(
-      `${API_BASE_URL}/pool/offerSend/${jobOpeningId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-    return res.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+
+export const getSentOfferPool = (jobOpeningId) => {
+  return apiClient.get(`${CONTROLLER}/pool/offerSend/${jobOpeningId}`);
 };
 
 export const rejectOfferBySystem = (jobCandidateId, reason) => {
-  try {
-    return axios.put(
-      `${API_BASE_URL}/reject-by-system/${jobCandidateId}`,
-      { reason },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-  } catch (error) {
-    if (error.response) throw error.response;
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+  return apiClient.put(`${CONTROLLER}/reject-by-system/${jobCandidateId}`, { reason });
 };
 
 export const extendOfferExpiry = (jobCandidateId, newExpiryDate) => {
-  try {
-    return axios.put(
-      `${API_BASE_URL}/${jobCandidateId}/extend-expiry`,
-      { newExpiryDate },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-  } catch (error) {
-    if (error.response) throw error.response;
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+  return apiClient.put(`${CONTROLLER}/${jobCandidateId}/extend-expiry`, { newExpiryDate });
 };
 
-export const respondToOffer = async (
+export const respondToOffer = (
   jobCandidateId,
   isAccepted,
   rejectionReason = null
 ) => {
-  try {
     const payload = {
       isAccepted,
       rejectionReason: isAccepted ? null : rejectionReason,
     };
-
-    const response = await axios.put(
-      `${API_BASE_URL}/respond-offer/${jobCandidateId}`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw {
-      status: 0,
-      message: "Something went wrong. Please try again.",
-    };
-  }
+    return apiClient.put(`${CONTROLLER}/respond-offer/${jobCandidateId}`, payload);
 };
 
 export const uploadJobCandidateDocument = (
@@ -349,171 +86,48 @@ export const uploadJobCandidateDocument = (
   jobDocumentId,
   file
 ) => {
-  try {
     const formData = new FormData();
     formData.append("file", file);
-    const response = axios.post(
-      `${API_BASE_URL}/${jobCandidateId}/documents/${jobDocumentId}`,
-      formData,
+    return apiClient.post(`${CONTROLLER}/${jobCandidateId}/documents/${jobDocumentId}`, formData,
       {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "multipart/form-data",
         },
       }
-    );
-    return response;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw {
-      status: 0,
-      message: "Something went wrong. Please try again.",
-    };
-  }
+    ); 
 };
 
 export const submitAllDocuments = (jobCandidateId) => {
-  try {
-    const respond = axios.put(
-      `${API_BASE_URL}/${jobCandidateId}/documents/submit`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw {
-      status: 0,
-      message: "Something went wrong. Please try again.",
-    };
-  }
+  return apiClient.put(`${CONTROLLER}/${jobCandidateId}/documents/submit`,{});
 };
 
-export const getCandidateDocuments = async (jobCandidateId) => {
-  try {
-    const res = await axios.get(`${API_BASE_URL}/${jobCandidateId}/documents`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-    return res.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw {
-      status: 0,
-      message: "Something went wrong. Please try again.",
-    };
-  }
+export const getCandidateDocuments = (jobCandidateId) => {
+  return apiClient.get(`${CONTROLLER}/${jobCandidateId}/documents`);  
 };
 
-export const verifyCandidateDocuments = async (
+export const verifyCandidateDocuments = (
   jobCandidateId,
   isVerified,
   rejectionReason = null
 ) => {
-  try {
-    const res = await axios.put(
-      `${API_BASE_URL}/${jobCandidateId}/documents/verify`,
-      {
-        isVerified,
-        rejectionReason,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    return res.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-
-    throw {
-      status: 0,
-      message: "Something went wrong. Please try again.",
-    };
-  }
+  return apiClient.put(`${CONTROLLER}/${jobCandidateId}/documents/verify`, {
+    isVerified,
+    rejectionReason,
+  });
 };
 
-export const getDocumentUploadedPool = async (jobOpeningId) => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/pool/documentUploaded/${jobOpeningId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    if (error.response) {
-      throw error.response;
-    }
-    throw error;
-  }
+export const getDocumentUploadedPool = (jobOpeningId) => {
+  return apiClient.get(`${CONTROLLER}/pool/documentUploaded/${jobOpeningId}`);
 };
 
-export const getPostOfferPool = async (jobOpeningId) => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/pool/PostOffer/${jobOpeningId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    if (error.response) {
-      throw error.response;
-    }
-    throw error;
-  }
+export const getPostOfferPool = (jobOpeningId) => {
+  return apiClient.get(`${CONTROLLER}/pool/postOffer/${jobOpeningId}`);
 };
 
-export const sendJoiningDate = async (jobCandidateId, joiningDate) => {
-  try {
-    const response = await axios.put(
-      `${API_BASE_URL}/send-Joining-Date/${jobCandidateId}`,
-      { joiningDate },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  }
+export const sendJoiningDate = (jobCandidateId, joiningDate) => {
+  return apiClient.put(`${CONTROLLER}/send-Joining-Date/${jobCandidateId}`, { joiningDate });
 };
 
-export const addCandidateToEmployee = async (jobCandidateId) => {
-  try {
-    const response = await axios.post(  
-      `${API_BASE_URL}/Create-Employee/${jobCandidateId}`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    if (error.response) throw error.response;
-    throw { status: 0, message: "Something went wrong. Please try again." };
-  } 
+export const addCandidateToEmployee = (jobCandidateId) => {
+  return apiClient.post(`${CONTROLLER}/Create-Employee/${jobCandidateId}`, {}); 
 };

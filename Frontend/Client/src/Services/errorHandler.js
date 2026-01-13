@@ -20,8 +20,7 @@ export const handleGlobalError = (error) => {
       showErrorsSequentially(errors);
       return;
     }
-
-    if (message) {
+    else if (message) {
       toast.error(message);
       return;
     }

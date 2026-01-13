@@ -47,7 +47,7 @@ export default function DocumentUpload() {
       toast.success("document uploaded successfully!")
       setUploadedDocs((prev) => ({
         ...prev,
-        [jobDocumentId]: res.data.documentUrl,
+        [jobDocumentId]: res.documentUrl,
       }));
     } catch (err) {
       handleGlobalError(err)

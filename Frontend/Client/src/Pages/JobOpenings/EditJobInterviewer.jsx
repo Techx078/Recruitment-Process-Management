@@ -11,7 +11,7 @@ import { toast } from "react-toastify";
 const EditJobInterviewers = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
+  const [isLoading, setIsLoading] = useState(false);
   const [interviewers, setInterviewers] = useState([]);
   const [selected, setSelected] = useState([]);
   const [error, setError] = useState(null);
@@ -49,12 +49,16 @@ const EditJobInterviewers = () => {
   // Save to backend
   const save = async () => {
     try {
+      setIsLoading(true);
       const token = localStorage.getItem("token");
       await updateJobInterviewers(id, selected, token);
       toast.success("Interviewers updated!");
+      setIsLoading(false);
       navigate(`/job-openings/${id}`);
     } catch (error) {
       handleGlobalError(error);
+    }finally {
+      setIsLoading(false);
     }
   };
    
@@ -100,10 +104,12 @@ const EditJobInterviewers = () => {
 
       <div className="flex gap-3 mt-4">
         <button
+          disabled={isLoading}
           onClick={save}
           className="bg-black text-white px-4 py-2 rounded"
         >
-          Save Changes
+          {isLoading ? "Saving..." : "Save Changes"}
+          
         </button>
 
         <button

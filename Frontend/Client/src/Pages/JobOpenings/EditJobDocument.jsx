@@ -11,7 +11,7 @@ import { handleGlobalError } from "../../Services/errorHandler";
 const EditJobDocument = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
+  const [isLoading, setIsLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [selected, setSelected] = useState([]);
   const [error, setError] = useState(null);
@@ -25,7 +25,6 @@ const EditJobDocument = () => {
         setDocuments(allDocuments);
 
         const job = await getJobOpeningById(id, token);
-        console.log(job);
 
         const selected = job.documents.map((d) => ({
           documentId: d.id,
@@ -64,13 +63,16 @@ const EditJobDocument = () => {
 
   const save = async () => {
     try {
+      setIsLoading(true);
       const token = localStorage.getItem("token");
-      console.log(selected);
       await updateJobDocument(id, selected, token);
       toast.success("Document updated!");
+      setIsLoading(false);
       navigate(`/job-openings/${id}`);
     } catch (e) {
       handleGlobalError(e);
+    }finally {
+      setIsLoading(false);
     }
   };
   if (error) {
@@ -125,10 +127,11 @@ const EditJobDocument = () => {
       </div>
 
       <button
+        disabled={isLoading}
         onClick={save}
         className="mt-4  bg-gray-900 text-white px-4 py-2 rounded"
       >
-        Save Changes
+       {isLoading ? "saving" : "Save"} Changes
       </button>
 
       <button
